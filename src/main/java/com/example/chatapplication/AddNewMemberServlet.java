@@ -1,5 +1,4 @@
 package com.example.chatapplication;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import jakarta.servlet.*;
@@ -20,10 +19,8 @@ import java.sql.*;
 import java.util.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-@WebServlet("/CreateNewGroup")
-public class CreateNewGroupServlet extends HttpServlet {
-
+@WebServlet("/AddNewMembers")
+public class AddNewMemberServlet extends HttpServlet {
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json");
         String stoken = cookieExtract(request);
@@ -31,8 +28,8 @@ public class CreateNewGroupServlet extends HttpServlet {
         JSONObject jsonResponse = new JSONObject();
         if(stoken != null && sender_id != null){
             JsonObject jsonObject = JsonParser.parseReader(new InputStreamReader(request.getInputStream())).getAsJsonObject();
-            String grpname = jsonObject.get("name").getAsString();
-            String admin_id = jsonObject.get("Admin_id").getAsString();
+            String grp_id = jsonObject.get("grp_id").getAsString();
+            String added_by = jsonObject.get("added_by").getAsString();
             JsonArray jsonArray = jsonObject.getAsJsonArray("grpMembers");
             List<String> groupMembers = new ArrayList<>();
             for (JsonElement element : jsonArray) {
@@ -42,52 +39,26 @@ public class CreateNewGroupServlet extends HttpServlet {
             PreparedStatement ps =null;
 
             if(con!=null){
-                String qry ="insert into chat_groups (group_id, name, created_by) values (?,?,?)";
-                String qry_gm ="insert into group_members (id, grp_id,user_id,role,added_by) values (?,?,?,?,?)";
-                String grp_id = IdGeneration.generateRandomID();
-                try{
-                    ps =con.prepareStatement(qry);
-                    ps.setString(1, grp_id);
-                    ps.setString(2, grpname);
-                    ps.setString(3, admin_id);
-                    int rowinserted = ps.executeUpdate();
-                    if(rowinserted>0){
-                        jsonResponse.put("success", "Group created");
-                    }
-                    else{
-                        jsonResponse.put("error", "Error on creating group");
+                String qryForNewMember = "insert into group_members (id,grp_id,user_id,role,added_by) values(?,?,?,?,?)";
 
-                    }
-                    ps=con.prepareStatement(qry_gm);
+                try{
+                    ps=con.prepareStatement(qryForNewMember);
                     for(String member:groupMembers){
                         ps.setString(1, IdGeneration.generateRandomID());
                         ps.setString(2, grp_id);
                         ps.setString(3, member);
                         ps.setString(4,"Member");
-                        ps.setString(5, admin_id);
+                        ps.setString(5, added_by);
 
-                        rowinserted = ps.executeUpdate();
+                        int rowinserted = ps.executeUpdate();
                         if(rowinserted>0){
-                            jsonResponse.put("success", "Group MEmbers Added");
+                            jsonResponse.put("success", "new MEmbers Added");
 
                         }
                         else{
                             jsonResponse.put("error", "Error on add Members");
 
                         }
-
-                    }
-                    ps.setString(1, IdGeneration.generateRandomID());
-                    ps.setString(2, grp_id);
-                    ps.setString(3, admin_id);
-                    ps.setString(4,"Admin");
-                    ps.setString(5, admin_id);
-                    rowinserted = ps.executeUpdate();
-                    if(rowinserted>0){
-                        jsonResponse.put("success", "Group created");
-                    }
-                    else{
-                        jsonResponse.put("error", "Error on add Admin");
 
                     }
                 }catch (SQLException e){
@@ -111,9 +82,7 @@ public class CreateNewGroupServlet extends HttpServlet {
 
         }
         response.getWriter().write(jsonResponse.toString());
-
     }
-
     private String cookieExtract(HttpServletRequest request){
         Cookie[] cookies = request.getCookies();
 

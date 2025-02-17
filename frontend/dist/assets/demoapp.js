@@ -61,7 +61,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
             _ember["default"].run.scheduleOnce('afterRender', this, function () {
                 var curruser = self.get('model.curruser');
                 if (curruser) {
-                    this.set('sender_id', curruser.user_id);
+                    self.set('sender_id', curruser.user_id);
                     self.set('rsaPubown', curruser.rsa_public_key);
                 }
                 var socket = new WebSocket("ws://localhost:8080/chatApplication_war_exploded/LiveChat/" + this.sender_id);
@@ -439,9 +439,11 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
             },
             ViewMembers: function ViewMembers() {
                 var self = this;
+                self.get('ViewGrpMembers').clear();
                 _ember["default"].$(".empty-page").css("display", "none");
                 _ember["default"].$(".Chat").css("display", "none");
                 _ember["default"].$(".createGroup").css("display", "none");
+                _ember["default"].$(".addMembers").css("display", "none");
                 _ember["default"].$(".ViewGrpMember").css("display", "block");
 
                 _ember["default"].$.ajax({
@@ -484,11 +486,10 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                 });
             },
             closeViewMember: function closeViewMember() {
-                var self = this;
-                self.get('ViewGrpMembers').clear();
                 _ember["default"].$(".empty-page").css("display", "none");
                 _ember["default"].$(".createGroup").css("display", "none");
                 _ember["default"].$(".ViewGrpMember").css("display", "none");
+                _ember["default"].$(".addMembers").css("display", "none");
                 _ember["default"].$(".Chat").css("display", "block");
             },
 
@@ -500,15 +501,95 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                 };
 
                 _ember["default"].$.ajax({
-                    url: 'http://localhost:8080/chatApplication_war_exploded/MakeAdmin',
+                    url: 'http://localhost:8080/chatApplication_war_exploded/RoleChange',
                     type: 'POST',
                     contentType: 'application/json',
                     dataType: 'json',
                     xhrFields: { withCredentials: true },
                     data: JSON.stringify(member_details),
-                    success: function success(response) {},
-                    error: function error(_error5) {}
+                    success: function success(response) {
+                        _ember["default"].$(".empty-page").css("display", "none");
+                        _ember["default"].$(".createGroup").css("display", "none");
+                        _ember["default"].$(".ViewGrpMember").css("display", "none");
+                        _ember["default"].$(".addMembers").css("display", "none");
+                        _ember["default"].$(".Chat").css("display", "block");
+                    },
+                    error: function error(_error5) {
+                        console.error(_error5);
+                    }
                 });
+            },
+            addMembers: function addMembers() {
+                var self = this;
+                self.get('ViewGrpMembers').clear();
+                _ember["default"].$(".empty-page").css("display", "none");
+                _ember["default"].$(".createGroup").css("display", "none");
+                _ember["default"].$(".ViewGrpMember").css("display", "none");
+                _ember["default"].$(".Chat").css("display", "none");
+                _ember["default"].$(".addMembers").css("display", "block");
+                _ember["default"].$.ajax({
+                    url: 'http://localhost:8080/chatApplication_war_exploded/FetchUsers',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    dataType: 'json',
+                    xhrFields: { withCredentials: true },
+                    data: JSON.stringify({ grp_id: self.get('receiver_id') }),
+                    success: function success(response) {
+                        var _iteratorNormalCompletion4 = true;
+                        var _didIteratorError4 = false;
+                        var _iteratorError4 = undefined;
+
+                        try {
+                            for (var _iterator4 = response.users[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+                                var mem = _step4.value;
+
+                                self.get('ViewGrpMembers').pushObject(mem);
+                            }
+                        } catch (err) {
+                            _didIteratorError4 = true;
+                            _iteratorError4 = err;
+                        } finally {
+                            try {
+                                if (!_iteratorNormalCompletion4 && _iterator4["return"]) {
+                                    _iterator4["return"]();
+                                }
+                            } finally {
+                                if (_didIteratorError4) {
+                                    throw _iteratorError4;
+                                }
+                            }
+                        }
+                    },
+                    error: function error(_error6) {
+                        console.error(_error6);
+                    }
+
+                });
+            },
+            addNewMember: function addNewMember() {
+                var self = this;
+                var newMembers = {
+                    grp_id: self.get('receiver_id'),
+                    added_by: self.get('sender_id'),
+                    grpMembers: self.get('groupMembers')
+                };
+                _ember["default"].$.ajax({
+                    url: 'http://localhost:8080/chatApplication_war_exploded/AddNewMembers',
+                    type: 'POST',
+                    data: JSON.stringify(newMembers),
+                    xhrFields: { withCredentials: true },
+                    success: function success(response) {
+                        _ember["default"].$(".createGroup").css("display", "none");
+                        _ember["default"].$(".ViewGrpMember").css("display", "none");
+                        _ember["default"].$(".addMembers").css("display", "none");
+                        _ember["default"].$(".Chat").css("display", "block");
+                    },
+                    error: function error(_error7) {
+                        alert("error on Adding new members ", _error7);
+                    }
+
+                });
+                self.get('groupMembers').clear();
             }
 
         }
@@ -840,11 +921,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           return el0;
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var element10 = dom.childAt(fragment, [1]);
+          var element14 = dom.childAt(fragment, [1]);
           var morphs = new Array(3);
-          morphs[0] = dom.createElementMorph(element10);
-          morphs[1] = dom.createMorphAt(dom.childAt(element10, [3]), 0, 0);
-          morphs[2] = dom.createMorphAt(dom.childAt(element10, [5]), 0, 0);
+          morphs[0] = dom.createElementMorph(element14);
+          morphs[1] = dom.createMorphAt(dom.childAt(element14, [3]), 0, 0);
+          morphs[2] = dom.createMorphAt(dom.childAt(element14, [5]), 0, 0);
           return morphs;
         },
         statements: [["element", "action", ["fetchchat", ["get", "message", ["loc", [null, [15, 47], [15, 54]]]], "Private"], [], ["loc", [null, [15, 26], [15, 67]]]], ["content", "message.name", ["loc", [null, [17, 33], [17, 49]]]], ["content", "message.mobile_number", ["loc", [null, [18, 38], [18, 63]]]]],
@@ -911,10 +992,10 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           return el0;
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var element9 = dom.childAt(fragment, [1]);
+          var element13 = dom.childAt(fragment, [1]);
           var morphs = new Array(2);
-          morphs[0] = dom.createElementMorph(element9);
-          morphs[1] = dom.createMorphAt(dom.childAt(element9, [3]), 0, 0);
+          morphs[0] = dom.createElementMorph(element13);
+          morphs[1] = dom.createMorphAt(dom.childAt(element13, [3]), 0, 0);
           return morphs;
         },
         statements: [["element", "action", ["fetchchat", ["get", "group", ["loc", [null, [24, 51], [24, 56]]]], "Group"], [], ["loc", [null, [24, 30], [24, 67]]]], ["content", "group.name", ["loc", [null, [26, 37], [26, 51]]]]],
@@ -955,10 +1036,13 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             dom.appendChild(el0, el1);
             return el0;
           },
-          buildRenderNodes: function buildRenderNodes() {
-            return [];
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var element10 = dom.childAt(fragment, [1]);
+            var morphs = new Array(1);
+            morphs[0] = dom.createElementMorph(element10);
+            return morphs;
           },
-          statements: [],
+          statements: [["element", "action", ["addMembers"], ["on", "click"], ["loc", [null, [51, 29], [51, 63]]]]],
           locals: [],
           templates: []
         };
@@ -1005,12 +1089,12 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           return el0;
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var element7 = dom.childAt(fragment, [1]);
-          var element8 = dom.childAt(fragment, [5]);
+          var element11 = dom.childAt(fragment, [1]);
+          var element12 = dom.childAt(fragment, [5]);
           var morphs = new Array(3);
-          morphs[0] = dom.createElementMorph(element7);
+          morphs[0] = dom.createElementMorph(element11);
           morphs[1] = dom.createMorphAt(fragment, 3, 3, contextualElement);
-          morphs[2] = dom.createElementMorph(element8);
+          morphs[2] = dom.createElementMorph(element12);
           return morphs;
         },
         statements: [["element", "action", ["ExitGroup", ["get", "model.curruser.user_id", ["loc", [null, [49, 45], [49, 67]]]]], ["on", "click"], ["loc", [null, [49, 24], [49, 80]]]], ["block", "if", [["get", "isAdmin", ["loc", [null, [50, 26], [50, 33]]]]], [], 0, null, ["loc", [null, [50, 20], [52, 27]]]], ["element", "action", ["ViewMembers"], ["on", "click"], ["loc", [null, [53, 28], [53, 63]]]]],
@@ -1093,11 +1177,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             return el0;
           },
           buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var element6 = dom.childAt(fragment, [1]);
+            var element9 = dom.childAt(fragment, [1]);
             var morphs = new Array(3);
-            morphs[0] = dom.createMorphAt(dom.childAt(element6, [1, 1]), 0, 0);
-            morphs[1] = dom.createMorphAt(dom.childAt(element6, [3]), 0, 0);
-            morphs[2] = dom.createMorphAt(dom.childAt(element6, [5, 3]), 0, 0);
+            morphs[0] = dom.createMorphAt(dom.childAt(element9, [1, 1]), 0, 0);
+            morphs[1] = dom.createMorphAt(dom.childAt(element9, [3]), 0, 0);
+            morphs[2] = dom.createMorphAt(dom.childAt(element9, [5, 3]), 0, 0);
             return morphs;
           },
           statements: [["content", "message.sender_name", ["loc", [null, [65, 53], [65, 76]]]], ["content", "message.message", ["loc", [null, [67, 50], [67, 69]]]], ["content", "message.timestamp", ["loc", [null, [70, 54], [70, 75]]]]],
@@ -1172,10 +1256,10 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             return el0;
           },
           buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var element5 = dom.childAt(fragment, [1]);
+            var element8 = dom.childAt(fragment, [1]);
             var morphs = new Array(2);
-            morphs[0] = dom.createMorphAt(dom.childAt(element5, [3]), 0, 0);
-            morphs[1] = dom.createMorphAt(dom.childAt(element5, [5, 1]), 0, 0);
+            morphs[0] = dom.createMorphAt(dom.childAt(element8, [3]), 0, 0);
+            morphs[1] = dom.createMorphAt(dom.childAt(element8, [5, 1]), 0, 0);
             return morphs;
           },
           statements: [["content", "message.message", ["loc", [null, [78, 50], [78, 69]]]], ["content", "message.timestamp", ["loc", [null, [80, 54], [80, 75]]]]],
@@ -1287,12 +1371,12 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           return el0;
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var element3 = dom.childAt(fragment, [1]);
-          var element4 = dom.childAt(element3, [7]);
+          var element6 = dom.childAt(fragment, [1]);
+          var element7 = dom.childAt(element6, [7]);
           var morphs = new Array(3);
-          morphs[0] = dom.createMorphAt(dom.childAt(element3, [3]), 0, 0);
-          morphs[1] = dom.createMorphAt(dom.childAt(element3, [5]), 0, 0);
-          morphs[2] = dom.createElementMorph(element4);
+          morphs[0] = dom.createMorphAt(dom.childAt(element6, [3]), 0, 0);
+          morphs[1] = dom.createMorphAt(dom.childAt(element6, [5]), 0, 0);
+          morphs[2] = dom.createElementMorph(element7);
           return morphs;
         },
         statements: [["content", "message.name", ["loc", [null, [104, 45], [104, 61]]]], ["content", "message.mobile_number", ["loc", [null, [105, 50], [105, 75]]]], ["element", "action", ["addUsertoGroup", ["get", "message.user_id", ["loc", [null, [106, 95], [106, 110]]]]], ["on", "change"], ["loc", [null, [106, 69], [106, 124]]]]],
@@ -1343,6 +1427,92 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
       })();
       var child1 = (function () {
         var child0 = (function () {
+          var child0 = (function () {
+            return {
+              meta: {
+                "revision": "Ember@1.13.12",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 137,
+                    "column": 32
+                  },
+                  "end": {
+                    "line": 139,
+                    "column": 32
+                  }
+                },
+                "moduleName": "demoapp/templates/chat.hbs"
+              },
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createTextNode("                                ");
+                dom.appendChild(el0, el1);
+                var el1 = dom.createElement("button");
+                var el2 = dom.createTextNode("Make as Admin");
+                dom.appendChild(el1, el2);
+                dom.appendChild(el0, el1);
+                var el1 = dom.createTextNode("\n");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+                var element3 = dom.childAt(fragment, [1]);
+                var morphs = new Array(1);
+                morphs[0] = dom.createElementMorph(element3);
+                return morphs;
+              },
+              statements: [["element", "action", ["makeAdmin", ["get", "member.user_id", ["loc", [null, [138, 61], [138, 75]]]]], [], ["loc", [null, [138, 40], [138, 77]]]]],
+              locals: [],
+              templates: []
+            };
+          })();
+          var child1 = (function () {
+            return {
+              meta: {
+                "revision": "Ember@1.13.12",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 139,
+                    "column": 32
+                  },
+                  "end": {
+                    "line": 141,
+                    "column": 32
+                  }
+                },
+                "moduleName": "demoapp/templates/chat.hbs"
+              },
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createTextNode("                                    ");
+                dom.appendChild(el0, el1);
+                var el1 = dom.createElement("button");
+                var el2 = dom.createTextNode("Dismiss as Admin");
+                dom.appendChild(el1, el2);
+                dom.appendChild(el0, el1);
+                var el1 = dom.createTextNode("\n");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+                var element2 = dom.childAt(fragment, [1]);
+                var morphs = new Array(1);
+                morphs[0] = dom.createElementMorph(element2);
+                return morphs;
+              },
+              statements: [["element", "action", ["makeAdmin", ["get", "member.user_id", ["loc", [null, [140, 65], [140, 79]]]]], [], ["loc", [null, [140, 44], [140, 81]]]]],
+              locals: [],
+              templates: []
+            };
+          })();
           return {
             meta: {
               "revision": "Ember@1.13.12",
@@ -1353,7 +1523,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
                   "column": 28
                 },
                 "end": {
-                  "line": 139,
+                  "line": 142,
                   "column": 28
                 }
               },
@@ -1370,27 +1540,23 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               var el2 = dom.createTextNode("Remove");
               dom.appendChild(el1, el2);
               dom.appendChild(el0, el1);
-              var el1 = dom.createTextNode("\n                                ");
+              var el1 = dom.createTextNode("\n");
               dom.appendChild(el0, el1);
-              var el1 = dom.createElement("button");
-              var el2 = dom.createTextNode("Make as Admin");
-              dom.appendChild(el1, el2);
-              dom.appendChild(el0, el1);
-              var el1 = dom.createTextNode("\n\n");
+              var el1 = dom.createComment("");
               dom.appendChild(el0, el1);
               return el0;
             },
             buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var element0 = dom.childAt(fragment, [1]);
-              var element1 = dom.childAt(fragment, [3]);
+              var element4 = dom.childAt(fragment, [1]);
               var morphs = new Array(2);
-              morphs[0] = dom.createElementMorph(element0);
-              morphs[1] = dom.createElementMorph(element1);
+              morphs[0] = dom.createElementMorph(element4);
+              morphs[1] = dom.createMorphAt(fragment, 3, 3, contextualElement);
+              dom.insertBoundary(fragment, null);
               return morphs;
             },
-            statements: [["element", "action", ["ExitGroup", ["get", "member.user_id", ["loc", [null, [136, 61], [136, 75]]]]], [], ["loc", [null, [136, 40], [136, 77]]]], ["element", "action", ["makeAdmin", ["get", "member.user_id", ["loc", [null, [137, 61], [137, 75]]]]], [], ["loc", [null, [137, 40], [137, 77]]]]],
+            statements: [["element", "action", ["ExitGroup", ["get", "member.user_id", ["loc", [null, [136, 61], [136, 75]]]]], [], ["loc", [null, [136, 40], [136, 77]]]], ["block", "if", [["subexpr", "neq", [["get", "member.role", ["loc", [null, [137, 43], [137, 54]]]], "Admin"], [], ["loc", [null, [137, 38], [137, 63]]]]], [], 0, 1, ["loc", [null, [137, 32], [141, 39]]]]],
             locals: [],
-            templates: []
+            templates: [child0, child1]
           };
         })();
         return {
@@ -1403,7 +1569,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
                 "column": 24
               },
               "end": {
-                "line": 140,
+                "line": 143,
                 "column": 24
               }
             },
@@ -1425,7 +1591,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             dom.insertBoundary(fragment, null);
             return morphs;
           },
-          statements: [["block", "if", [["subexpr", "neq", [["get", "model.curruser.user_id", ["loc", [null, [135, 39], [135, 61]]]], ["get", "member.user_id", ["loc", [null, [135, 62], [135, 76]]]]], [], ["loc", [null, [135, 34], [135, 77]]]]], [], 0, null, ["loc", [null, [135, 28], [139, 35]]]]],
+          statements: [["block", "if", [["subexpr", "neq", [["get", "model.curruser.user_id", ["loc", [null, [135, 39], [135, 61]]]], ["get", "member.user_id", ["loc", [null, [135, 62], [135, 76]]]]], [], ["loc", [null, [135, 34], [135, 77]]]]], [], 0, null, ["loc", [null, [135, 28], [142, 35]]]]],
           locals: [],
           templates: [child0]
         };
@@ -1440,7 +1606,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               "column": 12
             },
             "end": {
-              "line": 144,
+              "line": 147,
               "column": 12
             }
           },
@@ -1502,18 +1668,98 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           return el0;
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var element2 = dom.childAt(fragment, [1]);
+          var element5 = dom.childAt(fragment, [1]);
           var morphs = new Array(5);
-          morphs[0] = dom.createMorphAt(dom.childAt(element2, [3]), 0, 0);
-          morphs[1] = dom.createMorphAt(dom.childAt(element2, [5]), 0, 0);
-          morphs[2] = dom.createMorphAt(dom.childAt(element2, [7]), 0, 0);
-          morphs[3] = dom.createMorphAt(element2, 9, 9);
-          morphs[4] = dom.createMorphAt(element2, 10, 10);
+          morphs[0] = dom.createMorphAt(dom.childAt(element5, [3]), 0, 0);
+          morphs[1] = dom.createMorphAt(dom.childAt(element5, [5]), 0, 0);
+          morphs[2] = dom.createMorphAt(dom.childAt(element5, [7]), 0, 0);
+          morphs[3] = dom.createMorphAt(element5, 9, 9);
+          morphs[4] = dom.createMorphAt(element5, 10, 10);
           return morphs;
         },
-        statements: [["content", "member.name", ["loc", [null, [128, 41], [128, 56]]]], ["content", "member.mobile_number", ["loc", [null, [129, 35], [129, 59]]]], ["content", "member.role", ["loc", [null, [130, 30], [130, 45]]]], ["block", "if", [["subexpr", "eq", [["get", "model.curruser.user_id", ["loc", [null, [131, 30], [131, 52]]]], ["get", "member.user_id", ["loc", [null, [131, 54], [131, 68]]]]], [], ["loc", [null, [131, 26], [131, 69]]]]], [], 0, null, ["loc", [null, [131, 20], [133, 27]]]], ["block", "if", [["get", "isAdmin", ["loc", [null, [134, 30], [134, 37]]]]], [], 1, null, ["loc", [null, [134, 24], [140, 31]]]]],
+        statements: [["content", "member.name", ["loc", [null, [128, 41], [128, 56]]]], ["content", "member.mobile_number", ["loc", [null, [129, 35], [129, 59]]]], ["content", "member.role", ["loc", [null, [130, 30], [130, 45]]]], ["block", "if", [["subexpr", "eq", [["get", "model.curruser.user_id", ["loc", [null, [131, 30], [131, 52]]]], ["get", "member.user_id", ["loc", [null, [131, 54], [131, 68]]]]], [], ["loc", [null, [131, 26], [131, 69]]]]], [], 0, null, ["loc", [null, [131, 20], [133, 27]]]], ["block", "if", [["get", "isAdmin", ["loc", [null, [134, 30], [134, 37]]]]], [], 1, null, ["loc", [null, [134, 24], [143, 31]]]]],
         locals: ["member"],
         templates: [child0, child1]
+      };
+    })();
+    var child6 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@1.13.12",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 159,
+              "column": 16
+            },
+            "end": {
+              "line": 168,
+              "column": 16
+            }
+          },
+          "moduleName": "demoapp/templates/chat.hbs"
+        },
+        arity: 1,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("                    ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("div");
+          dom.setAttribute(el1, "class", "groupnew");
+          var el2 = dom.createTextNode("\n                        ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("div");
+          dom.setAttribute(el2, "class", "avatargrp");
+          var el3 = dom.createElement("img");
+          dom.setAttribute(el3, "src", "assets/profile.png");
+          dom.setAttribute(el3, "alt", "");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n                        ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("p");
+          dom.setAttribute(el2, "class", "");
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n                        ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("span");
+          dom.setAttribute(el2, "class", "");
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n                        ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("input");
+          dom.setAttribute(el2, "type", "checkbox");
+          dom.setAttribute(el2, "class", "GroupDescrp");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n\n                    ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n                    ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("hr");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var element0 = dom.childAt(fragment, [1]);
+          var element1 = dom.childAt(element0, [7]);
+          var morphs = new Array(3);
+          morphs[0] = dom.createMorphAt(dom.childAt(element0, [3]), 0, 0);
+          morphs[1] = dom.createMorphAt(dom.childAt(element0, [5]), 0, 0);
+          morphs[2] = dom.createElementMorph(element1);
+          return morphs;
+        },
+        statements: [["content", "member.name", ["loc", [null, [162, 36], [162, 51]]]], ["content", "member.mobile_number", ["loc", [null, [163, 39], [163, 63]]]], ["element", "action", ["addUsertoGroup", ["get", "member.user_id", ["loc", [null, [164, 95], [164, 109]]]]], ["on", "change"], ["loc", [null, [164, 69], [164, 123]]]]],
+        locals: ["member"],
+        templates: []
       };
     })();
     return {
@@ -1526,7 +1772,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 149,
+            "line": 178,
             "column": 7
           }
         },
@@ -1801,46 +2047,113 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
         var el3 = dom.createTextNode("\n\n    ");
         dom.appendChild(el2, el3);
         dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n\n    ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("section");
+        dom.setAttribute(el2, "class", "addMembers");
+        var el3 = dom.createTextNode("\n        ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("form");
+        var el4 = dom.createTextNode("\n            ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4, "class", "viewHeader");
+        var el5 = dom.createTextNode("\n                ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("h1");
+        var el6 = dom.createTextNode("Add Members");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("br");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n                ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("button");
+        var el6 = dom.createTextNode("Close");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n            ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("br");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n            ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4, "class", "grp-field");
+        var el5 = dom.createTextNode("\n");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("            ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n            ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4, "class", "button-container");
+        var el5 = dom.createTextNode("\n                ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("button");
+        dom.setAttribute(el5, "type", "submit");
+        dom.setAttribute(el5, "class", "submit-button");
+        var el6 = dom.createTextNode("Add Members");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n            ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n        ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n\n\n    ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
         var el2 = dom.createTextNode("\n\n");
         dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element11 = dom.childAt(fragment, [2]);
-        var element12 = dom.childAt(element11, [3]);
-        var element13 = dom.childAt(element12, [1]);
-        var element14 = dom.childAt(element13, [3]);
-        var element15 = dom.childAt(element13, [5]);
-        var element16 = dom.childAt(element13, [7]);
-        var element17 = dom.childAt(element11, [7]);
-        var element18 = dom.childAt(element17, [1]);
-        var element19 = dom.childAt(element17, [7]);
-        var element20 = dom.childAt(element11, [9, 1]);
-        var element21 = dom.childAt(element11, [11]);
-        var element22 = dom.childAt(element21, [1, 4]);
-        var element23 = dom.childAt(element21, [4]);
-        var morphs = new Array(15);
-        morphs[0] = dom.createMorphAt(dom.childAt(element13, [1]), 1, 1);
-        morphs[1] = dom.createAttrMorph(element14, 'value');
-        morphs[2] = dom.createElementMorph(element15);
-        morphs[3] = dom.createElementMorph(element16);
-        morphs[4] = dom.createMorphAt(element12, 3, 3);
-        morphs[5] = dom.createMorphAt(element12, 4, 4);
-        morphs[6] = dom.createMorphAt(dom.childAt(element18, [1, 3]), 0, 0);
-        morphs[7] = dom.createMorphAt(dom.childAt(element18, [3]), 1, 1);
-        morphs[8] = dom.createMorphAt(dom.childAt(element17, [5]), 3, 3);
-        morphs[9] = dom.createElementMorph(element19);
-        morphs[10] = dom.createElementMorph(element20);
-        morphs[11] = dom.createMorphAt(dom.childAt(element20, [3]), 3, 3);
-        morphs[12] = dom.createElementMorph(element22);
-        morphs[13] = dom.createElementMorph(element23);
-        morphs[14] = dom.createMorphAt(element23, 1, 1);
+        var element15 = dom.childAt(fragment, [2]);
+        var element16 = dom.childAt(element15, [3]);
+        var element17 = dom.childAt(element16, [1]);
+        var element18 = dom.childAt(element17, [3]);
+        var element19 = dom.childAt(element17, [5]);
+        var element20 = dom.childAt(element17, [7]);
+        var element21 = dom.childAt(element15, [7]);
+        var element22 = dom.childAt(element21, [1]);
+        var element23 = dom.childAt(element21, [7]);
+        var element24 = dom.childAt(element15, [9, 1]);
+        var element25 = dom.childAt(element15, [11]);
+        var element26 = dom.childAt(element25, [1, 4]);
+        var element27 = dom.childAt(element25, [4]);
+        var element28 = dom.childAt(element15, [13, 1]);
+        var element29 = dom.childAt(element28, [1, 4]);
+        var morphs = new Array(18);
+        morphs[0] = dom.createMorphAt(dom.childAt(element17, [1]), 1, 1);
+        morphs[1] = dom.createAttrMorph(element18, 'value');
+        morphs[2] = dom.createElementMorph(element19);
+        morphs[3] = dom.createElementMorph(element20);
+        morphs[4] = dom.createMorphAt(element16, 3, 3);
+        morphs[5] = dom.createMorphAt(element16, 4, 4);
+        morphs[6] = dom.createMorphAt(dom.childAt(element22, [1, 3]), 0, 0);
+        morphs[7] = dom.createMorphAt(dom.childAt(element22, [3]), 1, 1);
+        morphs[8] = dom.createMorphAt(dom.childAt(element21, [5]), 3, 3);
+        morphs[9] = dom.createElementMorph(element23);
+        morphs[10] = dom.createElementMorph(element24);
+        morphs[11] = dom.createMorphAt(dom.childAt(element24, [3]), 3, 3);
+        morphs[12] = dom.createElementMorph(element26);
+        morphs[13] = dom.createElementMorph(element27);
+        morphs[14] = dom.createMorphAt(element27, 1, 1);
+        morphs[15] = dom.createElementMorph(element28);
+        morphs[16] = dom.createElementMorph(element29);
+        morphs[17] = dom.createMorphAt(dom.childAt(element28, [4]), 1, 1);
         return morphs;
       },
-      statements: [["content", "model.curruser.name", ["loc", [null, [9, 25], [9, 48]]]], ["attribute", "value", ["concat", [["get", "model.curruser.user_id", ["loc", [null, [10, 42], [10, 64]]]]]]], ["element", "action", ["showGrpCreate"], ["on", "click"], ["loc", [null, [11, 35], [11, 72]]]], ["element", "action", ["logout"], [], ["loc", [null, [12, 35], [12, 55]]]], ["block", "each", [["get", "model.users", ["loc", [null, [14, 12], [14, 23]]]]], [], 0, null, ["loc", [null, [14, 4], [22, 13]]]], ["block", "each", [["get", "model.groups", ["loc", [null, [23, 16], [23, 28]]]]], [], 1, null, ["loc", [null, [23, 8], [31, 17]]]], ["content", "selectedUsername", ["loc", [null, [45, 37], [45, 57]]]], ["block", "if", [["get", "isGroup", ["loc", [null, [48, 22], [48, 29]]]]], [], 2, null, ["loc", [null, [48, 16], [54, 23]]]], ["block", "each", [["get", "AllMessage", ["loc", [null, [61, 20], [61, 30]]]]], [], 3, null, ["loc", [null, [61, 12], [85, 21]]]], ["element", "action", [["subexpr", "if", [["get", "isGroup", ["loc", [null, [88, 44], [88, 51]]]], "SendMessageOnGroup", "sendMessage"], [], ["loc", [null, [88, 40], [88, 87]]]]], ["on", "submit"], ["loc", [null, [88, 31], [88, 102]]]], ["element", "action", ["CreateNewGroup", ["get", "model.curruser.user_id", ["loc", [null, [95, 40], [95, 62]]]]], ["on", "submit"], ["loc", [null, [95, 14], [95, 77]]]], ["block", "each", [["get", "model.users", ["loc", [null, [101, 24], [101, 35]]]]], [], 4, null, ["loc", [null, [101, 16], [110, 25]]]], ["element", "action", ["closeViewMember"], ["on", "click"], ["loc", [null, [121, 20], [121, 59]]]], ["element", "action", ["RemoveMember", ["get", "model.curruser.user_id", ["loc", [null, [124, 38], [124, 60]]]]], ["on", "submit"], ["loc", [null, [124, 14], [124, 75]]]], ["block", "each", [["get", "ViewGrpMembers", ["loc", [null, [125, 20], [125, 34]]]]], [], 5, null, ["loc", [null, [125, 12], [144, 21]]]]],
+      statements: [["content", "model.curruser.name", ["loc", [null, [9, 25], [9, 48]]]], ["attribute", "value", ["concat", [["get", "model.curruser.user_id", ["loc", [null, [10, 42], [10, 64]]]]]]], ["element", "action", ["showGrpCreate"], ["on", "click"], ["loc", [null, [11, 35], [11, 72]]]], ["element", "action", ["logout"], [], ["loc", [null, [12, 35], [12, 55]]]], ["block", "each", [["get", "model.users", ["loc", [null, [14, 12], [14, 23]]]]], [], 0, null, ["loc", [null, [14, 4], [22, 13]]]], ["block", "each", [["get", "model.groups", ["loc", [null, [23, 16], [23, 28]]]]], [], 1, null, ["loc", [null, [23, 8], [31, 17]]]], ["content", "selectedUsername", ["loc", [null, [45, 37], [45, 57]]]], ["block", "if", [["get", "isGroup", ["loc", [null, [48, 22], [48, 29]]]]], [], 2, null, ["loc", [null, [48, 16], [54, 23]]]], ["block", "each", [["get", "AllMessage", ["loc", [null, [61, 20], [61, 30]]]]], [], 3, null, ["loc", [null, [61, 12], [85, 21]]]], ["element", "action", [["subexpr", "if", [["get", "isGroup", ["loc", [null, [88, 44], [88, 51]]]], "SendMessageOnGroup", "sendMessage"], [], ["loc", [null, [88, 40], [88, 87]]]]], ["on", "submit"], ["loc", [null, [88, 31], [88, 102]]]], ["element", "action", ["CreateNewGroup", ["get", "model.curruser.user_id", ["loc", [null, [95, 40], [95, 62]]]]], ["on", "submit"], ["loc", [null, [95, 14], [95, 77]]]], ["block", "each", [["get", "model.users", ["loc", [null, [101, 24], [101, 35]]]]], [], 4, null, ["loc", [null, [101, 16], [110, 25]]]], ["element", "action", ["closeViewMember"], ["on", "click"], ["loc", [null, [121, 20], [121, 59]]]], ["element", "action", ["RemoveMember", ["get", "model.curruser.user_id", ["loc", [null, [124, 38], [124, 60]]]]], ["on", "submit"], ["loc", [null, [124, 14], [124, 75]]]], ["block", "each", [["get", "ViewGrpMembers", ["loc", [null, [125, 20], [125, 34]]]]], [], 5, null, ["loc", [null, [125, 12], [147, 21]]]], ["element", "action", ["addNewMember"], ["on", "submit"], ["loc", [null, [153, 14], [153, 53]]]], ["element", "action", ["closeViewMember"], ["on", "click"], ["loc", [null, [156, 24], [156, 63]]]], ["block", "each", [["get", "ViewGrpMembers", ["loc", [null, [159, 24], [159, 38]]]]], [], 6, null, ["loc", [null, [159, 16], [168, 25]]]]],
       locals: [],
-      templates: [child0, child1, child2, child3, child4, child5]
+      templates: [child0, child1, child2, child3, child4, child5, child6]
     };
   })());
 });
@@ -2303,7 +2616,7 @@ catch(err) {
 });
 
 if (!runningTests) {
-  require("demoapp/app")["default"].create({"name":"demoapp","version":"0.0.0+c584c255"});
+  require("demoapp/app")["default"].create({"name":"demoapp","version":"0.0.0+8ebb5dac"});
 }
 
 /* jshint ignore:end */

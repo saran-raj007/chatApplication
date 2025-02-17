@@ -48,7 +48,7 @@
                 {{#if isGroup}}
                 <button {{action "ExitGroup" model.curruser.user_id on="click"}}>Exit Group</button>
                     {{#if isAdmin}}
-                     <button>Add Member</button>
+                     <button {{action "addMembers" on="click"}}>Add Member</button>
                     {{/if}}
                     <button {{action "ViewMembers" on="click"}}>View Members</button>
                 {{/if}}
@@ -134,8 +134,11 @@
                         {{#if isAdmin}}
                             {{#if (neq model.curruser.user_id member.user_id)}}
                                 <button {{action "ExitGroup" member.user_id}}>Remove</button>
+                                {{#if (neq member.role "Admin")}}
                                 <button {{action "makeAdmin" member.user_id}}>Make as Admin</button>
-
+                                {{else}}
+                                    <button {{action "makeAdmin" member.user_id}}>Dismiss as Admin</button>
+                                {{/if}}
                             {{/if}}
                         {{/if}}
 
@@ -143,6 +146,32 @@
                 <hr>
             {{/each}}
         </form>
+
+    </section>
+
+    <section class="addMembers">
+        <form {{action "addNewMember"  on="submit" }}>
+            <div class="viewHeader">
+                <h1>Add Members</h1><br>
+                <button {{action "closeViewMember" on="click"}}>Close</button>
+            </div><br>
+            <div class="grp-field">
+                {{#each ViewGrpMembers as |member|}}
+                    <div class="groupnew" >
+                        <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
+                        <p class="">{{member.name}}</p>
+                        <span class="">{{member.mobile_number}}</span>
+                        <input type="checkbox"   class="GroupDescrp" {{action "addUsertoGroup" member.user_id on="change"}}  >
+
+                    </div>
+                    <hr>
+                {{/each}}
+            </div>
+            <div class="button-container">
+                <button type="submit" class="submit-button">Add Members</button>
+            </div>
+        </form>
+
 
     </section>
 

@@ -35,7 +35,7 @@ export default Ember.Controller.extend({
         Ember.run.scheduleOnce('afterRender', this, function() {
             let curruser = self.get('model.curruser');
             if (curruser) {
-                this.set('sender_id', curruser.user_id);
+                self.set('sender_id', curruser.user_id);
                 self.set('rsaPubown',curruser.rsa_public_key);
             }
             let socket = new WebSocket(`ws://localhost:8080/chatApplication_war_exploded/LiveChat/${this.sender_id}`);
@@ -405,9 +405,11 @@ export default Ember.Controller.extend({
         },
         ViewMembers :function(){
             const self =this;
+            self.get('ViewGrpMembers').clear();
             Ember.$(".empty-page").css("display", "none");
             Ember.$(".Chat").css("display", "none");
             Ember.$(".createGroup").css("display", "none");
+            Ember.$(".addMembers").css("display","none");
             Ember.$(".ViewGrpMember").css("display","block");
 
 
@@ -433,11 +435,10 @@ export default Ember.Controller.extend({
 
         },
         closeViewMember : function (){
-            const self =this;
-            self.get('ViewGrpMembers').clear();
             Ember.$(".empty-page").css("display", "none");
             Ember.$(".createGroup").css("display", "none");
             Ember.$(".ViewGrpMember").css("display","none");
+            Ember.$(".addMembers").css("display","none");
             Ember.$(".Chat").css("display", "block");
 
         },
@@ -450,21 +451,86 @@ export default Ember.Controller.extend({
             };
 
             Ember.$.ajax({
-                url : 'http://localhost:8080/chatApplication_war_exploded/MakeAdmin',
+                url : 'http://localhost:8080/chatApplication_war_exploded/RoleChange',
                 type : 'POST',
                 contentType: 'application/json',
                 dataType: 'json',
                 xhrFields: { withCredentials: true },
                 data: JSON.stringify(member_details),
                 success : function (response){
+                    Ember.$(".empty-page").css("display", "none");
+                    Ember.$(".createGroup").css("display", "none");
+                    Ember.$(".ViewGrpMember").css("display","none");
+                    Ember.$(".addMembers").css("display","none");
+                    Ember.$(".Chat").css("display", "block");
+
 
                 },
                 error : function (error){
+                    console.error(error);
 
                 }
             });
 
+        },
+        addMembers : function (){
+            const self=this;
+            self.get('ViewGrpMembers').clear();
+            Ember.$(".empty-page").css("display", "none");
+            Ember.$(".createGroup").css("display", "none");
+            Ember.$(".ViewGrpMember").css("display","none");
+            Ember.$(".Chat").css("display", "none");
+            Ember.$(".addMembers").css("display","block");
+            Ember.$.ajax({
+                url: 'http://localhost:8080/chatApplication_war_exploded/FetchUsers',
+                type: 'POST',
+                contentType: 'application/json',
+                dataType: 'json',
+                xhrFields: { withCredentials: true },
+                data: JSON.stringify({grp_id : self.get('receiver_id')}),
+                success : function (response){
+                    for(let mem of response.users){
+                        self.get('ViewGrpMembers').pushObject(mem);
+                    }
+                },
+                error : function (error){
+                    console.error(error);
+
+                }
+
+            });
+
+
+        },
+        addNewMember : function (){
+            const self =this;
+            let newMembers ={
+                grp_id :self.get('receiver_id'),
+                added_by :self.get('sender_id'),
+                grpMembers : self.get('groupMembers'),
+            };
+            Ember.$.ajax({
+                url : 'http://localhost:8080/chatApplication_war_exploded/AddNewMembers',
+                type :'POST',
+                data : JSON.stringify(newMembers),
+                xhrFields : {withCredentials : true},
+                success : function (response){
+                    Ember.$(".createGroup").css("display", "none");
+                    Ember.$(".ViewGrpMember").css("display","none");
+                    Ember.$(".addMembers").css("display","none");
+                    Ember.$(".Chat").css("display", "block");
+
+                },
+                error : function (error){
+                    alert("error on Adding new members ",error);
+
+                }
+
+            });
+            self.get('groupMembers').clear();
+
         }
+
 
     }
 
