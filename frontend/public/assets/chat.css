@@ -423,8 +423,9 @@ section {
 }
 .groupnew {
     display: flex;
-    align-items: center;
-    margin-bottom: 10px;
+    flex-direction: row;
+    gap : 15px;
+    overflow: auto;
 }
 
 .avatargrp img {
@@ -464,9 +465,9 @@ hr {
 .submit-button {
     padding: 10px 20px;
     background-color: #00ff22;
-    color: #fff;
+    color: #0c0505;
     border: none;
-    border-radius: 4px;
+    border-radius: 30px;
     font-size: 16px;
     cursor: pointer;
     transition: background-color 0.3s ease;
@@ -499,4 +500,40 @@ hr {
     font-weight: 300;
     color: #c3c1c1; /* Adjust color as needed */
     font-size: 0.75rem;
+}
+
+.grpOperations{
+    display: flex;
+    flex-direction: row-reverse;
+    margin-left: 50%;
+    gap :20px;
+}
+.grpOperations button{
+    cursor: pointer;
+    width: 100%;
+    border-radius: 30px;
+}
+.ViewGrpMember{
+    display: none;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 30px;
+    background-color: #f9f9f9;
+}
+.viewHeader{
+    display: flex;
+    column-gap: 170px;
+}
+.grpoperations{
+    display: flex;
+    gap :50px;
+    margin-left: 30px;
+}
+.groupnew button{
+    width: 100%;
+    padding: 5px;
+    cursor: pointer;
+    border-radius: 30px;
 }

@@ -25,7 +25,7 @@ public class FetchchatServlet extends HttpServlet {
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String stoken =cookieExtract(request);
         String sender_id = UserSessionGenerate.validateToken(stoken,request);
-
+        JSONObject jsonResponse = new JSONObject();
         if(stoken!=null && sender_id!=null ){
 
             JsonObject jsonObject = JsonParser.parseReader(new InputStreamReader(request.getInputStream())).getAsJsonObject();
@@ -42,6 +42,7 @@ public class FetchchatServlet extends HttpServlet {
                     String qry = "select * from messages where ((send_id = ? and receiver_id =?) or (send_id = ? and receiver_id =?)) order by created_at asc; ";
                     String qryFrokey = "select * from users where user_id=?";
                     String qryForgrpMsg ="SELECT gm.grpmssg_id, gm.grp_id, gm.sender_id, gm.message, gm.created_at, gm.msg_iv, u.name, ge.enc_aes_key FROM group_messages gm JOIN users u ON gm.sender_id = u.user_id JOIN aes_keys ge ON gm.grpmssg_id = ge.grpmssg_id WHERE gm.grp_id = ? AND gm.created_at >= (SELECT gg.added_at FROM group_members gg WHERE gg.user_id = ? AND gg.grp_id =?) AND ge.receiver_id = ? order by gm.created_at asc; ";
+                    String adminqry ="select * from group_members where user_id=? and grp_id=?";
                     try {
                         if(msgType.equals("Private")) {
                             ps = con.prepareStatement(qry);
@@ -87,13 +88,19 @@ public class FetchchatServlet extends HttpServlet {
 
 
                             }
+                            ps =con.prepareStatement(adminqry);
+                            ps.setString(1, sender_id);
+                            ps.setString(2, receiver_id);
+                            rs = ps.executeQuery();
+                            if(rs.next()) {
+                                jsonResponse.put("role", rs.getString("role"));
+                            }
 
 
                         }
                         ps = con.prepareStatement(qryFrokey);
                         ps.setString(1, receiver_id);
                         rs = ps.executeQuery();
-                        JSONObject jsonResponse = new JSONObject();
 
                         if (rs.next()) {
                             jsonResponse.put("key", rs.getString("rsa_public_key"));

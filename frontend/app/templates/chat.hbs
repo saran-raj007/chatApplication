@@ -43,10 +43,17 @@
             <li class="group">
                 <div class="avatar"><img src="assets/profile.png" alt=""></div>
                 <p class="GroupName">{{selectedUsername}}</p>
-
             </li>
+            <div class="grpOperations">
+                {{#if isGroup}}
+                <button {{action "ExitGroup" model.curruser.user_id on="click"}}>Exit Group</button>
+                    {{#if isAdmin}}
+                     <button>Add Member</button>
+                    {{/if}}
+                    <button {{action "ViewMembers" on="click"}}>View Members</button>
+                {{/if}}
 
-
+            </div>
         </div>
         <hr>
         <div class="MessageContainer">
@@ -106,6 +113,37 @@
                 <button type="submit" class="submit-button">Create Group</button>
             </div>
         </form>
+    </section>
+
+    <section class="ViewGrpMember">
+        <div class="viewHeader">
+            <h1>Group Members</h1><br>
+            <button {{action "closeViewMember" on="click"}}>Close</button>
+        </div><br>
+
+        <form {{action "RemoveMember" model.curruser.user_id on="submit" }}>
+            {{#each ViewGrpMembers as |member|}}
+                <div class="groupnew" >
+                    <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
+                    <p class="GroupName">{{member.name}}</p>
+                    <span class="">{{member.mobile_number}}</span>
+                        <span>{{member.role}}</span>
+                    {{#if (eq model.curruser.user_id  member.user_id)}}
+                        <span>(YOU)</span>
+                    {{/if}}
+                        {{#if isAdmin}}
+                            {{#if (neq model.curruser.user_id member.user_id)}}
+                                <button {{action "ExitGroup" member.user_id}}>Remove</button>
+                                <button {{action "makeAdmin" member.user_id}}>Make as Admin</button>
+
+                            {{/if}}
+                        {{/if}}
+
+                </div>
+                <hr>
+            {{/each}}
+        </form>
+
     </section>
 
 </main>

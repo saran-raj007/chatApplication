@@ -21,6 +21,9 @@ export default Ember.Controller.extend({
     grpPubKey: null,
     grpMembersencAESKeys : Ember.A(),
     isGroup: false,
+    isAdmin : false,
+    ViewGrpMembers :Ember.A(),
+
 
 
 
@@ -98,6 +101,7 @@ export default Ember.Controller.extend({
             }
             self.set('selectedUsername',receiver.name);
             self.get('AllMessage').clear();
+            self.get('ViewGrpMembers').clear();
             Ember.$.ajax({
                 url : 'http://localhost:8080/chatApplication_war_exploded/FetchchatServlet',
                 type: 'POST',
@@ -106,8 +110,10 @@ export default Ember.Controller.extend({
                 xhrFields: { withCredentials: true },
                 data : JSON.stringify(datas),
                 success(response) {
+                    self.set('isAdmin',false);
                     Ember.$(".empty-page").css("display", "none");
                     Ember.$(".createGroup").css("display", "none");
+                    Ember.$(".ViewGrpMember").css("display","none");
                     Ember.$(".Chat").css("display", "block");
                     StorageService.getPrivateKey("privateKey").then( function (privateKey){
                         if(chat=="Private"){
@@ -142,6 +148,7 @@ export default Ember.Controller.extend({
                         }
                         else{
                             // write code for group chat decrypt
+                            if(response.role=="Admin") self.set('isAdmin',true);
                             for(let msg of response.messages){
                                 let msg_pack;
 
@@ -263,6 +270,7 @@ export default Ember.Controller.extend({
         showGrpCreate(){
             Ember.$(".empty-page").css("display", "none");
             Ember.$(".Chat").css("display", "none");
+            Ember.$("ViewMember").css("display","none");
             Ember.$(".createGroup").css("display", "block");
 
         },
@@ -278,6 +286,7 @@ export default Ember.Controller.extend({
         CreateNewGroup(creater_id){
             let self =this;
             let grpName =document.getElementById('grpName').value;
+            if(!grpName) return ;
             let grpDetails ={
                 name :grpName,
                 Admin_id :creater_id,
@@ -306,57 +315,9 @@ export default Ember.Controller.extend({
 
         },
 
-        fetchChatForGroup(group) {
-            const self =this;
-            self.setProperties({
-                receiver_id: group.group_id,
-                selectedUsername: group.name
-            });
-            self.get('AllMessage').clear();
-
-            StorageService.getPrivateKey(group.group_id)
-                .then(key => {
-                    if (key==null) {
-                        return CryptoUtils.generateECDHKeyPair()
-                            .then(userKey => {
-                                return storageService.storePrivateKey(userKey.privateKey, group.group_id)
-                                    .then(() => ({
-                                        grp_id: group.group_id,
-                                        user_pubkey: userKey.publicKey
-                                    }));
-                            });
-                    } else {
-                        return { grp_id: group.group_id, user_pubkey: "NO" };
-                    }
-                })
-                .then(datas => {
-                    return Ember.$.ajax({
-                        url: 'http://localhost:8080/chatApplication_war_exploded/FetchChatForGroup',
-                        type: 'POST',
-                        contentType: 'application/json',
-                        dataType: 'json',
-                        xhrFields: { withCredentials: true },
-                        data: JSON.stringify(datas),
-                        success :  function (response){
-                            Ember.$(".empty-page").css("display", "none");
-                            Ember.$(".createGroup").css("display", "none");
-                            Ember.$(".Chat").css("display", "block");
-                            self.set('grpPubKey',response.key);
-                        },
-                        error :  function (error){
-
-
-                        }
-                    });
-                })
-                .catch(error => {
-                    console.error("Error in fetchChatForGroup:", error);
-                });
-        },
-
 
         SendMessageOnGroup: function () {
-            let self = this;
+            const self = this;
             let message = document.getElementById('MessageInput').value.trim();
             if (!message) return; // Prevent sending empty messages
 
@@ -417,6 +378,92 @@ export default Ember.Controller.extend({
             }).fail(function (error) {
                 console.error("Error fetching group keys:", error);
             });
+        },
+
+        ExitGroup : function (member_id){
+            const self =this;
+            let member_details ={
+                member_id :member_id,
+                grp_id : self.get('receiver_id')
+            };
+            Ember.$.ajax({
+                url: 'http://localhost:8080/chatApplication_war_exploded/ExitGroupServlet',
+                type: 'POST',
+                contentType: 'application/json',
+                dataType: 'json',
+                xhrFields: { withCredentials: true },
+                data: JSON.stringify(member_details),
+                success : function (response){
+                    window.location.href="chat";
+
+                },
+                error : function (error){
+                    console.log(error);
+                }
+
+            });
+        },
+        ViewMembers :function(){
+            const self =this;
+            Ember.$(".empty-page").css("display", "none");
+            Ember.$(".Chat").css("display", "none");
+            Ember.$(".createGroup").css("display", "none");
+            Ember.$(".ViewGrpMember").css("display","block");
+
+
+            Ember.$.ajax({
+                url: 'http://localhost:8080/chatApplication_war_exploded/FetchGroupMembers',
+                type: 'POST',
+                contentType: 'application/json',
+                dataType: 'json',
+                xhrFields: { withCredentials: true },
+                data: JSON.stringify({grp_id : self.get('receiver_id')}),
+                success : function (response){
+                    for(let mem of response.grp_members){
+                        self.get('ViewGrpMembers').pushObject(mem);
+                    }
+                },
+                error : function (error){
+                    console.error(error);
+
+                }
+
+            });
+
+
+        },
+        closeViewMember : function (){
+            const self =this;
+            self.get('ViewGrpMembers').clear();
+            Ember.$(".empty-page").css("display", "none");
+            Ember.$(".createGroup").css("display", "none");
+            Ember.$(".ViewGrpMember").css("display","none");
+            Ember.$(".Chat").css("display", "block");
+
+        },
+
+        makeAdmin : function (member_id){
+            const self =this;
+            let member_details ={
+                member_id :member_id,
+                grp_id : self.get('receiver_id'),
+            };
+
+            Ember.$.ajax({
+                url : 'http://localhost:8080/chatApplication_war_exploded/MakeAdmin',
+                type : 'POST',
+                contentType: 'application/json',
+                dataType: 'json',
+                xhrFields: { withCredentials: true },
+                data: JSON.stringify(member_details),
+                success : function (response){
+
+                },
+                error : function (error){
+
+                }
+            });
+
         }
 
     }
