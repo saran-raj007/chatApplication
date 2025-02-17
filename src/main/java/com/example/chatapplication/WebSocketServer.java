@@ -1,0 +1,210 @@
+package com.example.chatapplication;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import jakarta.websocket.*;
+import jakarta.websocket.server.PathParam;
+import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.StringReader;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.sql.*;
+
+@ServerEndpoint("/LiveChat/{sender_id}")
+public class WebSocketServer {
+    private static final Map<String, Session> userSessions = new ConcurrentHashMap<>();
+
+    @OnOpen
+    public void onOpen(Session session, @PathParam("sender_id") String sender_id) {
+        userSessions.put(sender_id, session);
+        System.out.println("New connection: " + sender_id);
+    }
+
+
+    @OnMessage
+    public void onMessage(String message, @PathParam("sender_id") String sender_id, Session session) throws IOException {
+        JSONObject msg = new JSONObject(message);
+        String msgType = msg.getString("type");
+        if(msgType.equals("Private")){
+            String receiver_id = msg.getString("receiver");
+            String message_text = msg.getString("ciphertext");
+            String iv = msg.getString("iv");
+            String aeskey_receiver = msg.getString("aeskeyReceiver");
+            String aeskey_sender = msg.getString("aeskeySender");
+
+
+            storeMessage(sender_id, receiver_id, message_text, iv, aeskey_receiver, aeskey_sender);
+            Session receiverSession = userSessions.get(receiver_id);
+            if (receiverSession != null && receiverSession.isOpen()) {
+                JSONObject jsonResponse = new JSONObject();
+                jsonResponse.put("sender_id", sender_id);
+                jsonResponse.put("message", message_text);
+                jsonResponse.put("iv", iv);
+                jsonResponse.put("aes_key_receiver", aeskey_receiver);
+                jsonResponse.put("aes_key_sender", aeskey_sender);
+
+                receiverSession.getBasicRemote().sendText(jsonResponse.toString());
+            }
+
+        }
+        else{
+            String message_text = msg.getString("ciphertext");
+            String grp_id = msg.getString("grp_id");
+            String msg_iv = msg.getString("iv");
+            String sender_name = msg.getString("sender_name");
+            JSONArray members_aesKey = msg.getJSONArray("members_aesKey");
+            Map<String, String> memberaesKeyMap = new HashMap<>();
+            for (int i=0;i<members_aesKey.length();i++) {
+                JSONObject obj=members_aesKey.getJSONObject(i);
+                String userId=obj.getString("user_id");
+                String key=obj.getString("encryptedAESKey");
+                memberaesKeyMap.put(userId, key);
+            }
+
+
+
+            System.out.println(message_text);
+            System.out.println(msg_iv);
+            //System.out.println(encryptedAESkey);
+
+            sendMessageToGroup(grp_id,message_text,msg_iv,memberaesKeyMap,sender_id,sender_name);
+            storeGroupMessage(grp_id,sender_id,message_text,msg_iv,memberaesKeyMap);
+
+
+        }
+
+    }
+
+    @OnClose
+    public void onClose(Session session, @PathParam("sender_id") String sender_id) {
+        userSessions.remove(sender_id);
+        System.out.println("Connection closed: " + sender_id);
+    }
+
+    @OnError
+    public void onError(Session session, Throwable throwable) {
+        System.err.println("Error: " + throwable.getMessage());
+    }
+
+    private void storeMessage(String sender_id, String receiver_id, String message,String iv, String aeskey_receiver, String aeskey_sender) {
+        Connection con = DBconnection.getConnection();
+        PreparedStatement ps = null;
+        if(con != null) {
+            String qry= "insert into messages (mess_id, send_id, receiver_id, message, iv, aes_key_receiver,aes_key_sender) values (?,?,?,?,?,?,?)";
+            try{
+                ps = con.prepareStatement(qry);
+                ps.setString(1,IdGeneration.generateRandomID());
+                ps.setString(2,sender_id);
+                ps.setString(3,receiver_id);
+                ps.setString(4,message);
+                ps.setString(5,iv);
+                ps.setString(6,aeskey_receiver);
+                ps.setString(7,aeskey_sender);
+
+                int rowinsert =ps.executeUpdate();
+                if(rowinsert > 0) {
+                    System.out.println("Message inserted successfully");
+                }
+                else{
+                    System.out.println("Message insert failed");
+                }
+
+            }catch ( SQLException e){
+                e.printStackTrace();
+
+            }
+        }
+        else{
+            System.out.println("Connection failed");
+        }
+
+
+    }
+    private void  sendMessageToGroup(String grp_id,String message,String msg_iv,Map<String,String> memberaesKeyMap, String sender_id,String sender_name) throws IOException {
+
+        System.out.println(memberaesKeyMap.size());
+
+        for (Map.Entry<String, String> entry : memberaesKeyMap.entrySet()) {
+            String member_id = entry.getKey();
+            String key = entry.getValue();
+            Session receiverSession = userSessions.get(member_id);
+            if(receiverSession != null && receiverSession.isOpen()) {
+                JSONObject jsonResponse = new JSONObject();
+                jsonResponse.put("grp_id", grp_id);
+                jsonResponse.put("member_id", member_id);
+                jsonResponse.put("sender_id",sender_id);
+                jsonResponse.put("message",message);
+                jsonResponse.put("iv",msg_iv);
+                jsonResponse.put("aes_key_receiver",key);
+                jsonResponse.put("sender_name",sender_name);
+                receiverSession.getBasicRemote().sendText(jsonResponse.toString());
+
+            }
+        }
+
+
+    }
+
+    private void storeGroupMessage(String grp_id,String sender_id,String message_text,String msg_iv,Map<String,String> memberaesKeyMap){
+        Connection con = DBconnection.getConnection();
+        PreparedStatement ps = null;
+        if(con != null) {
+            String qryForInsert= "insert into group_messages (grpmssg_id,grp_id,sender_id,message,msg_iv) values (?,?,?,?,?)";
+            String qryAesKey ="insert into  aes_keys (key_id,grpmssg_id,grp_id,receiver_id,enc_aes_key) values (?,?,?,?,?)";
+            try{
+                String grp_msg_id=IdGeneration.generateRandomID();
+                ps = con.prepareStatement(qryForInsert);
+                ps.setString(1,grp_msg_id);
+                ps.setString(2,grp_id);
+                ps.setString(3,sender_id);
+                ps.setString(4,message_text);
+                ps.setString(5,msg_iv);
+
+
+                int rowinsert =ps.executeUpdate();
+                if(rowinsert > 0) {
+                    System.out.println("Message inserted successfully");
+                }
+                else{
+                    System.out.println("Message insert failed");
+                }
+                ps = con.prepareStatement(qryAesKey);
+                for(Map.Entry<String, String> entry : memberaesKeyMap.entrySet()) {
+                    ps.setString(1,IdGeneration.generateRandomID());
+                    ps.setString(2,grp_msg_id);
+                    ps.setString(3,grp_id);
+                    ps.setString(4,entry.getKey());
+                    ps.setString(5,entry.getValue());
+                     rowinsert =ps.executeUpdate();
+                    if(rowinsert > 0) {
+                        System.out.println("Message inserted successfully");
+                    }
+                    else{
+                        System.out.println("Message insert failed");
+                    }
+
+                }
+
+
+            }catch ( SQLException e){
+                e.printStackTrace();
+
+            }
+        }
+        else{
+            System.out.println("Connection failed");
+        }
+
+    }
+
+
+}
+
+

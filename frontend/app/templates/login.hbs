@@ -1,0 +1,14 @@
+<link rel="stylesheet" href="assets/login.css">
+<div class="login-container">
+  <h2>Login</h2>
+  <form {{action "login" on="submit"}}>
+    <label for="mobile">Mobile Number</label>
+    <input type="number" id="user-mb" name="user-mb"  placeholder="Enter Mobile Number" pattern="\d{10}" maxlength="10" required>
+
+    <label for="password">Password</label>
+    <input type="password" id="user-pass" name="user-pass" placeholder="Enter Password" required>
+
+    <button type="submit">Login</button>
+  </form>
+    <a href="/signup">Signup?</a>
+</div>
