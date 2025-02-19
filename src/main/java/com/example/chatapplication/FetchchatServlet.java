@@ -33,15 +33,18 @@ public class FetchchatServlet extends HttpServlet {
             String msgType = jsonObject.get("type").getAsString();
 
             Connection con = DBconnection.getConnection();
-            PreparedStatement ps = null;
-            ResultSet rs =null;
-            List<JSONObject> msgList = new ArrayList<>();
+            PreparedStatement ps;
+            ResultSet rs;
+            ResultSet rss;
+            List<JSONObject> msgList;
 
             if(con != null){
 
                     String qry = "select * from messages where ((send_id = ? and receiver_id =?) or (send_id = ? and receiver_id =?)) order by created_at asc; ";
+                    String qrys="select * from files where ((sender_id = ? and receiver_id =?) or (sender_id = ? and receiver_id =?)) order by created_at asc; ";
                     String qryFrokey = "select * from users where user_id=?";
-                    String qryForgrpMsg ="SELECT gm.grpmssg_id, gm.grp_id, gm.sender_id, gm.message, gm.created_at, gm.msg_iv, u.name, ge.enc_aes_key FROM group_messages gm JOIN users u ON gm.sender_id = u.user_id JOIN aes_keys ge ON gm.grpmssg_id = ge.grpmssg_id WHERE gm.grp_id = ? AND gm.created_at >= (SELECT gg.added_at FROM group_members gg WHERE gg.user_id = ? AND gg.grp_id =?) AND ge.receiver_id = ? order by gm.created_at asc; ";
+                    String qryForgrpMsg ="SELECT gm.grpmssg_id, gm.grp_id, gm.sender_id, gm.message, gm.created_at, gm.msg_iv, u.name, ge.enc_aes_key FROM group_messages gm JOIN users u ON gm.sender_id = u.user_id JOIN aes_keys ge ON gm.grpmssg_id = ge.grpmssg_id WHERE gm.grp_id = ? AND gm.created_at >= (SELECT gg.added_at FROM group_members gg WHERE gg.user_id = ? AND gg.grp_id =?) AND ge.receiver_id = ? order by gm.created_at asc ";
+                    String qryGrps="select f.*, u.name from files f join users u ON f.sender_id = u.user_id where f.receiver_id = ? and f.created_at >= (select added_at from group_members where grp_id = ? and user_id = ?)";
                     String adminqry ="select * from group_members where user_id=? and grp_id=?";
                     try {
                         if(msgType.equals("Private")) {
@@ -51,20 +54,14 @@ public class FetchchatServlet extends HttpServlet {
                             ps.setString(3, receiver_id);
                             ps.setString(4, sender_id);
                             rs = ps.executeQuery();
+                            ps=con.prepareStatement(qrys);
+                            ps.setString(1, sender_id);
+                            ps.setString(2, receiver_id);
+                            ps.setString(3, receiver_id);
+                            ps.setString(4, sender_id);
+                            rss = ps.executeQuery();
+                            msgList=MsgPackForPrivate(rs,rss);
 
-                            while (rs.next()) {
-                                JSONObject msg = new JSONObject();
-                                msg.put("mess_id", rs.getString("mess_id"));
-                                msg.put("sender_id", rs.getString("send_id"));
-                                msg.put("receiver_id", rs.getString("receiver_id")); // consider this line
-                                msg.put("message", rs.getString("message"));
-                                msg.put("iv", rs.getString("iv"));
-                                msg.put("aes_key_receiver", rs.getString("aes_key_receiver"));
-                                msg.put("aes_key_sender", rs.getString("aes_key_sender"));
-                                msg.put("timestamp", rs.getString("created_at"));
-                                msgList.add(msg);
-
-                            }
                         }
                         else{
                             ps = con.prepareStatement(qryForgrpMsg);
@@ -73,27 +70,21 @@ public class FetchchatServlet extends HttpServlet {
                             ps.setString(3, receiver_id);
                             ps.setString(4, sender_id);
                             rs = ps.executeQuery();
-                            while (rs.next()) {
-                                JSONObject msg = new JSONObject();
-                                msg.put("mess_id", rs.getString("grpmssg_id"));
-                                msg.put("grp_id", rs.getString("grp_id"));
-                                msg.put("sender_id", rs.getString("sender_id")); // consider this line
-                                msg.put("message", rs.getString("message"));
-                                msg.put("iv", rs.getString("msg_iv"));
-                                msg.put("enc_aes_key", rs.getString("enc_aes_key"));
-                                msg.put("sender_name", rs.getString("name"));
-                                msg.put("timestamp", rs.getString("created_at"));
-                                msgList.add(msg);
 
+                            ps = con.prepareStatement(qryGrps);
+                            ps.setString(1,receiver_id);
+                            ps.setString(2, receiver_id);
+                            ps.setString(3, sender_id);
+                            rss = ps.executeQuery();
 
-
-                            }
+                            msgList=msgPackForGroup(rs,rss);
                             ps =con.prepareStatement(adminqry);
                             ps.setString(1, sender_id);
                             ps.setString(2, receiver_id);
                             rs = ps.executeQuery();
+
                             if(rs.next()) {
-                                jsonResponse.put("role", rs.getString("role"));
+                                jsonResponse.put("isAdmin", rs.getBoolean("isAdmin"));
                             }
 
 
@@ -137,6 +128,75 @@ public class FetchchatServlet extends HttpServlet {
             }
         }
         return null;
+
+    }
+    private List<JSONObject> MsgPackForPrivate(ResultSet rs, ResultSet rss) throws SQLException {
+        List<JSONObject> msgList = new ArrayList<>();
+        boolean textMsg = rs.next();
+        boolean stickerMsg = rss.next();
+        while(textMsg) {
+            JSONObject msg = new JSONObject();
+            msg.put("dataFormat","Text");
+            msg.put("mess_id", rs.getString("mess_id"));
+            msg.put("sender_id", rs.getString("send_id"));
+            msg.put("receiver_id", rs.getString("receiver_id")); // consider this line
+            msg.put("message", rs.getString("message"));
+            msg.put("iv", rs.getString("iv"));
+            msg.put("aes_key_receiver", rs.getString("aes_key_receiver"));
+            msg.put("aes_key_sender", rs.getString("aes_key_sender"));
+            msg.put("timestamp", rs.getString("created_at"));
+            msgList.add(msg);
+            textMsg=rs.next();
+        }
+        while(stickerMsg){
+            JSONObject msg = new JSONObject();
+            msg.put("dataFormat","Sticker");
+            msg.put("sender_id", rss.getString("sender_id"));
+            msg.put("receiver_id", rss.getString("receiver_id"));
+            msg.put("file_name", rss.getString("file_name"));
+            msg.put("timestamp", rss.getString("created_at"));
+            msgList.add(msg);
+            stickerMsg=rss.next();
+
+        }
+        return msgList;
+
+
+    }
+    private List<JSONObject> msgPackForGroup(ResultSet rs, ResultSet rss) throws SQLException{
+        List<JSONObject> msgList = new ArrayList<>();
+        boolean textMsg = rs.next();
+        boolean stickerMsg = rss.next();
+        while (textMsg) {
+            JSONObject msg = new JSONObject();
+            msg.put("dataFormat","Text");
+            msg.put("mess_id", rs.getString("grpmssg_id"));
+            msg.put("grp_id", rs.getString("grp_id"));
+            msg.put("sender_id", rs.getString("sender_id")); // consider this line
+            msg.put("message", rs.getString("message"));
+            msg.put("iv", rs.getString("msg_iv"));
+            msg.put("enc_aes_key", rs.getString("enc_aes_key"));
+            msg.put("sender_name", rs.getString("name"));
+            msg.put("timestamp", rs.getString("created_at"));
+            msgList.add(msg);
+            textMsg=rs.next();
+
+        }
+
+        while(stickerMsg){
+            JSONObject msg = new JSONObject();
+            msg.put("dataFormat","Sticker");
+            msg.put("sender_id", rss.getString("sender_id"));
+            msg.put("receiver_id", rss.getString("receiver_id"));
+            msg.put("file_name", rss.getString("file_name"));
+            msg.put("timestamp", rss.getString("created_at"));
+           // msg.put("sender_name", rs.getString("name"));
+            msgList.add(msg);
+            stickerMsg=rss.next();
+        }
+
+
+        return msgList;
 
     }
 

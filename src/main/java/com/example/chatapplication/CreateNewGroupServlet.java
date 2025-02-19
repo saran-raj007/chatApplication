@@ -43,7 +43,7 @@ public class CreateNewGroupServlet extends HttpServlet {
 
             if(con!=null){
                 String qry ="insert into chat_groups (group_id, name, created_by) values (?,?,?)";
-                String qry_gm ="insert into group_members (id, grp_id,user_id,role,added_by) values (?,?,?,?,?)";
+                String qry_gm ="insert into group_members (id, grp_id,user_id,isAdmin,added_by) values (?,?,?,?,?)";
                 String grp_id = IdGeneration.generateRandomID();
                 try{
                     ps =con.prepareStatement(qry);
@@ -63,24 +63,21 @@ public class CreateNewGroupServlet extends HttpServlet {
                         ps.setString(1, IdGeneration.generateRandomID());
                         ps.setString(2, grp_id);
                         ps.setString(3, member);
-                        ps.setString(4,"Member");
+                        ps.setBoolean(4,false);
                         ps.setString(5, admin_id);
 
                         rowinserted = ps.executeUpdate();
                         if(rowinserted>0){
                             jsonResponse.put("success", "Group MEmbers Added");
-
                         }
                         else{
                             jsonResponse.put("error", "Error on add Members");
-
                         }
-
                     }
                     ps.setString(1, IdGeneration.generateRandomID());
                     ps.setString(2, grp_id);
                     ps.setString(3, admin_id);
-                    ps.setString(4,"Admin");
+                    ps.setBoolean(4,true);
                     ps.setString(5, admin_id);
                     rowinserted = ps.executeUpdate();
                     if(rowinserted>0){

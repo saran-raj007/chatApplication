@@ -65,25 +65,26 @@ public class SignupServlet extends HttpServlet {
                         response.addCookie(jwtCookie);
 
 
-
-                        response.getWriter().write("{\"status\":\"success\" , \"message\":\"new user has been registered\"}");
+                        jsonResponse.put("user_id",usrid);
+                        response.getWriter().write(jsonResponse.toString());
                     }
                     else{
-                        response.getWriter().write("{\"status\":\"error\" , \"message\":\"ERROR ON USER REGISTRATION\"}");
+                        jsonResponse.put("message","Something went wrong");
+                        response.getWriter().write(jsonResponse.toString());
 
                     }
                 }
 
             }catch (SQLException e){
                 e.printStackTrace();
+                jsonResponse.put("message","Something went wrong");
+                response.getWriter().write(jsonResponse.toString());
 
-                response.getWriter().write("{\"status\":\"error\" ,\"message\":\"ERROR ON DB CONNECTION\"}");
             }
         }
         else{
-
-            response.getWriter().write("{\"status\":\"error\" ,\"message\":\"ERROR ON DB CONNECTION\"}");
-
+            jsonResponse.put("message","Something went wrong");
+            response.getWriter().write(jsonResponse.toString());
         }
 
 

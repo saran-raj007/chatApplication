@@ -39,7 +39,6 @@
 
     <section class="Chat">
         <div class="ChatHead">
-
             <li class="group">
                 <div class="avatar"><img src="assets/profile.png" alt=""></div>
                 <p class="GroupName">{{selectedUsername}}</p>
@@ -52,43 +51,64 @@
                     {{/if}}
                     <button {{action "ViewMembers" on="click"}}>View Members</button>
                 {{/if}}
-
             </div>
         </div>
         <hr>
         <div class="MessageContainer">
             <span></span>
             {{#each AllMessage as |message|}}
-                {{#if (neq message.sender_id model.curruser.user_id)}}
-                    <div class="message you">
-                        <div class="messageHeader">
-                            <span class="senderName">{{message.sender_name}}</span>
-                        </div>
-                        <p class="messageContent">{{message.message}}</p>
-                        <div class="messageDetails">
-                            <i class="fa-solid fa-check"></i>
-                            <span class="messageTime">{{message.timestamp}}</span>
+                {{#if (eq message.dataFormat "Text")}}
+                    {{#if (neq message.sender_id model.curruser.user_id)}}
+                        <div class="message you">
+                            <div class="messageHeader">
+                                <span class="senderName">{{message.sender_name}}</span>
+                            </div>
+                            <p class="messageContent">{{message.message}}</p>
+                            <div class="messageDetails">
+                                <i class="fa-solid fa-check"></i>
+                                <span class="messageTime">{{message.timestamp}}</span>
 
+                            </div>
                         </div>
+                    {{else}}
+                        <div class="message me">
+                            <div class="messageHeader">
+                            </div>
+                            <p class="messageContent">{{message.message}}</p>
+                            <div class="messageDetails">
+                                <span class="messageTime">{{message.timestamp}}</span>
+                                <i class="fa-solid fa-check"></i>
+                            </div>
+                        </div>
+                    {{/if}}
+                {{/if}}
+                {{#if (eq message.dataFormat "Sticker")}}
+                    {{#if (neq message.sender_id model.curruser.user_id)}}
+                        <div class="message syou">
+                        <img src="http://localhost:8080/chatApplication_war_exploded/uploads/{{message.file_name}}" class="sticker-icon">
                     </div>
-                {{else}}
-                    <div class="message me">
-                        <div class="messageHeader">
+                    {{else}}
+                        <div class=" message sme">
+                            <img src="http://localhost:8080/chatApplication_war_exploded/uploads/{{message.file_name}}" class="sticker-icon">
                         </div>
-                        <p class="messageContent">{{message.message}}</p>
-                        <div class="messageDetails">
-                            <span class="messageTime">{{message.timestamp}}</span>
-                            <i class="fa-solid fa-check"></i>
-                        </div>
-                    </div>
+                    {{/if}}
                 {{/if}}
             {{/each}}
-
         </div>
+        <div class="messageCenter">
         <form id="MessageForm" {{action (if isGroup "SendMessageOnGroup" "sendMessage") on="submit" }}>
             <input type="text" id="MessageInput" name="MessageInput">
+            <button type="button" {{action "openStickerPicker"}}>stickers</button>
             <button type="submit" class="Send">send</button>
         </form>
+        {{#if showStickerPicker}}
+            <div class="sticker-picker" >
+                {{#each stickers as |sticker|}}
+                    <img src="{{sticker.url}}" class="sticker-icon" {{action "extractSticker" sticker.url}}>
+                {{/each}}
+            </div>
+        {{/if}}
+        </div>
     </section>
     <section class="createGroup">
 
@@ -127,17 +147,21 @@
                     <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
                     <p class="GroupName">{{member.name}}</p>
                     <span class="">{{member.mobile_number}}</span>
-                        <span>{{member.role}}</span>
-                    {{#if (eq model.curruser.user_id  member.user_id)}}
+                    {{#if member.isAdmin}}
+                        <span>Admin</span>
+                    {{else}}
+                        <span>Member</span>
+                    {{/if}}
+                        {{#if (eq model.curruser.user_id  member.user_id)}}
                         <span>(YOU)</span>
                     {{/if}}
                         {{#if isAdmin}}
                             {{#if (neq model.curruser.user_id member.user_id)}}
                                 <button {{action "ExitGroup" member.user_id}}>Remove</button>
-                                {{#if (neq member.role "Admin")}}
-                                <button {{action "makeAdmin" member.user_id}}>Make as Admin</button>
+                                {{#if  member.isAdmin}}
+                                    <button {{action "makeAdmin" member.user_id false}}>Dismiss as Admin</button>
                                 {{else}}
-                                    <button {{action "makeAdmin" member.user_id}}>Dismiss as Admin</button>
+                                    <button {{action "makeAdmin" member.user_id true}}>Make as Admin</button>
                                 {{/if}}
                             {{/if}}
                         {{/if}}

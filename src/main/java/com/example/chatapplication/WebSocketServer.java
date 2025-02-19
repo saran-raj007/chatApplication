@@ -4,6 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import jakarta.servlet.annotation.MultipartConfig;
+import jakarta.servlet.http.Part;
 import jakarta.websocket.*;
 import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerEndpoint;
@@ -13,12 +15,16 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.StringReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.sql.*;
 
 @ServerEndpoint("/LiveChat/{sender_id}")
-public class WebSocketServer {
+@MultipartConfig
+public class WebSocketServer  {
     private static final Map<String, Session> userSessions = new ConcurrentHashMap<>();
 
     @OnOpen
@@ -30,57 +36,105 @@ public class WebSocketServer {
 
     @OnMessage
     public void onMessage(String message, @PathParam("sender_id") String sender_id, Session session) throws IOException {
+        //   System.out.println(Arrays.toString(message));
+
         JSONObject msg = new JSONObject(message);
         String msgType = msg.getString("type");
-        if(msgType.equals("Private")){
-            String receiver_id = msg.getString("receiver");
-            String message_text = msg.getString("ciphertext");
-            String iv = msg.getString("iv");
-            String aeskey_receiver = msg.getString("aeskeyReceiver");
-            String aeskey_sender = msg.getString("aeskeySender");
+        String dataFormat = msg.getString("dataFormat");
 
-
-            storeMessage(sender_id, receiver_id, message_text, iv, aeskey_receiver, aeskey_sender);
-            Session receiverSession = userSessions.get(receiver_id);
-            if (receiverSession != null && receiverSession.isOpen()) {
-                JSONObject jsonResponse = new JSONObject();
+        if (msgType.equals("Private")) {
+            JSONObject jsonResponse = new JSONObject();
+            String receiver_id = msg.getString("receiver_id");
+            ;
+            if (dataFormat.equals("Text")) {
+                String message_text = msg.getString("ciphertext");
+                String iv = msg.getString("iv");
+                String aeskey_receiver = msg.getString("aeskeyReceiver");
+                String aeskey_sender = msg.getString("aeskeySender");
+                storeMessage(sender_id, receiver_id, message_text, iv, aeskey_receiver, aeskey_sender);
+                jsonResponse.put("dataFormat", "Text");
                 jsonResponse.put("sender_id", sender_id);
                 jsonResponse.put("message", message_text);
                 jsonResponse.put("iv", iv);
                 jsonResponse.put("aes_key_receiver", aeskey_receiver);
                 jsonResponse.put("aes_key_sender", aeskey_sender);
 
+            } else {
+
+                String file_name = msg.getString("file_name");
+                String sender_name = msg.getString("sender_name");
+                storeFiles(file_name, sender_id, receiver_id);
+                jsonResponse.put("dataFormat", "Sticker");
+                jsonResponse.put("sender_id", sender_id);
+                jsonResponse.put("file_name", file_name);
+                jsonResponse.put("sender_name", sender_name);
+            }
+            Session receiverSession = userSessions.get(receiver_id);
+            if (receiverSession != null && receiverSession.isOpen()) {
+
                 receiverSession.getBasicRemote().sendText(jsonResponse.toString());
             }
 
-        }
-        else{
-            String message_text = msg.getString("ciphertext");
+        } else {
             String grp_id = msg.getString("grp_id");
-            String msg_iv = msg.getString("iv");
             String sender_name = msg.getString("sender_name");
-            JSONArray members_aesKey = msg.getJSONArray("members_aesKey");
-            Map<String, String> memberaesKeyMap = new HashMap<>();
-            for (int i=0;i<members_aesKey.length();i++) {
-                JSONObject obj=members_aesKey.getJSONObject(i);
-                String userId=obj.getString("user_id");
-                String key=obj.getString("encryptedAESKey");
-                memberaesKeyMap.put(userId, key);
+
+            if (dataFormat.equals("Text")) {
+                JSONArray members_aesKey = msg.getJSONArray("members_aesKey");
+                String message_text = msg.getString("ciphertext");
+                String msg_iv = msg.getString("iv");
+                Map<String, String> memberaesKeyMap = new HashMap<>();
+                for (int i = 0; i < members_aesKey.length(); i++) {
+                    JSONObject obj = members_aesKey.getJSONObject(i);
+                    String userId = obj.getString("user_id");
+                    String key = obj.getString("encryptedAESKey");
+                    memberaesKeyMap.put(userId, key);
+                }
+                sendMessageToGroup(grp_id, message_text, msg_iv, memberaesKeyMap, sender_id, sender_name);
+                storeGroupMessage(grp_id, sender_id, message_text, msg_iv, memberaesKeyMap);
+            } else {
+                String file_name = msg.getString("file_name");
+                storeFiles(file_name, sender_id, grp_id);
+                JSONObject jsonResponse = new JSONObject();
+                jsonResponse.put("dataFormat", "Sticker");
+                jsonResponse.put("sender_id", sender_id);
+                jsonResponse.put("file_name", file_name);
+                jsonResponse.put("sender_name", sender_name);
+                Connection con =DBconnection.getConnection();
+                PreparedStatement ps=null;
+                ResultSet rs=null;
+                if(con!=null){
+                    String qryforgrpMember="select * from group_members where grp_id=? and user_id!=?";
+                    try{
+                        ps=con.prepareStatement(qryforgrpMember);
+                        ps.setString(1, grp_id);
+                        ps.setString(2, sender_id);
+                        rs=ps.executeQuery();
+                        while(rs.next()){
+                            Session receiverSession = userSessions.get(rs.getString("user_id"));
+                            if(receiverSession != null && receiverSession.isOpen()) {
+                                receiverSession.getBasicRemote().sendText(jsonResponse.toString());
+                            }
+
+                        }
+
+                    }catch (SQLException e){
+                        e.printStackTrace();
+                    }
+                }
+
             }
 
-
-
-            System.out.println(message_text);
-            System.out.println(msg_iv);
-            //System.out.println(encryptedAESkey);
-
-            sendMessageToGroup(grp_id,message_text,msg_iv,memberaesKeyMap,sender_id,sender_name);
-            storeGroupMessage(grp_id,sender_id,message_text,msg_iv,memberaesKeyMap);
-
-
         }
 
+
+
+
+
+
     }
+
+
 
     @OnClose
     public void onClose(Session session, @PathParam("sender_id") String sender_id) {
@@ -201,6 +255,33 @@ public class WebSocketServer {
         else{
             System.out.println("Connection failed");
         }
+
+    }
+    private void storeFiles(String file_name,String sender_id,String receiver_id){
+        Connection con = DBconnection.getConnection();
+        PreparedStatement ps = null;
+        if(con != null) {
+            String qryFroFile ="insert into files (file_id,sender_id,receiver_id,file_name) values (?,?,?,?)";
+            try{
+                ps = con.prepareStatement(qryFroFile);
+                ps.setString(1,IdGeneration.generateRandomID());
+                ps.setString(2,sender_id);
+                ps.setString(3,receiver_id);
+                ps.setString(4,file_name);
+                int rowinsert =ps.executeUpdate();
+                if(rowinsert > 0) {
+                    System.out.println("File inserted successfully");
+                }
+                else{
+                    System.out.println("File insert failed");
+                }
+
+            }catch (SQLException e){
+                e.printStackTrace();
+
+            }
+        }
+
 
     }
 

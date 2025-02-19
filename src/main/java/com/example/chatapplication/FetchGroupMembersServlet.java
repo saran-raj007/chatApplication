@@ -34,7 +34,7 @@ public class FetchGroupMembersServlet extends HttpServlet {
             ResultSet rs = null;
             List<JSONObject> grpMembers = new ArrayList<>();
             if(con != null){
-                String qryForGrpMem ="select u.user_id,u.name,u.mobile_number,gm.role from users u join group_members gm on gm.user_id=u.user_id where gm.grp_id =?";
+                String qryForGrpMem ="select u.user_id,u.name,u.mobile_number,gm.isAdmin from users u join group_members gm on gm.user_id=u.user_id where gm.grp_id =?";
                 try{
                     ps = con.prepareStatement(qryForGrpMem);
                     ps.setString(1,grp_id);
@@ -45,7 +45,7 @@ public class FetchGroupMembersServlet extends HttpServlet {
                         grpMember.put("user_id", rs.getString("user_id"));
                         grpMember.put("name", rs.getString("name"));
                         grpMember.put("mobile_number", rs.getString("mobile_number"));
-                        grpMember.put("role", rs.getString("role"));
+                        grpMember.put("isAdmin", rs.getBoolean("isAdmin"));
                         grpMembers.add(grpMember);
                     }
                     JSONObject jsonResponse = new JSONObject();

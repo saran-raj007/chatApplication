@@ -39,7 +39,7 @@ public class AddNewMemberServlet extends HttpServlet {
             PreparedStatement ps =null;
 
             if(con!=null){
-                String qryForNewMember = "insert into group_members (id,grp_id,user_id,role,added_by) values(?,?,?,?,?)";
+                String qryForNewMember = "insert into group_members (id,grp_id,user_id,isAdmin,added_by) values(?,?,?,?,?)";
 
                 try{
                     ps=con.prepareStatement(qryForNewMember);
@@ -47,17 +47,15 @@ public class AddNewMemberServlet extends HttpServlet {
                         ps.setString(1, IdGeneration.generateRandomID());
                         ps.setString(2, grp_id);
                         ps.setString(3, member);
-                        ps.setString(4,"Member");
+                        ps.setBoolean(4,false);
                         ps.setString(5, added_by);
 
                         int rowinserted = ps.executeUpdate();
                         if(rowinserted>0){
                             jsonResponse.put("success", "new MEmbers Added");
-
                         }
                         else{
                             jsonResponse.put("error", "Error on add Members");
-
                         }
 
                     }

@@ -23,6 +23,14 @@ export default Ember.Controller.extend({
     isGroup: false,
     isAdmin : false,
     ViewGrpMembers :Ember.A(),
+    showStickerPicker: false,
+    stickers: [
+        { url: "/Stickers/dumbbell.png" },
+        { url: "/Stickers/laptop.png" },
+        { url: "/Stickers/listening.png" },
+        { url: "/Stickers/tea-time.png" }
+    ],
+
 
 
 
@@ -43,27 +51,38 @@ export default Ember.Controller.extend({
             socket.onmessage = (event) => {
                 let receivedMessage = JSON.parse(event.data);
                 let msg_pack;
-                StorageService.getPrivateKey("privateKey").then( function (privateKey){
-                    CryptoUtils.decryptMessage(receivedMessage.message, receivedMessage.aes_key_receiver, privateKey, receivedMessage.iv).then(function(message){
-                        msg_pack ={
-                            sender_id: receivedMessage.sender_id,
-                            message :message,
-                            sender_name: receivedMessage.sender_name
-                        };
-                        self.get('AllMessage').pushObject(msg_pack);
+                if(receivedMessage.dataFormat==="Text") {
+                    StorageService.getPrivateKey("privateKey").then(function (privateKey) {
+                        CryptoUtils.decryptMessage(receivedMessage.message, receivedMessage.aes_key_receiver, privateKey, receivedMessage.iv).then(function (message) {
+                            msg_pack = {
+                                sender_id: receivedMessage.sender_id,
+                                message: message,
+                                sender_name: receivedMessage.sender_name,
+                                dataFormat : 'Text',
+                            };
+                            self.get('AllMessage').pushObject(msg_pack);
 
-                    }).catch(function (error){
-                        console.log("error on decryption process",error);
+                        }).catch(function (error) {
+                            console.log("error on decryption process", error);
+
+                        });
+                    }).catch(function (error) {
+                        console.log("Error on fetch key form indexDB:", error);
 
                     });
-                }).catch(function (error){
-                    console.log("Error on fetch key form indexDB:", error);
-
-                });
+                }
+                else{
+                    msg_pack = {
+                        sender_id: receivedMessage.sender_id,
+                        file_name: receivedMessage.file_name,
+                        sender_name: receivedMessage.sender_name,
+                        dataFormat : 'Sticker',
+                    };
+                    self.get('AllMessage').pushObject(msg_pack);
+                }
             };
             socket.onclose = () => console.log('WebSocket Disconnected');
             socket.onerror = (error) => console.error('WebSocket Error:', error);
-
             this.set('socket', socket);
 
         });
@@ -78,7 +97,7 @@ export default Ember.Controller.extend({
         fetchchat(receiver,chat){
             const self =this;
             let datas;
-            if(chat=="Private"){
+            if(chat==="Private"){
 
                 datas ={
                     userid : receiver.user_id,
@@ -116,63 +135,103 @@ export default Ember.Controller.extend({
                     Ember.$(".ViewGrpMember").css("display","none");
                     Ember.$(".Chat").css("display", "block");
                     StorageService.getPrivateKey("privateKey").then( function (privateKey){
-                        if(chat=="Private"){
-                            for(let msg of response.messages){
-                                let key;
-                                if(msg.sender_id!=self.get('sender_id')){
-                                    key=msg.aes_key_receiver;
-                                }
-                                else{
-                                    key=msg.aes_key_sender;
-                                }
-                                let msg_pack;
+                        if(chat==="Private"){
+                            var promises = [];
+                            for (let msg of response.messages) {
+                                if (msg.dataFormat === "Text") {
+                                    let key = (msg.sender_id !== self.get('sender_id')) ? msg.aes_key_receiver : msg.aes_key_sender;
 
-                                CryptoUtils.decryptMessage(msg.message, key, privateKey, msg.iv).then(function(message){
-                                    //et('AllMessage').pushObject(msg_pack);
-
-                                    msg_pack ={
+                                    let promise = new Ember.RSVP.Promise(function (resolve, reject) {
+                                        CryptoUtils.decryptMessage(msg.message, key, privateKey, msg.iv).then(function (message) {
+                                            let msg_pack = {
+                                                sender_id: msg.sender_id,
+                                                message: message,
+                                                dataFormat: "Text",
+                                                timestamp : msg.timestamp
+                                            };
+                                            resolve(msg_pack);
+                                        }).catch(function (error) {
+                                            console.log("Error in decryption:", error);
+                                            reject(error);
+                                        });
+                                    });
+                                    promises.push(promise);
+                                } else {
+                                    let stickerPromise = Ember.RSVP.resolve({
                                         sender_id: msg.sender_id,
-                                        message :message,
-                                    };
+                                        file_name: msg.file_name,
+                                        dataFormat: "Sticker",
+                                        timestamp: msg.timestamp
+                                    });
 
-                                    self.get('AllMessage').pushObject(msg_pack);
-
-
-                                }).catch(function (error){
-                                    console.log("error on decryption process",error);
-
-                                });
-
-
+                                    promises.push(stickerPromise);
+                                }
+                                console.log(self.get('AllMessage'));
                             }
+                            Ember.RSVP.allSettled(promises).then(function (results) {
+                                let sortedMessages = results
+                                    .filter(result => result.value)
+                                    .map(result => result.value)
+                                    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                                sortedMessages.forEach(function (msg_pack) {
+                                    self.get('AllMessage').pushObject(msg_pack);
+                                });
+                                console.log(self.get('AllMessage').toArray());
+                            }).catch(function (error) {
+                                console.log("Error in processing messages:", error);
+                            });
+                            console.log(self.get('AllMessage'));
+
                         }
                         else{
                             // write code for group chat decrypt
-                            if(response.role=="Admin") self.set('isAdmin',true);
+                            var promises = [];
+                            self.set('isAdmin',response.isAdmin);
                             for(let msg of response.messages){
                                 let msg_pack;
-
-                                CryptoUtils.decryptMessage(msg.message, msg.enc_aes_key, privateKey, msg.iv).then(function(message){
-                                    //et('AllMessage').pushObject(msg_pack);
-
-                                    msg_pack ={
+                                if(msg.dataFormat==="Text"){
+                                    let promise = new Ember.RSVP.Promise(function (resolve, reject) {
+                                        CryptoUtils.decryptMessage(msg.message, msg.enc_aes_key,privateKey, msg.iv).then(function (message) {
+                                            msg_pack ={
+                                                sender_id: msg.sender_id,
+                                                message :message,
+                                                sender_name : msg.sender_name,
+                                                timestamp :msg.timestamp,
+                                                dataFormat : "Text",
+                                            };
+                                            resolve(msg_pack);
+                                        }).catch(function (error) {
+                                            console.log("Error in decryption:", error);
+                                            reject(error);
+                                        });
+                                    });
+                                    promises.push(promise);
+                                }
+                                else{
+                                    let stickerPromise = Ember.RSVP.resolve({
                                         sender_id: msg.sender_id,
-                                        message :message,
+                                        file_name: msg.file_name,
+                                        dataFormat: "Sticker",
                                         sender_name : msg.sender_name,
-                                        timestamp :msg.timestamp,
-                                    };
+                                        timestamp: msg.timestamp,
 
-                                    self.get('AllMessage').pushObject(msg_pack);
-
-
-                                }).catch(function (error){
-                                    console.log("error on decryption process",error);
-
-                                });
-
+                                    });
+                                    promises.push(stickerPromise);
+                                }
                             }
+                            Ember.RSVP.allSettled(promises).then(function (results) {
+                                let sortedMessages = results
+                                    .filter(result => result.value)
+                                    .map(result => result.value)
+                                    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                                sortedMessages.forEach(function (msg_pack) {
+                                    self.get('AllMessage').pushObject(msg_pack);
+                                });
+                                console.log(self.get('AllMessage').toArray());
+                            }).catch(function (error) {
+                                console.log("Error in processing messages:", error);
+                            });
                         }
-
 
                     }).catch(function (error){
                         console.log("Error on fetch key form indexDB:", error);
@@ -192,7 +251,6 @@ export default Ember.Controller.extend({
                                 console.error("Error encrypting AES Key:", error);
                             });
                         }
-
                         CryptoUtils.encryptAESKey(aesKey, ownPublicKey).then(function (encryptedAESKey) {
                             // console.log("Encrypted AES Key:", encryptedAESKey);
                             self.set('own',encryptedAESKey);
@@ -203,13 +261,11 @@ export default Ember.Controller.extend({
                     }).catch(function (error) {
                         console.error("Error generating AES Key:", error);
                     });
-
                 },
                 error(err) {
                     console.error("Error sending data:", err);
                 }
             });
-
 
         },
         sendMessage() {
@@ -222,16 +278,20 @@ export default Ember.Controller.extend({
                     const mesg ={
                         sender_id : self.get('sender_id'),
                         message :  message,
+                        dataFormat : "Text",
+
                     };
                     if (message && receiver && self.get('socket')) {
                         self.get('AllMessage').pushObject(mesg);
                         self.get('socket').send(JSON.stringify({
                             type : "Private",
-                            receiver: receiver,
+                            receiver_id: receiver,
                             ciphertext: encryptedMessage.ciphertext,
                             iv: encryptedMessage.iv,
                             aeskeyReceiver : self.get('Ekey'),
                             aeskeySender : self.get('own'),
+                            dataFormat : "Text",
+
                         }));
 
                         self.set('newMessage', '');
@@ -315,13 +375,21 @@ export default Ember.Controller.extend({
 
         },
 
-
         SendMessageOnGroup: function () {
+            let msgtime = new Date();
+            let year =msgtime.getFullYear();
+            let month =msgtime.getMonth();
+            let date =msgtime.getDate();
+            let hour =msgtime.getHours();
+            let min =msgtime.getMinutes();
+            let sec= msgtime.getSeconds();
+            let time = `${year}-${month}-${date} ${hour}:${min}:${sec}`;
+            console.log(msgtime);
             const self = this;
             let message = document.getElementById('MessageInput').value.trim();
-            if (!message) return; // Prevent sending empty messages
+            if (!message) return;
 
-            document.getElementById("MessageInput").value = ""; // Clear input field
+            document.getElementById("MessageInput").value = "";
             let receiver = self.get('receiver_id');
             let sender_id = self.get('sender_id');
             let socket = self.get('socket');
@@ -358,7 +426,7 @@ export default Ember.Controller.extend({
                             return CryptoUtils.encryptMessage(message, aesKeyObj);
                         })
                         .then(function (encryptedMessage) {
-                          //  self.get('AllMessage').pushObject({ sender_id: sender_id, message: message });
+                            self.get('AllMessage').pushObject({ sender_id: sender_id, message: message,dataFormat : "Text",timestamp: time,});
                             if (socket) {
                                 socket.send(JSON.stringify({
                                     type: "Group",
@@ -368,6 +436,9 @@ export default Ember.Controller.extend({
                                     iv: encryptedMessage.iv,
                                     members_aesKey: validKeys,
                                     sender_name : self.get('model.curruser.name'),
+                                    time :time,
+                                    dataFormat : "Text",
+
                                 }));
                             }
                         })
@@ -443,11 +514,12 @@ export default Ember.Controller.extend({
 
         },
 
-        makeAdmin : function (member_id){
+        makeAdmin : function (member_id,state){
             const self =this;
             let member_details ={
                 member_id :member_id,
                 grp_id : self.get('receiver_id'),
+                state :state,
             };
 
             Ember.$.ajax({
@@ -528,6 +600,64 @@ export default Ember.Controller.extend({
 
             });
             self.get('groupMembers').clear();
+
+        },
+        openStickerPicker() {
+            if(this.get('showStickerPicker')){
+                this.set('showStickerPicker', false);
+            }
+            else{
+                this.set('showStickerPicker', true);
+
+            }
+
+        },
+        extractSticker : function (url){
+            const self =this;
+            fetch(url).then(function (response){
+                return response.blob();
+
+            }).then(function (blobData){
+                console.log(blobData);
+                let file = new File([blobData], "sticker.png", { type: blobData.type });
+
+                self.send("sendSticker",blobData);
+            })
+        },
+        sendSticker : function (sticker){
+            const self =this;
+            let socket = self.get('socket');
+            let formData = new FormData();
+            formData.append('sticker',sticker);
+
+            Ember.$.ajax({
+                url : 'http://localhost:8080/chatApplication_war_exploded/FilesHandling',
+                type :'POST',
+                data : formData,
+                processData: false,
+                contentType : false,
+                xhrFields : {withCredentials : true},
+                success : function (response) {
+                    let sticker_details = {
+                        sender_id: self.get('sender_id'),
+                        file_name: response.file_name,
+                        dataFormat: "Sticker",
+                        type: self.get('isGroup') ? 'Group' : 'Private',
+                        sender_name: self.get('model.curruser.name')
+                    };
+                    sticker_details[self.get('isGroup') ? 'grp_id' : 'receiver_id'] = self.get('receiver_id');
+                    if(socket){
+                        socket.send(JSON.stringify(sticker_details));
+                    }
+                    self.get('AllMessage').pushObject(sticker_details);
+                },
+                error : function (error){
+                    console.log(error);
+
+                }
+
+            });
+
 
         }
 

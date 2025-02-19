@@ -31,12 +31,6 @@ main {
     place-items: center;
 }
 
-
-
-
-
-
-
 .sideNav2 {
     height: 100%;
     width: 100%;
@@ -54,7 +48,7 @@ main {
     align-items: center;
     padding: 20px;
     padding-bottom: 0px;
-    background-color: darkturquoise;
+    background-color: #8356ba;
 }
 
 .SideNavhead h2 {
@@ -79,10 +73,7 @@ main {
 section {
     box-shadow: var(--box-shadow);
     width: 100%;
-
-    border-radius: 10px;
-    border-top-left-radius: 0px;
-    border-bottom-left-radius: 0px;
+    border-radius: 0px 10px 10px 0px;
     height: 100%;
     backdrop-filter: blur(55px);
     display: flex;
@@ -275,7 +266,6 @@ section {
     flex: 1;
     border-radius: 10px;
     border: none;
-
     background-color: #ebebebc6;
 }
 
@@ -285,9 +275,7 @@ section {
     background-color: #00a8979e;
     color: white;
     cursor:pointer;
-
     border-radius: 10px;
-
     margin: 0px 5px;
     font-size: 1.2rem
 }
@@ -545,4 +533,58 @@ hr {
     border: 1px solid #ccc;
     border-radius: 8px;
     background-color: #f9f9f9;
+}
+
+
+.sticker-button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.sticker-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: white;
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.sticker-icon {
+    width: 80px;
+    height: 80px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.sticker-icon:hover {
+    transform: scale(1.1);
+}
+
+.sticker-preview {
+    width: 60px;
+    height: 60px;
+    border: 1px solid #ccc;
+    padding: 5px;
+}
+
+.clear-sticker {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+}
+.messageCenter{
+    display: flex;
+    flex-direction: column;
+}
+.syou{
+    text-align:left;
+}
+.sme{
+    margin-left:auto;
+    text-align: right;
 }

@@ -31,13 +31,14 @@ public class RoleChangeServlet extends HttpServlet {
             JsonObject jsonObject = JsonParser.parseReader(new InputStreamReader(request.getInputStream())).getAsJsonObject();
             String member_id=jsonObject.get("member_id").getAsString();
             String grp_id=jsonObject.get("grp_id").getAsString();
+            boolean state=jsonObject.get("state").getAsBoolean();
             Connection con =DBconnection.getConnection();
             PreparedStatement ps =null;
             if(con != null){
-                String qryForRole="update group_members set role=? where grp_id=? and user_id=?";
+                String qryForRole="update group_members set isAdmin=? where grp_id=? and user_id=?";
                 try{
                     ps=con.prepareStatement(qryForRole);
-                    ps.setString(1,"Admin");
+                    ps.setBoolean(1,state);
                     ps.setString(2,grp_id);
                     ps.setString(3,member_id);
                     int rowupdate=ps.executeUpdate();

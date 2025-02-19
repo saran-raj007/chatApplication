@@ -14,11 +14,6 @@ export default Ember.Controller.extend({
 
              CryptoUtils.generateRSAKeys().then(function (keys) {
                  public_key=keys.publicKey;
-                 StorageService.storePrivateKey(keys.privateKey,"privateKey").then(function () {
-                     console.log("Private key stored successfully!");
-                 }).catch(function (error) {
-                     console.error("Error storing private key:", error);
-                 });
 
                  Ember.$.ajax({
 
@@ -33,7 +28,12 @@ export default Ember.Controller.extend({
                      }),
                      xhrFields: { withCredentials: true },
                      success: function(response) {
-                         window.location.href="chat";
+                         StorageService.storePrivateKey(keys.privateKey,response.user_id).then(function () {
+                             console.log("Private key stored successfully!");
+                             window.location.href="chat";
+                         }).catch(function (error) {
+                             console.error("Error storing private key:", error);
+                         });
                      },
                      error: function(error) {
                          alert(error.message);
