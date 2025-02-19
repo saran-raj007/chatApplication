@@ -362,6 +362,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                             }));
 
                             self.set('newMessage', '');
+                            var chatContainer = document.getElementsByClassName("MessageContainer");
+                            chatContainer.scrollTop = chatContainer.scrollHeight;
                         }
                     })["catch"](function (error) {
                         console.error("Error on message encryption:", error);
@@ -1005,11 +1007,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 14,
+              "line": 17,
               "column": 4
             },
             "end": {
-              "line": 22,
+              "line": 25,
               "column": 4
             }
           },
@@ -1050,11 +1052,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           var el2 = dom.createTextNode("\n\n        ");
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode("\n        ");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createElement("hr");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode("\n");
+          var el1 = dom.createTextNode("\n\n");
           dom.appendChild(el0, el1);
           return el0;
         },
@@ -1066,7 +1064,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           morphs[2] = dom.createMorphAt(dom.childAt(element17, [5]), 0, 0);
           return morphs;
         },
-        statements: [["element", "action", ["fetchchat", ["get", "message", ["loc", [null, [15, 47], [15, 54]]]], "Private"], [], ["loc", [null, [15, 26], [15, 67]]]], ["content", "message.name", ["loc", [null, [17, 33], [17, 49]]]], ["content", "message.mobile_number", ["loc", [null, [18, 38], [18, 63]]]]],
+        statements: [["element", "action", ["fetchchat", ["get", "message", ["loc", [null, [18, 47], [18, 54]]]], "Private"], [], ["loc", [null, [18, 26], [18, 67]]]], ["content", "message.name", ["loc", [null, [20, 33], [20, 49]]]], ["content", "message.mobile_number", ["loc", [null, [21, 38], [21, 63]]]]],
         locals: ["message"],
         templates: []
       };
@@ -1078,11 +1076,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 23,
+              "line": 26,
               "column": 8
             },
             "end": {
-              "line": 31,
+              "line": 34,
               "column": 8
             }
           },
@@ -1121,11 +1119,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           var el2 = dom.createTextNode("\n\n            ");
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode("\n            ");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createElement("hr");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode("\n");
+          var el1 = dom.createTextNode("\n\n");
           dom.appendChild(el0, el1);
           return el0;
         },
@@ -1136,7 +1130,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           morphs[1] = dom.createMorphAt(dom.childAt(element16, [3]), 0, 0);
           return morphs;
         },
-        statements: [["element", "action", ["fetchchat", ["get", "group", ["loc", [null, [24, 51], [24, 56]]]], "Group"], [], ["loc", [null, [24, 30], [24, 67]]]], ["content", "group.name", ["loc", [null, [26, 37], [26, 51]]]]],
+        statements: [["element", "action", ["fetchchat", ["get", "group", ["loc", [null, [27, 51], [27, 56]]]], "Group"], [], ["loc", [null, [27, 30], [27, 67]]]], ["content", "group.name", ["loc", [null, [29, 37], [29, 51]]]]],
         locals: ["group"],
         templates: []
       };
@@ -1149,11 +1143,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 49,
+                "line": 52,
                 "column": 20
               },
               "end": {
-                "line": 51,
+                "line": 54,
                 "column": 20
               }
             },
@@ -1180,7 +1174,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             morphs[0] = dom.createElementMorph(element13);
             return morphs;
           },
-          statements: [["element", "action", ["addMembers"], ["on", "click"], ["loc", [null, [50, 29], [50, 63]]]]],
+          statements: [["element", "action", ["addMembers"], ["on", "click"], ["loc", [null, [53, 29], [53, 63]]]]],
           locals: [],
           templates: []
         };
@@ -1191,11 +1185,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 47,
+              "line": 50,
               "column": 16
             },
             "end": {
-              "line": 53,
+              "line": 56,
               "column": 16
             }
           },
@@ -1206,10 +1200,12 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
         hasRendered: false,
         buildFragment: function buildFragment(dom) {
           var el0 = dom.createDocumentFragment();
-          var el1 = dom.createTextNode("                ");
+          var el1 = dom.createTextNode("                    ");
           dom.appendChild(el0, el1);
-          var el1 = dom.createElement("button");
-          var el2 = dom.createTextNode("Exit Group");
+          var el1 = dom.createElement("i");
+          dom.setAttribute(el1, "class", "fas fa-sign-out-alt logout-icon");
+          dom.setAttribute(el1, "title", "Logout");
+          var el2 = dom.createTextNode(">");
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
@@ -1235,7 +1231,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           morphs[2] = dom.createElementMorph(element15);
           return morphs;
         },
-        statements: [["element", "action", ["ExitGroup", ["get", "model.curruser.user_id", ["loc", [null, [48, 45], [48, 67]]]]], ["on", "click"], ["loc", [null, [48, 24], [48, 80]]]], ["block", "if", [["get", "isAdmin", ["loc", [null, [49, 26], [49, 33]]]]], [], 0, null, ["loc", [null, [49, 20], [51, 27]]]], ["element", "action", ["ViewMembers"], ["on", "click"], ["loc", [null, [52, 28], [52, 63]]]]],
+        statements: [["element", "action", ["ExitGroup", ["get", "model.curruser.user_id", ["loc", [null, [51, 99], [51, 121]]]]], ["on", "click"], ["loc", [null, [51, 78], [51, 134]]]], ["block", "if", [["get", "isAdmin", ["loc", [null, [52, 26], [52, 33]]]]], [], 0, null, ["loc", [null, [52, 20], [54, 27]]]], ["element", "action", ["ViewMembers"], ["on", "click"], ["loc", [null, [55, 28], [55, 63]]]]],
         locals: [],
         templates: [child0]
       };
@@ -1249,11 +1245,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               "loc": {
                 "source": null,
                 "start": {
-                  "line": 61,
+                  "line": 64,
                   "column": 20
                 },
                 "end": {
-                  "line": 73,
+                  "line": 75,
                   "column": 20
                 }
               },
@@ -1295,11 +1291,6 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               dom.setAttribute(el2, "class", "messageDetails");
               var el3 = dom.createTextNode("\n                                ");
               dom.appendChild(el2, el3);
-              var el3 = dom.createElement("i");
-              dom.setAttribute(el3, "class", "fa-solid fa-check");
-              dom.appendChild(el2, el3);
-              var el3 = dom.createTextNode("\n                                ");
-              dom.appendChild(el2, el3);
               var el3 = dom.createElement("span");
               dom.setAttribute(el3, "class", "messageTime");
               var el4 = dom.createComment("");
@@ -1320,10 +1311,10 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               var morphs = new Array(3);
               morphs[0] = dom.createMorphAt(dom.childAt(element12, [1, 1]), 0, 0);
               morphs[1] = dom.createMorphAt(dom.childAt(element12, [3]), 0, 0);
-              morphs[2] = dom.createMorphAt(dom.childAt(element12, [5, 3]), 0, 0);
+              morphs[2] = dom.createMorphAt(dom.childAt(element12, [5, 1]), 0, 0);
               return morphs;
             },
-            statements: [["content", "message.sender_name", ["loc", [null, [64, 57], [64, 80]]]], ["content", "message.message", ["loc", [null, [66, 54], [66, 73]]]], ["content", "message.timestamp", ["loc", [null, [69, 58], [69, 79]]]]],
+            statements: [["content", "message.sender_name", ["loc", [null, [67, 57], [67, 80]]]], ["content", "message.message", ["loc", [null, [69, 54], [69, 73]]]], ["content", "message.timestamp", ["loc", [null, [71, 58], [71, 79]]]]],
             locals: [],
             templates: []
           };
@@ -1335,11 +1326,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               "loc": {
                 "source": null,
                 "start": {
-                  "line": 73,
+                  "line": 75,
                   "column": 20
                 },
                 "end": {
-                  "line": 83,
+                  "line": 84,
                   "column": 20
                 }
               },
@@ -1379,11 +1370,6 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               var el4 = dom.createComment("");
               dom.appendChild(el3, el4);
               dom.appendChild(el2, el3);
-              var el3 = dom.createTextNode("\n                                ");
-              dom.appendChild(el2, el3);
-              var el3 = dom.createElement("i");
-              dom.setAttribute(el3, "class", "fa-solid fa-check");
-              dom.appendChild(el2, el3);
               var el3 = dom.createTextNode("\n                            ");
               dom.appendChild(el2, el3);
               dom.appendChild(el1, el2);
@@ -1401,7 +1387,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               morphs[1] = dom.createMorphAt(dom.childAt(element11, [5, 1]), 0, 0);
               return morphs;
             },
-            statements: [["content", "message.message", ["loc", [null, [77, 54], [77, 73]]]], ["content", "message.timestamp", ["loc", [null, [79, 58], [79, 79]]]]],
+            statements: [["content", "message.message", ["loc", [null, [79, 54], [79, 73]]]], ["content", "message.timestamp", ["loc", [null, [81, 58], [81, 79]]]]],
             locals: [],
             templates: []
           };
@@ -1412,11 +1398,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 60,
+                "line": 63,
                 "column": 16
               },
               "end": {
-                "line": 84,
+                "line": 85,
                 "column": 16
               }
             },
@@ -1438,7 +1424,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             dom.insertBoundary(fragment, null);
             return morphs;
           },
-          statements: [["block", "if", [["subexpr", "neq", [["get", "message.sender_id", ["loc", [null, [61, 31], [61, 48]]]], ["get", "model.curruser.user_id", ["loc", [null, [61, 49], [61, 71]]]]], [], ["loc", [null, [61, 26], [61, 72]]]]], [], 0, 1, ["loc", [null, [61, 20], [83, 27]]]]],
+          statements: [["block", "if", [["subexpr", "neq", [["get", "message.sender_id", ["loc", [null, [64, 31], [64, 48]]]], ["get", "model.curruser.user_id", ["loc", [null, [64, 49], [64, 71]]]]], [], ["loc", [null, [64, 26], [64, 72]]]]], [], 0, 1, ["loc", [null, [64, 20], [84, 27]]]]],
           locals: [],
           templates: [child0, child1]
         };
@@ -1451,11 +1437,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               "loc": {
                 "source": null,
                 "start": {
-                  "line": 86,
+                  "line": 87,
                   "column": 20
                 },
                 "end": {
-                  "line": 90,
+                  "line": 91,
                   "column": 20
                 }
               },
@@ -1488,7 +1474,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               morphs[0] = dom.createAttrMorph(element10, 'src');
               return morphs;
             },
-            statements: [["attribute", "src", ["concat", ["http://localhost:8080/chatApplication_war_exploded/uploads/", ["get", "message.file_name", ["loc", [null, [88, 95], [88, 112]]]]]]]],
+            statements: [["attribute", "src", ["concat", ["http://localhost:8080/chatApplication_war_exploded/uploads/", ["get", "message.file_name", ["loc", [null, [89, 95], [89, 112]]]]]]]],
             locals: [],
             templates: []
           };
@@ -1500,11 +1486,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               "loc": {
                 "source": null,
                 "start": {
-                  "line": 90,
+                  "line": 91,
                   "column": 20
                 },
                 "end": {
-                  "line": 94,
+                  "line": 95,
                   "column": 20
                 }
               },
@@ -1537,7 +1523,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               morphs[0] = dom.createAttrMorph(element9, 'src');
               return morphs;
             },
-            statements: [["attribute", "src", ["concat", ["http://localhost:8080/chatApplication_war_exploded/uploads/", ["get", "message.file_name", ["loc", [null, [92, 99], [92, 116]]]]]]]],
+            statements: [["attribute", "src", ["concat", ["http://localhost:8080/chatApplication_war_exploded/uploads/", ["get", "message.file_name", ["loc", [null, [93, 99], [93, 116]]]]]]]],
             locals: [],
             templates: []
           };
@@ -1548,11 +1534,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 85,
+                "line": 86,
                 "column": 16
               },
               "end": {
-                "line": 95,
+                "line": 96,
                 "column": 16
               }
             },
@@ -1574,7 +1560,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             dom.insertBoundary(fragment, null);
             return morphs;
           },
-          statements: [["block", "if", [["subexpr", "neq", [["get", "message.sender_id", ["loc", [null, [86, 31], [86, 48]]]], ["get", "model.curruser.user_id", ["loc", [null, [86, 49], [86, 71]]]]], [], ["loc", [null, [86, 26], [86, 72]]]]], [], 0, 1, ["loc", [null, [86, 20], [94, 27]]]]],
+          statements: [["block", "if", [["subexpr", "neq", [["get", "message.sender_id", ["loc", [null, [87, 31], [87, 48]]]], ["get", "model.curruser.user_id", ["loc", [null, [87, 49], [87, 71]]]]], [], ["loc", [null, [87, 26], [87, 72]]]]], [], 0, 1, ["loc", [null, [87, 20], [95, 27]]]]],
           locals: [],
           templates: [child0, child1]
         };
@@ -1585,11 +1571,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 59,
+              "line": 62,
               "column": 12
             },
             "end": {
-              "line": 96,
+              "line": 97,
               "column": 12
             }
           },
@@ -1614,7 +1600,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           dom.insertBoundary(fragment, null);
           return morphs;
         },
-        statements: [["block", "if", [["subexpr", "eq", [["get", "message.dataFormat", ["loc", [null, [60, 26], [60, 44]]]], "Text"], [], ["loc", [null, [60, 22], [60, 52]]]]], [], 0, null, ["loc", [null, [60, 16], [84, 23]]]], ["block", "if", [["subexpr", "eq", [["get", "message.dataFormat", ["loc", [null, [85, 26], [85, 44]]]], "Sticker"], [], ["loc", [null, [85, 22], [85, 55]]]]], [], 1, null, ["loc", [null, [85, 16], [95, 23]]]]],
+        statements: [["block", "if", [["subexpr", "eq", [["get", "message.dataFormat", ["loc", [null, [63, 26], [63, 44]]]], "Text"], [], ["loc", [null, [63, 22], [63, 52]]]]], [], 0, null, ["loc", [null, [63, 16], [85, 23]]]], ["block", "if", [["subexpr", "eq", [["get", "message.dataFormat", ["loc", [null, [86, 26], [86, 44]]]], "Sticker"], [], ["loc", [null, [86, 22], [86, 55]]]]], [], 1, null, ["loc", [null, [86, 16], [96, 23]]]]],
         locals: ["message"],
         templates: [child0, child1]
       };
@@ -1627,11 +1613,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 106,
+                "line": 107,
                 "column": 16
               },
               "end": {
-                "line": 108,
+                "line": 109,
                 "column": 16
               }
             },
@@ -1658,7 +1644,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             morphs[1] = dom.createElementMorph(element8);
             return morphs;
           },
-          statements: [["attribute", "src", ["concat", [["get", "sticker.url", ["loc", [null, [107, 32], [107, 43]]]]]]], ["element", "action", ["extractSticker", ["get", "sticker.url", ["loc", [null, [107, 94], [107, 105]]]]], [], ["loc", [null, [107, 68], [107, 107]]]]],
+          statements: [["attribute", "src", ["concat", [["get", "sticker.url", ["loc", [null, [108, 32], [108, 43]]]]]]], ["element", "action", ["extractSticker", ["get", "sticker.url", ["loc", [null, [108, 94], [108, 105]]]]], [], ["loc", [null, [108, 68], [108, 107]]]]],
           locals: ["sticker"],
           templates: []
         };
@@ -1669,11 +1655,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 104,
+              "line": 105,
               "column": 8
             },
             "end": {
-              "line": 110,
+              "line": 111,
               "column": 8
             }
           },
@@ -1704,7 +1690,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 1, 1);
           return morphs;
         },
-        statements: [["block", "each", [["get", "stickers", ["loc", [null, [106, 24], [106, 32]]]]], [], 0, null, ["loc", [null, [106, 16], [108, 25]]]]],
+        statements: [["block", "each", [["get", "stickers", ["loc", [null, [107, 24], [107, 32]]]]], [], 0, null, ["loc", [null, [107, 16], [109, 25]]]]],
         locals: [],
         templates: [child0]
       };
@@ -1716,11 +1702,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 121,
+              "line": 122,
               "column": 16
             },
             "end": {
-              "line": 130,
+              "line": 131,
               "column": 16
             }
           },
@@ -1784,7 +1770,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           morphs[2] = dom.createElementMorph(element7);
           return morphs;
         },
-        statements: [["content", "message.name", ["loc", [null, [124, 45], [124, 61]]]], ["content", "message.mobile_number", ["loc", [null, [125, 50], [125, 75]]]], ["element", "action", ["addUsertoGroup", ["get", "message.user_id", ["loc", [null, [126, 95], [126, 110]]]]], ["on", "change"], ["loc", [null, [126, 69], [126, 124]]]]],
+        statements: [["content", "message.name", ["loc", [null, [125, 45], [125, 61]]]], ["content", "message.mobile_number", ["loc", [null, [126, 50], [126, 75]]]], ["element", "action", ["addUsertoGroup", ["get", "message.user_id", ["loc", [null, [127, 95], [127, 110]]]]], ["on", "change"], ["loc", [null, [127, 69], [127, 124]]]]],
         locals: ["message"],
         templates: []
       };
@@ -1797,11 +1783,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 150,
+                "line": 151,
                 "column": 20
               },
               "end": {
-                "line": 152,
+                "line": 153,
                 "column": 20
               }
             },
@@ -1837,11 +1823,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 152,
+                "line": 153,
                 "column": 20
               },
               "end": {
-                "line": 154,
+                "line": 155,
                 "column": 20
               }
             },
@@ -1877,11 +1863,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 155,
+                "line": 156,
                 "column": 24
               },
               "end": {
-                "line": 157,
+                "line": 158,
                 "column": 20
               }
             },
@@ -1919,11 +1905,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
                 "loc": {
                   "source": null,
                   "start": {
-                    "line": 161,
+                    "line": 162,
                     "column": 32
                   },
                   "end": {
-                    "line": 163,
+                    "line": 164,
                     "column": 32
                   }
                 },
@@ -1950,7 +1936,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
                 morphs[0] = dom.createElementMorph(element3);
                 return morphs;
               },
-              statements: [["element", "action", ["makeAdmin", ["get", "member.user_id", ["loc", [null, [162, 65], [162, 79]]]], false], [], ["loc", [null, [162, 44], [162, 87]]]]],
+              statements: [["element", "action", ["makeAdmin", ["get", "member.user_id", ["loc", [null, [163, 65], [163, 79]]]], false], [], ["loc", [null, [163, 44], [163, 87]]]]],
               locals: [],
               templates: []
             };
@@ -1962,11 +1948,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
                 "loc": {
                   "source": null,
                   "start": {
-                    "line": 163,
+                    "line": 164,
                     "column": 32
                   },
                   "end": {
-                    "line": 165,
+                    "line": 166,
                     "column": 32
                   }
                 },
@@ -1993,7 +1979,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
                 morphs[0] = dom.createElementMorph(element2);
                 return morphs;
               },
-              statements: [["element", "action", ["makeAdmin", ["get", "member.user_id", ["loc", [null, [164, 65], [164, 79]]]], true], [], ["loc", [null, [164, 44], [164, 86]]]]],
+              statements: [["element", "action", ["makeAdmin", ["get", "member.user_id", ["loc", [null, [165, 65], [165, 79]]]], true], [], ["loc", [null, [165, 44], [165, 86]]]]],
               locals: [],
               templates: []
             };
@@ -2004,11 +1990,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               "loc": {
                 "source": null,
                 "start": {
-                  "line": 159,
+                  "line": 160,
                   "column": 28
                 },
                 "end": {
-                  "line": 166,
+                  "line": 167,
                   "column": 28
                 }
               },
@@ -2039,7 +2025,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               dom.insertBoundary(fragment, null);
               return morphs;
             },
-            statements: [["element", "action", ["ExitGroup", ["get", "member.user_id", ["loc", [null, [160, 61], [160, 75]]]]], [], ["loc", [null, [160, 40], [160, 77]]]], ["block", "if", [["get", "member.isAdmin", ["loc", [null, [161, 39], [161, 53]]]]], [], 0, 1, ["loc", [null, [161, 32], [165, 39]]]]],
+            statements: [["element", "action", ["ExitGroup", ["get", "member.user_id", ["loc", [null, [161, 61], [161, 75]]]]], [], ["loc", [null, [161, 40], [161, 77]]]], ["block", "if", [["get", "member.isAdmin", ["loc", [null, [162, 39], [162, 53]]]]], [], 0, 1, ["loc", [null, [162, 32], [166, 39]]]]],
             locals: [],
             templates: [child0, child1]
           };
@@ -2050,11 +2036,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 158,
+                "line": 159,
                 "column": 24
               },
               "end": {
-                "line": 167,
+                "line": 168,
                 "column": 24
               }
             },
@@ -2076,7 +2062,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             dom.insertBoundary(fragment, null);
             return morphs;
           },
-          statements: [["block", "if", [["subexpr", "neq", [["get", "model.curruser.user_id", ["loc", [null, [159, 39], [159, 61]]]], ["get", "member.user_id", ["loc", [null, [159, 62], [159, 76]]]]], [], ["loc", [null, [159, 34], [159, 77]]]]], [], 0, null, ["loc", [null, [159, 28], [166, 35]]]]],
+          statements: [["block", "if", [["subexpr", "neq", [["get", "model.curruser.user_id", ["loc", [null, [160, 39], [160, 61]]]], ["get", "member.user_id", ["loc", [null, [160, 62], [160, 76]]]]], [], ["loc", [null, [160, 34], [160, 77]]]]], [], 0, null, ["loc", [null, [160, 28], [167, 35]]]]],
           locals: [],
           templates: [child0]
         };
@@ -2087,11 +2073,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 145,
+              "line": 146,
               "column": 12
             },
             "end": {
-              "line": 171,
+              "line": 172,
               "column": 12
             }
           },
@@ -2158,7 +2144,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           morphs[4] = dom.createMorphAt(element5, 9, 9);
           return morphs;
         },
-        statements: [["content", "member.name", ["loc", [null, [148, 41], [148, 56]]]], ["content", "member.mobile_number", ["loc", [null, [149, 35], [149, 59]]]], ["block", "if", [["get", "member.isAdmin", ["loc", [null, [150, 26], [150, 40]]]]], [], 0, 1, ["loc", [null, [150, 20], [154, 27]]]], ["block", "if", [["subexpr", "eq", [["get", "model.curruser.user_id", ["loc", [null, [155, 34], [155, 56]]]], ["get", "member.user_id", ["loc", [null, [155, 58], [155, 72]]]]], [], ["loc", [null, [155, 30], [155, 73]]]]], [], 2, null, ["loc", [null, [155, 24], [157, 27]]]], ["block", "if", [["get", "isAdmin", ["loc", [null, [158, 30], [158, 37]]]]], [], 3, null, ["loc", [null, [158, 24], [167, 31]]]]],
+        statements: [["content", "member.name", ["loc", [null, [149, 41], [149, 56]]]], ["content", "member.mobile_number", ["loc", [null, [150, 35], [150, 59]]]], ["block", "if", [["get", "member.isAdmin", ["loc", [null, [151, 26], [151, 40]]]]], [], 0, 1, ["loc", [null, [151, 20], [155, 27]]]], ["block", "if", [["subexpr", "eq", [["get", "model.curruser.user_id", ["loc", [null, [156, 34], [156, 56]]]], ["get", "member.user_id", ["loc", [null, [156, 58], [156, 72]]]]], [], ["loc", [null, [156, 30], [156, 73]]]]], [], 2, null, ["loc", [null, [156, 24], [158, 27]]]], ["block", "if", [["get", "isAdmin", ["loc", [null, [159, 30], [159, 37]]]]], [], 3, null, ["loc", [null, [159, 24], [168, 31]]]]],
         locals: ["member"],
         templates: [child0, child1, child2, child3]
       };
@@ -2170,11 +2156,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 183,
+              "line": 184,
               "column": 16
             },
             "end": {
-              "line": 192,
+              "line": 193,
               "column": 16
             }
           },
@@ -2238,7 +2224,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           morphs[2] = dom.createElementMorph(element1);
           return morphs;
         },
-        statements: [["content", "member.name", ["loc", [null, [186, 36], [186, 51]]]], ["content", "member.mobile_number", ["loc", [null, [187, 39], [187, 63]]]], ["element", "action", ["addUsertoGroup", ["get", "member.user_id", ["loc", [null, [188, 95], [188, 109]]]]], ["on", "change"], ["loc", [null, [188, 69], [188, 123]]]]],
+        statements: [["content", "member.name", ["loc", [null, [187, 36], [187, 51]]]], ["content", "member.mobile_number", ["loc", [null, [188, 39], [188, 63]]]], ["element", "action", ["addUsertoGroup", ["get", "member.user_id", ["loc", [null, [189, 95], [189, 109]]]]], ["on", "change"], ["loc", [null, [189, 69], [189, 123]]]]],
         locals: ["member"],
         templates: []
       };
@@ -2253,7 +2239,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 202,
+            "line": 203,
             "column": 7
           }
         },
@@ -2267,6 +2253,12 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
         var el1 = dom.createElement("link");
         dom.setAttribute(el1, "rel", "stylesheet");
         dom.setAttribute(el1, "href", "assets/chat.css");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("link");
+        dom.setAttribute(el1, "rel", "stylesheet");
+        dom.setAttribute(el1, "href", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css");
         dom.appendChild(el0, el1);
         var el1 = dom.createTextNode("\n");
         dom.appendChild(el0, el1);
@@ -2289,7 +2281,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
         var el4 = dom.createTextNode("\n            ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("h2");
-        var el5 = dom.createTextNode("Chats of ");
+        var el5 = dom.createTextNode(" Welcome ");
         dom.appendChild(el4, el5);
         var el5 = dom.createComment("");
         dom.appendChild(el4, el5);
@@ -2303,16 +2295,23 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n            ");
         dom.appendChild(el3, el4);
-        var el4 = dom.createElement("button");
-        dom.setAttribute(el4, "class", "logout");
-        var el5 = dom.createTextNode("Create New Group");
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4, "class", "icon-container");
+        var el5 = dom.createTextNode("\n                ");
         dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n            ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("button");
-        dom.setAttribute(el4, "class", "logout");
-        var el5 = dom.createTextNode("Logout");
+        var el5 = dom.createElement("i");
+        dom.setAttribute(el5, "class", "fas fa-sign-out-alt logout-icon");
+        dom.setAttribute(el5, "title", "Logout");
+        var el6 = dom.createTextNode(">");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n                ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("i");
+        dom.setAttribute(el5, "class", "fas fa-users create-group-icon");
+        dom.setAttribute(el5, "title", "Create Group");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n            ");
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n        ");
@@ -2345,20 +2344,17 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
         var el4 = dom.createTextNode("\n            ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("li");
-        dom.setAttribute(el4, "class", "group");
+        dom.setAttribute(el4, "class", "chatDetails");
         var el5 = dom.createTextNode("\n                ");
         dom.appendChild(el4, el5);
-        var el5 = dom.createElement("div");
-        dom.setAttribute(el5, "class", "avatar");
-        var el6 = dom.createElement("img");
-        dom.setAttribute(el6, "src", "assets/profile.png");
-        dom.setAttribute(el6, "alt", "");
-        dom.appendChild(el5, el6);
+        var el5 = dom.createElement("img");
+        dom.setAttribute(el5, "src", "assets/profile.png");
+        dom.setAttribute(el5, "alt", "");
         dom.appendChild(el4, el5);
         var el5 = dom.createTextNode("\n                ");
         dom.appendChild(el4, el5);
         var el5 = dom.createElement("p");
-        dom.setAttribute(el5, "class", "GroupName");
+        dom.setAttribute(el5, "class", "recevName");
         var el6 = dom.createComment("");
         dom.appendChild(el5, el6);
         dom.appendChild(el4, el5);
@@ -2614,47 +2610,48 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element18 = dom.childAt(fragment, [2]);
+        var element18 = dom.childAt(fragment, [4]);
         var element19 = dom.childAt(element18, [3]);
         var element20 = dom.childAt(element19, [1]);
         var element21 = dom.childAt(element20, [3]);
         var element22 = dom.childAt(element20, [5]);
-        var element23 = dom.childAt(element20, [7]);
-        var element24 = dom.childAt(element18, [7]);
-        var element25 = dom.childAt(element24, [1]);
-        var element26 = dom.childAt(element24, [7]);
-        var element27 = dom.childAt(element26, [1]);
-        var element28 = dom.childAt(element27, [3]);
-        var element29 = dom.childAt(element18, [9, 1]);
-        var element30 = dom.childAt(element18, [11]);
-        var element31 = dom.childAt(element30, [1, 4]);
-        var element32 = dom.childAt(element30, [4]);
-        var element33 = dom.childAt(element18, [13, 1]);
-        var element34 = dom.childAt(element33, [1, 4]);
+        var element23 = dom.childAt(element22, [1]);
+        var element24 = dom.childAt(element22, [3]);
+        var element25 = dom.childAt(element18, [7]);
+        var element26 = dom.childAt(element25, [1]);
+        var element27 = dom.childAt(element25, [7]);
+        var element28 = dom.childAt(element27, [1]);
+        var element29 = dom.childAt(element28, [3]);
+        var element30 = dom.childAt(element18, [9, 1]);
+        var element31 = dom.childAt(element18, [11]);
+        var element32 = dom.childAt(element31, [1, 4]);
+        var element33 = dom.childAt(element31, [4]);
+        var element34 = dom.childAt(element18, [13, 1]);
+        var element35 = dom.childAt(element34, [1, 4]);
         var morphs = new Array(20);
         morphs[0] = dom.createMorphAt(dom.childAt(element20, [1]), 1, 1);
         morphs[1] = dom.createAttrMorph(element21, 'value');
-        morphs[2] = dom.createElementMorph(element22);
-        morphs[3] = dom.createElementMorph(element23);
+        morphs[2] = dom.createElementMorph(element23);
+        morphs[3] = dom.createElementMorph(element24);
         morphs[4] = dom.createMorphAt(element19, 3, 3);
         morphs[5] = dom.createMorphAt(element19, 4, 4);
-        morphs[6] = dom.createMorphAt(dom.childAt(element25, [1, 3]), 0, 0);
-        morphs[7] = dom.createMorphAt(dom.childAt(element25, [3]), 1, 1);
-        morphs[8] = dom.createMorphAt(dom.childAt(element24, [5]), 3, 3);
-        morphs[9] = dom.createElementMorph(element27);
-        morphs[10] = dom.createElementMorph(element28);
-        morphs[11] = dom.createMorphAt(element26, 3, 3);
-        morphs[12] = dom.createElementMorph(element29);
-        morphs[13] = dom.createMorphAt(dom.childAt(element29, [3]), 3, 3);
-        morphs[14] = dom.createElementMorph(element31);
-        morphs[15] = dom.createElementMorph(element32);
-        morphs[16] = dom.createMorphAt(element32, 1, 1);
-        morphs[17] = dom.createElementMorph(element33);
-        morphs[18] = dom.createElementMorph(element34);
-        morphs[19] = dom.createMorphAt(dom.childAt(element33, [4]), 1, 1);
+        morphs[6] = dom.createMorphAt(dom.childAt(element26, [1, 3]), 0, 0);
+        morphs[7] = dom.createMorphAt(dom.childAt(element26, [3]), 1, 1);
+        morphs[8] = dom.createMorphAt(dom.childAt(element25, [5]), 3, 3);
+        morphs[9] = dom.createElementMorph(element28);
+        morphs[10] = dom.createElementMorph(element29);
+        morphs[11] = dom.createMorphAt(element27, 3, 3);
+        morphs[12] = dom.createElementMorph(element30);
+        morphs[13] = dom.createMorphAt(dom.childAt(element30, [3]), 3, 3);
+        morphs[14] = dom.createElementMorph(element32);
+        morphs[15] = dom.createElementMorph(element33);
+        morphs[16] = dom.createMorphAt(element33, 1, 1);
+        morphs[17] = dom.createElementMorph(element34);
+        morphs[18] = dom.createElementMorph(element35);
+        morphs[19] = dom.createMorphAt(dom.childAt(element34, [4]), 1, 1);
         return morphs;
       },
-      statements: [["content", "model.curruser.name", ["loc", [null, [9, 25], [9, 48]]]], ["attribute", "value", ["concat", [["get", "model.curruser.user_id", ["loc", [null, [10, 42], [10, 64]]]]]]], ["element", "action", ["showGrpCreate"], ["on", "click"], ["loc", [null, [11, 35], [11, 72]]]], ["element", "action", ["logout"], [], ["loc", [null, [12, 35], [12, 55]]]], ["block", "each", [["get", "model.users", ["loc", [null, [14, 12], [14, 23]]]]], [], 0, null, ["loc", [null, [14, 4], [22, 13]]]], ["block", "each", [["get", "model.groups", ["loc", [null, [23, 16], [23, 28]]]]], [], 1, null, ["loc", [null, [23, 8], [31, 17]]]], ["content", "selectedUsername", ["loc", [null, [44, 37], [44, 57]]]], ["block", "if", [["get", "isGroup", ["loc", [null, [47, 22], [47, 29]]]]], [], 2, null, ["loc", [null, [47, 16], [53, 23]]]], ["block", "each", [["get", "AllMessage", ["loc", [null, [59, 20], [59, 30]]]]], [], 3, null, ["loc", [null, [59, 12], [96, 21]]]], ["element", "action", [["subexpr", "if", [["get", "isGroup", ["loc", [null, [99, 44], [99, 51]]]], "SendMessageOnGroup", "sendMessage"], [], ["loc", [null, [99, 40], [99, 87]]]]], ["on", "submit"], ["loc", [null, [99, 31], [99, 102]]]], ["element", "action", ["openStickerPicker"], [], ["loc", [null, [101, 34], [101, 64]]]], ["block", "if", [["get", "showStickerPicker", ["loc", [null, [104, 14], [104, 31]]]]], [], 4, null, ["loc", [null, [104, 8], [110, 15]]]], ["element", "action", ["CreateNewGroup", ["get", "model.curruser.user_id", ["loc", [null, [115, 40], [115, 62]]]]], ["on", "submit"], ["loc", [null, [115, 14], [115, 77]]]], ["block", "each", [["get", "model.users", ["loc", [null, [121, 24], [121, 35]]]]], [], 5, null, ["loc", [null, [121, 16], [130, 25]]]], ["element", "action", ["closeViewMember"], ["on", "click"], ["loc", [null, [141, 20], [141, 59]]]], ["element", "action", ["RemoveMember", ["get", "model.curruser.user_id", ["loc", [null, [144, 38], [144, 60]]]]], ["on", "submit"], ["loc", [null, [144, 14], [144, 75]]]], ["block", "each", [["get", "ViewGrpMembers", ["loc", [null, [145, 20], [145, 34]]]]], [], 6, null, ["loc", [null, [145, 12], [171, 21]]]], ["element", "action", ["addNewMember"], ["on", "submit"], ["loc", [null, [177, 14], [177, 53]]]], ["element", "action", ["closeViewMember"], ["on", "click"], ["loc", [null, [180, 24], [180, 63]]]], ["block", "each", [["get", "ViewGrpMembers", ["loc", [null, [183, 24], [183, 38]]]]], [], 7, null, ["loc", [null, [183, 16], [192, 25]]]]],
+      statements: [["content", "model.curruser.name", ["loc", [null, [10, 25], [10, 48]]]], ["attribute", "value", ["concat", [["get", "model.curruser.user_id", ["loc", [null, [11, 42], [11, 64]]]]]]], ["element", "action", ["logout"], [], ["loc", [null, [13, 74], [13, 94]]]], ["element", "action", ["showGrpCreate"], ["on", "click"], ["loc", [null, [14, 79], [14, 116]]]], ["block", "each", [["get", "model.users", ["loc", [null, [17, 12], [17, 23]]]]], [], 0, null, ["loc", [null, [17, 4], [25, 13]]]], ["block", "each", [["get", "model.groups", ["loc", [null, [26, 16], [26, 28]]]]], [], 1, null, ["loc", [null, [26, 8], [34, 17]]]], ["content", "selectedUsername", ["loc", [null, [47, 37], [47, 57]]]], ["block", "if", [["get", "isGroup", ["loc", [null, [50, 22], [50, 29]]]]], [], 2, null, ["loc", [null, [50, 16], [56, 23]]]], ["block", "each", [["get", "AllMessage", ["loc", [null, [62, 20], [62, 30]]]]], [], 3, null, ["loc", [null, [62, 12], [97, 21]]]], ["element", "action", [["subexpr", "if", [["get", "isGroup", ["loc", [null, [100, 44], [100, 51]]]], "SendMessageOnGroup", "sendMessage"], [], ["loc", [null, [100, 40], [100, 87]]]]], ["on", "submit"], ["loc", [null, [100, 31], [100, 102]]]], ["element", "action", ["openStickerPicker"], [], ["loc", [null, [102, 34], [102, 64]]]], ["block", "if", [["get", "showStickerPicker", ["loc", [null, [105, 14], [105, 31]]]]], [], 4, null, ["loc", [null, [105, 8], [111, 15]]]], ["element", "action", ["CreateNewGroup", ["get", "model.curruser.user_id", ["loc", [null, [116, 40], [116, 62]]]]], ["on", "submit"], ["loc", [null, [116, 14], [116, 77]]]], ["block", "each", [["get", "model.users", ["loc", [null, [122, 24], [122, 35]]]]], [], 5, null, ["loc", [null, [122, 16], [131, 25]]]], ["element", "action", ["closeViewMember"], ["on", "click"], ["loc", [null, [142, 20], [142, 59]]]], ["element", "action", ["RemoveMember", ["get", "model.curruser.user_id", ["loc", [null, [145, 38], [145, 60]]]]], ["on", "submit"], ["loc", [null, [145, 14], [145, 75]]]], ["block", "each", [["get", "ViewGrpMembers", ["loc", [null, [146, 20], [146, 34]]]]], [], 6, null, ["loc", [null, [146, 12], [172, 21]]]], ["element", "action", ["addNewMember"], ["on", "submit"], ["loc", [null, [178, 14], [178, 53]]]], ["element", "action", ["closeViewMember"], ["on", "click"], ["loc", [null, [181, 24], [181, 63]]]], ["block", "each", [["get", "ViewGrpMembers", ["loc", [null, [184, 24], [184, 38]]]]], [], 7, null, ["loc", [null, [184, 16], [193, 25]]]]],
       locals: [],
       templates: [child0, child1, child2, child3, child4, child5, child6, child7]
     };
@@ -3119,7 +3116,7 @@ catch(err) {
 });
 
 if (!runningTests) {
-  require("demoapp/app")["default"].create({"name":"demoapp","version":"0.0.0+1bcd4a20"});
+  require("demoapp/app")["default"].create({"name":"demoapp","version":"0.0.0+dbc3bdb1"});
 }
 
 /* jshint ignore:end */

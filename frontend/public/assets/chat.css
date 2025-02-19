@@ -32,27 +32,24 @@ main {
 }
 
 .sideNav2 {
-    height: 100%;
+    height: 95%;
     width: 100%;
     box-shadow: var(--box-shadow);
+
     backdrop-filter: blur(55px);
-    border-radius: 10px;
-    border-top-right-radius: 0px;
-    border-bottom-right-radius: 0px;
+    border-radius: 3%;
     overflow: auto;
     border: 1px solid #ffffff21;
 }
 
 .SideNavhead {
-    display: flex;
-    align-items: center;
+    text-align: center;
     padding: 20px;
-    padding-bottom: 0px;
-    background-color: #8356ba;
+    background-color: #18b5f1;
 }
 
 .SideNavhead h2 {
-    color: #00f5d4;
+    color: #b8f500;
     font-size: 1.8rem;
     margin-right: auto;
 
@@ -77,6 +74,7 @@ section {
     height: 100%;
     backdrop-filter: blur(55px);
     display: flex;
+    padding: 20px;
     flex-direction: column;
     border: 1px solid #ffffff21;
 
@@ -139,13 +137,16 @@ section {
     display: grid;
     grid-template-columns: 55px calc(100% - 55px);
     grid-template-rows: repeat(2, 30px);
-    width: calc(100% - 20px);
+    width: auto;
     margin: 10px;
     padding: 10px;
     list-style-type: none;
-    border-radius: 5px;
+    border-radius: 15px;
     user-select: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Soft shadow */
     cursor: pointer;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+
 }
 
 .avatar {
@@ -172,7 +173,8 @@ section {
 }
 
 .group:hover {
-    background-color: #ffffff21;
+    transform: scale(1.05); /* Slightly enlarges on hover */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
 }
 
 .avatar img {
@@ -188,12 +190,34 @@ section {
     top: 0;
     left: 0;
     width: 100%;
-    height: 60px;
-    background: #128C7E;
+    height: 67px;
+    background: #6bd8ce;
     color: white;
     padding: 10px;
-    z-index: 1500
+    border-radius: 10px;
 
+}
+.chatDetails{
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    align-items: center;
+
+}
+.profileIMG{
+    padding: 30px 0px 30px 30px;
+}
+.chatDetails img{
+    border-radius: 50%;
+    height: 30%;
+    width: 30%;
+    object-fit: cover;
+    padding: 25px 3px 25px 0px;
+
+}
+.recevName{
+    font-size: large;
+    font-style: ;
 }
 
 .ChatHead .group:hover {
@@ -251,12 +275,14 @@ section {
 }
 
 .MessageContainer {
+    overflow: auto;
     flex: 1;
+    bottom: 30px;
 }
 
 #MessageForm {
-    padding: 10px;
     display: flex;
+    padding: 10px;
     width: 100%;
 
 }
@@ -265,8 +291,8 @@ section {
     padding: 10px;
     flex: 1;
     border-radius: 10px;
-    border: none;
-    background-color: #ebebebc6;
+    background-color: whitesmoke ;
+    border: 1px solid;
 }
 
 #MessageForm button {
@@ -285,14 +311,14 @@ section {
 }
 .MessageContainer{
     display: flex;
-   // height:100%;
     width:100%;
     padding:10px;
     flex-direction: column;
+    margin-bottom: 150px;
     overflow: auto;
     margin-top: 40px; /* To prevent overlap with the fixed profile bar */
     height: calc(100vh - 190px); /* Fill the rest of the viewport */
-  //  overflow-y: auto;
+    overflow-y: auto;
 }
 .MessageContainer span{
     margin-bottom: auto;
@@ -363,7 +389,9 @@ section {
 }
 
 .Chat{
+    height: 95%;
     display: none;
+    overflow: hidden;
 }
 
 .logout{
@@ -578,8 +606,9 @@ hr {
     cursor: pointer;
 }
 .messageCenter{
-    display: flex;
-    flex-direction: column;
+    position: fixed;
+    bottom: 0;
+    width: 95%;
 }
 .syou{
     text-align:left;
@@ -587,4 +616,33 @@ hr {
 .sme{
     margin-left:auto;
     text-align: right;
+}
+.icon-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    gap: 15px;
+    background: white;
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.icon-container i {
+    font-size: 24px;
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.logout-icon {
+    color: red;
+}
+
+.create-group-icon {
+    color: blue;
+}
+
+.icon-container i:hover {
+    transform: scale(1.2);
 }

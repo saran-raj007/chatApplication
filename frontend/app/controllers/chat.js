@@ -295,6 +295,8 @@ export default Ember.Controller.extend({
                         }));
 
                         self.set('newMessage', '');
+                        var chatContainer = document.getElementsByClassName("MessageContainer");
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
                     }
 
                 }).catch(function (error){

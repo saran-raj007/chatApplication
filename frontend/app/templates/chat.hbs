@@ -1,4 +1,5 @@
 <link rel="stylesheet" href="assets/chat.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <main>
     <div class="sideNav1">
 
@@ -6,10 +7,12 @@
     </div>
     <div class="sideNav2">
         <div class="SideNavhead">
-            <h2>Chats of {{model.curruser.name}}</h2>
+            <h2> Welcome {{model.curruser.name}}</h2>
             <input type="hidden" value="{{model.curruser.user_id}}" id="curruserid" name="curruserid" >
-            <button class="logout" {{action "showGrpCreate" on="click"}}>Create New Group</button>
-            <button class="logout" {{action "logout" }}>Logout</button>
+            <div class="icon-container">
+                <i class="fas fa-sign-out-alt logout-icon" title="Logout" {{action "logout" }}>></i>
+                <i class="fas fa-users create-group-icon" title="Create Group" {{action "showGrpCreate" on="click"}}></i>
+            </div>
         </div>
     {{#each model.users as |message|}}
         <li class="group" {{action "fetchchat" message "Private" }}>
@@ -18,7 +21,7 @@
             <span class="GroupDescrp">{{message.mobile_number}}</span>
 
         </li>
-        <hr>
+
     {{/each}}
         {{#each model.groups as |group|}}
             <li class="group" {{action "fetchchat" group "Group" }}>
@@ -27,7 +30,7 @@
                 <span class="GroupDescrp"></span>
 
             </li>
-            <hr>
+
         {{/each}}
 
 
@@ -39,13 +42,13 @@
 
     <section class="Chat">
         <div class="ChatHead">
-            <li class="group">
-                <div class="avatar"><img src="assets/profile.png" alt=""></div>
-                <p class="GroupName">{{selectedUsername}}</p>
+            <li class="chatDetails">
+                <img src="assets/profile.png" alt="">
+                <p class="recevName">{{selectedUsername}}</p>
             </li>
             <div class="grpOperations">
                 {{#if isGroup}}
-                <button {{action "ExitGroup" model.curruser.user_id on="click"}}>Exit Group</button>
+                    <i class="fas fa-sign-out-alt logout-icon" title="Logout" {{action "ExitGroup" model.curruser.user_id on="click"}}>></i>
                     {{#if isAdmin}}
                      <button {{action "addMembers" on="click"}}>Add Member</button>
                     {{/if}}
@@ -65,7 +68,6 @@
                             </div>
                             <p class="messageContent">{{message.message}}</p>
                             <div class="messageDetails">
-                                <i class="fa-solid fa-check"></i>
                                 <span class="messageTime">{{message.timestamp}}</span>
 
                             </div>
@@ -77,7 +79,6 @@
                             <p class="messageContent">{{message.message}}</p>
                             <div class="messageDetails">
                                 <span class="messageTime">{{message.timestamp}}</span>
-                                <i class="fa-solid fa-check"></i>
                             </div>
                         </div>
                     {{/if}}
