@@ -793,7 +793,6 @@ export default Ember.Controller.extend({
                                         forkKeys.pushObject({ receiver_id: member.user_id, enc_aes });
                                     });
                             } else if (!isGroup) {
-                                alert("*");
                                 forkKeys.pushObject({ receiver_id: msg.receiver_id, enc_aes: msg.aes_key_receiver });
                                 forkKeys.pushObject({ receiver_id: msg.sender_id, enc_aes: msg.aes_key_sender });
                                 return Promise.resolve();
@@ -805,7 +804,7 @@ export default Ember.Controller.extend({
                 });
             }).then(() => {
                 let newForkMemberMessages = response_data.messages.map(msg => ({
-                    msg_id: msg.mess_id,
+                    mess_id: msg.mess_id,
                     sender_id: msg.sender_id,
                     receiver_id: msg.receiver_id,
                     message: msg.message,

@@ -860,7 +860,6 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                                         forkKeys.pushObject({ receiver_id: member.user_id, enc_aes: enc_aes });
                                     });
                                 } else if (!isGroup) {
-                                    alert("*");
                                     forkKeys.pushObject({ receiver_id: msg.receiver_id, enc_aes: msg.aes_key_receiver });
                                     forkKeys.pushObject({ receiver_id: msg.sender_id, enc_aes: msg.aes_key_sender });
                                     return Promise.resolve();
@@ -873,7 +872,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                 }).then(function () {
                     var newForkMemberMessages = response_data.messages.map(function (msg) {
                         return {
-                            msg_id: msg.mess_id,
+                            mess_id: msg.mess_id,
                             sender_id: msg.sender_id,
                             receiver_id: msg.receiver_id,
                             message: msg.message,
@@ -3515,7 +3514,7 @@ catch(err) {
 });
 
 if (!runningTests) {
-  require("demoapp/app")["default"].create({"name":"demoapp","version":"0.0.0+fc213e88"});
+  require("demoapp/app")["default"].create({"name":"demoapp","version":"0.0.0+7b21d019"});
 }
 
 /* jshint ignore:end */
