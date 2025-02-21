@@ -44,7 +44,7 @@ public class FetchchatServlet extends HttpServlet {
                     String qrys="select * from files where ((sender_id = ? and receiver_id =?) or (sender_id = ? and receiver_id =?)) order by created_at asc; ";
                     String qryFrokey = "select * from users where user_id=?";
                     String qryForgrpMsg ="SELECT gm.grpmssg_id, gm.grp_id, gm.sender_id, gm.message, gm.created_at, gm.msg_iv, u.name, ge.enc_aes_key FROM group_messages gm JOIN users u ON gm.sender_id = u.user_id JOIN aes_keys ge ON gm.grpmssg_id = ge.grpmssg_id WHERE gm.grp_id = ? AND gm.created_at >= (SELECT gg.added_at FROM group_members gg WHERE gg.user_id = ? AND gg.grp_id =?) AND ge.receiver_id = ? order by gm.created_at asc ";
-                    String qryGrps="select f.*, u.name from files f join users u ON f.sender_id = u.user_id where f.receiver_id = ? and f.created_at >= (select added_at from group_members where grp_id = ? and user_id = ?)";
+                    String qryGrps="select f.*, u.name from files f join users u ON f.sender_id = u.user_id or f.receiver_id = u.user_id   where f.receiver_id = ? and f.created_at >= (select added_at from group_members where grp_id = ? and user_id = ?)";
                     String adminqry ="select * from group_members where user_id=? and grp_id=?";
                     try {
                         if(msgType.equals("Private")) {
@@ -139,7 +139,7 @@ public class FetchchatServlet extends HttpServlet {
             msg.put("dataFormat","Text");
             msg.put("mess_id", rs.getString("mess_id"));
             msg.put("sender_id", rs.getString("send_id"));
-            msg.put("receiver_id", rs.getString("receiver_id")); // consider this line
+            msg.put("receiver_id", rs.getString("receiver_id"));
             msg.put("message", rs.getString("message"));
             msg.put("iv", rs.getString("iv"));
             msg.put("aes_key_receiver", rs.getString("aes_key_receiver"));
@@ -151,6 +151,7 @@ public class FetchchatServlet extends HttpServlet {
         while(stickerMsg){
             JSONObject msg = new JSONObject();
             msg.put("dataFormat","Sticker");
+            msg.put("mess_id", rss.getString("file_id"));
             msg.put("sender_id", rss.getString("sender_id"));
             msg.put("receiver_id", rss.getString("receiver_id"));
             msg.put("file_name", rss.getString("file_name"));
@@ -186,11 +187,12 @@ public class FetchchatServlet extends HttpServlet {
         while(stickerMsg){
             JSONObject msg = new JSONObject();
             msg.put("dataFormat","Sticker");
+            msg.put("mess_id", rss.getString("file_id"));
             msg.put("sender_id", rss.getString("sender_id"));
             msg.put("receiver_id", rss.getString("receiver_id"));
             msg.put("file_name", rss.getString("file_name"));
             msg.put("timestamp", rss.getString("created_at"));
-           // msg.put("sender_name", rs.getString("name"));
+         //   msg.put("sender_name", rs.getString("name"));
             msgList.add(msg);
             stickerMsg=rss.next();
         }

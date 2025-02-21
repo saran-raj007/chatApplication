@@ -52,28 +52,28 @@
                     {{#if isAdmin}}
                      <button {{action "addMembers" on="click"}}>Add Member</button>
                     {{/if}}
-                    <button {{action "ViewMembers" on="click"}}>View Members</button>
+                    <button {{action "OpenViweMember" on="click"}}>View Members</button>
                 {{/if}}
             </div>
         </div>
-        <hr>
         <div class="MessageContainer">
             <span></span>
             {{#each AllMessage as |message|}}
                 {{#if (eq message.dataFormat "Text")}}
                     {{#if (neq message.sender_id model.curruser.user_id)}}
-                        <div class="message you">
+                        <div class="message you" {{action "showForkMessageOption" on="click"}}>
+                            <button {{action "ForkMessage" message on="click"}}>Fork Message from here</button>
                             <div class="messageHeader">
                                 <span class="senderName">{{message.sender_name}}</span>
                             </div>
                             <p class="messageContent">{{message.message}}</p>
                             <div class="messageDetails">
                                 <span class="messageTime">{{message.timestamp}}</span>
-
                             </div>
                         </div>
                     {{else}}
                         <div class="message me">
+                            <button>Fork Message from here</button>
                             <div class="messageHeader">
                             </div>
                             <p class="messageContent">{{message.message}}</p>
@@ -86,16 +86,19 @@
                 {{#if (eq message.dataFormat "Sticker")}}
                     {{#if (neq message.sender_id model.curruser.user_id)}}
                         <div class="message syou">
+                            <span>{{message.sender_name}}</span>
                         <img src="http://localhost:8080/chatApplication_war_exploded/uploads/{{message.file_name}}" class="sticker-icon">
                     </div>
                     {{else}}
                         <div class=" message sme">
+                            <span>{{message.sender_name}}</span>
                             <img src="http://localhost:8080/chatApplication_war_exploded/uploads/{{message.file_name}}" class="sticker-icon">
                         </div>
                     {{/if}}
                 {{/if}}
             {{/each}}
         </div>
+
         <div class="messageCenter">
         <form id="MessageForm" {{action (if isGroup "SendMessageOnGroup" "sendMessage") on="submit" }}>
             <input type="text" id="MessageInput" name="MessageInput">
@@ -196,8 +199,38 @@
                 <button type="submit" class="submit-button">Add Members</button>
             </div>
         </form>
+    </section>
 
+    <section class="forkmsg">
+        <h1><strong>Add users to forked chat</strong></h1><br>
+        <form {{action "CreatForkMessage"  on="submit" }}>
+            <div class="start-fork">
+                <strong id="fork-sender">sender</strong>
+                <span id="fork-msg">Message</span>
+                <span id="fork-time">Time</span>
+            </div>
+            <div class="grp-field">
+                <h3>Add Users</h3>
+                {{#each model.users as |message|}}
+                    <div class="fork-user" >
+                        <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
+                        <p class="GroupName">{{message.name}}</p>
+                        <span class="GroupDescrp">{{message.mobile_number}}</span>
+                        <input type="checkbox"   class="GroupDescrp" {{action "addUserToFork" message.user_id on="change"}}  >
 
+                    </div>
+                {{/each}}
+            </div>
+            <div class="data-field">
+            <div class="chat-title">
+                <label for="grpName">Chat Title: </label><input type="text" name="chat-title" id="chat-title" required>
+            </div>
+            <label><input type="checkbox" id="all" name="all"> Include all participants of this conversation</label>
+            </div>
+            <div class="button-container">
+                <button type="submit" class="submit-button">Create Chat</button>
+            </div>
+        </form>
     </section>
 
 </main>

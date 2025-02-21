@@ -2,6 +2,7 @@ import Ember from 'ember';
 import CryptoUtils from "../utils/crypto";
 import StorageService from "../services/storage-service";
 import storageService from "../services/storage-service";
+import crypto from "../utils/crypto";
 //import {console} from "ember-cli-qunit";
 
 
@@ -18,12 +19,19 @@ export default Ember.Controller.extend({
     Ekey : null,
     own :null,
     groupMembers: Ember.A(),
-    grpPubKey: null,
     grpMembersencAESKeys : Ember.A(),
     isGroup: false,
     isAdmin : false,
     ViewGrpMembers :Ember.A(),
     showStickerPicker: false,
+    forkNewMembers :Ember.A(),
+    forkOldMembers :Ember.A(),
+    forkID : null,
+    tempfork :Ember.A(),
+    forkedmsg :  null,
+    secretKey :null,
+    newForkMemberMessages : Ember.A(),
+    forkKeys :Ember.A(),
     stickers: [
         { url: "/Stickers/dumbbell.png" },
         { url: "/Stickers/laptop.png" },
@@ -145,6 +153,7 @@ export default Ember.Controller.extend({
                                         CryptoUtils.decryptMessage(msg.message, key, privateKey, msg.iv).then(function (message) {
                                             let msg_pack = {
                                                 sender_id: msg.sender_id,
+                                                mess_id :msg.mess_id,
                                                 message: message,
                                                 dataFormat: "Text",
                                                 timestamp : msg.timestamp
@@ -158,6 +167,7 @@ export default Ember.Controller.extend({
                                     promises.push(promise);
                                 } else {
                                     let stickerPromise = Ember.RSVP.resolve({
+                                        mess_id :msg.mess_id,
                                         sender_id: msg.sender_id,
                                         file_name: msg.file_name,
                                         dataFormat: "Sticker",
@@ -193,6 +203,7 @@ export default Ember.Controller.extend({
                                     let promise = new Ember.RSVP.Promise(function (resolve, reject) {
                                         CryptoUtils.decryptMessage(msg.message, msg.enc_aes_key,privateKey, msg.iv).then(function (message) {
                                             msg_pack ={
+                                                mess_id :msg.mess_id,
                                                 sender_id: msg.sender_id,
                                                 message :message,
                                                 sender_name : msg.sender_name,
@@ -209,6 +220,7 @@ export default Ember.Controller.extend({
                                 }
                                 else{
                                     let stickerPromise = Ember.RSVP.resolve({
+                                        mess_id :msg.mess_id,
                                         sender_id: msg.sender_id,
                                         file_name: msg.file_name,
                                         dataFormat: "Sticker",
@@ -476,15 +488,19 @@ export default Ember.Controller.extend({
 
             });
         },
-        ViewMembers :function(){
+        OpenViweMember(){
             const self =this;
-            self.get('ViewGrpMembers').clear();
             Ember.$(".empty-page").css("display", "none");
             Ember.$(".Chat").css("display", "none");
             Ember.$(".createGroup").css("display", "none");
             Ember.$(".addMembers").css("display","none");
             Ember.$(".ViewGrpMember").css("display","block");
+            self.send("ViewMembers",self.get('receiver_id'));
 
+        },
+        ViewMembers :function(grp_id){
+            const self =this;
+            self.get('ViewGrpMembers').clear();
 
             Ember.$.ajax({
                 url: 'http://localhost:8080/chatApplication_war_exploded/FetchGroupMembers',
@@ -492,7 +508,7 @@ export default Ember.Controller.extend({
                 contentType: 'application/json',
                 dataType: 'json',
                 xhrFields: { withCredentials: true },
-                data: JSON.stringify({grp_id : self.get('receiver_id')}),
+                data: JSON.stringify({grp_id : grp_id}),
                 success : function (response){
                     for(let mem of response.grp_members){
                         self.get('ViewGrpMembers').pushObject(mem);
@@ -537,7 +553,6 @@ export default Ember.Controller.extend({
                     Ember.$(".ViewGrpMember").css("display","none");
                     Ember.$(".addMembers").css("display","none");
                     Ember.$(".Chat").css("display", "block");
-
 
                 },
                 error : function (error){
@@ -661,7 +676,165 @@ export default Ember.Controller.extend({
             });
 
 
+        },
+        addUserToFork(user_id){
+            if(event.target.checked){
+                this.get('forkNewMembers').pushObject(user_id);
+            }
+            else{
+                this.get('forkNewMembers').removeObject(user_id);
+            }
+        },
+        ForkMessage : function (message) {
+            const self = this;
+            Ember.$(".createGroup").css("display", "none");
+            Ember.$(".ViewGrpMember").css("display", "none");
+            Ember.$(".addMembers").css("display", "none");
+            Ember.$(".Chat").css("display", "none");
+            Ember.$(".forkmsg").css("display", "block");
+            document.getElementById("fork-sender").textContent = message.sender_id;
+            document.getElementById("fork-msg").textContent = message.message;
+            document.getElementById("fork-time").textContent = message.timestamp;
+            self.set('forkedmsg', message);
+        },
+        CreatForkMessage: function () {
+            const self = this;
+            let chatName = document.getElementById('chat-title').value;
+            let isGroup = self.get('isGroup');
+            let sender_id = self.get('sender_id');
+            let receiver_id = self.get('receiver_id');
+            let forkOldMembers = self.get('forkOldMembers');
+            let forkNewMembers = self.get('forkNewMembers');
+            let forkKeys = self.get('forkKeys');
+            let isChecked = Ember.$("#all").prop("checked");
+            let response_data;
+
+            // ✅ Fix: Handle member retrieval properly
+            let getMembersPromise = Promise.resolve();
+
+            if (isGroup && isChecked) {
+                self.send("ViewMembers", receiver_id);
+                getMembersPromise = new Promise(resolve => {
+                    Ember.run.later(() => {
+                        let ViewGrpMembers = self.get('ViewGrpMembers');
+                        if (ViewGrpMembers && ViewGrpMembers.length) {
+                            ViewGrpMembers.forEach(member => {
+                                if (member.user_id !== sender_id) {
+                                    forkOldMembers.pushObject(member.user_id);
+                                }
+                            });
+                        }
+                        resolve(ViewGrpMembers);
+                    }, 500);
+                });
+            } else if (!isGroup && isChecked) {
+                forkOldMembers.pushObject(receiver_id);
+            }
+
+            return getMembersPromise.then(() => {
+                let tempfork = forkNewMembers.concat(forkOldMembers);
+                self.set('tempfork', tempfork);
+
+                let msg_pack = {
+                    name: chatName,
+                    Admin_id: sender_id,
+                    grpMembers: tempfork
+                };
+
+                // 1️⃣ Create new group chat
+                return Ember.$.ajax({
+                    url: 'http://localhost:8080/chatApplication_war_exploded/CreateNewGroup',
+                    type: 'POST',
+                    data: JSON.stringify(msg_pack),
+                    xhrFields: { withCredentials: true }
+                });
+            }).then(response => {
+                self.set('forkID', response.grp_id);
+                return Ember.$.ajax({
+                    url: 'http://localhost:8080/chatApplication_war_exploded/FetchMessageFork',
+                    type: 'POST',
+                    data: JSON.stringify({
+                        msg_id: self.get('forkedmsg').mess_id,
+                        msg_time: self.get('forkedmsg').timestamp,
+                        dataFormat: self.get('forkedmsg').dataFormat,
+                        isGroup: isGroup,
+                        sender_id: sender_id,
+                        receiver_id: receiver_id
+                    }),
+                    xhrFields: { withCredentials: true }
+                });
+            }).then(response => {
+                response_data = response;
+                self.send('ViewMembers', self.get('forkID'));
+
+                return new Promise(resolve => {
+                    Ember.run.later(() => {
+                        let ViewGrpMembers = self.get('ViewGrpMembers');
+                        console.log("ViewGrpMembers After Fix:", ViewGrpMembers);
+                        resolve(ViewGrpMembers);
+                    }, 500);
+                });
+            }).then(ViewGrpMembers => {
+                return StorageService.getPrivateKey("privateKey").then(RSAPrivateKey => {
+                    self.set('secretKey', RSAPrivateKey);
+                    console.log(ViewGrpMembers);
+                    console.log("ViewGrpMembers Length:", ViewGrpMembers.length);
+
+                    let encryptionPromises = response_data.messages.map(msg => {
+                        return Promise.allSettled(ViewGrpMembers.map(member => {
+                            if (!forkOldMembers.includes(member.user_id)) {
+                                let key = isGroup ? msg.enc_aes_key :
+                                    (msg.sender_id === sender_id ? msg.aes_key_sender : msg.aes_key_receiver);
+
+                                // ✅ Return the promise correctly
+                                return CryptoUtils.decryptAESKey(key, RSAPrivateKey)
+                                    .then(dec_aes => CryptoUtils.encryptAESKey(dec_aes, member.rsa_public_key))
+                                    .then(enc_aes => {
+                                        forkKeys.pushObject({ receiver_id: member.user_id, enc_aes });
+                                    });
+                            } else if (!isGroup) {
+                                alert("*");
+                                forkKeys.pushObject({ receiver_id: msg.receiver_id, enc_aes: msg.aes_key_receiver });
+                                forkKeys.pushObject({ receiver_id: msg.sender_id, enc_aes: msg.aes_key_sender });
+                                return Promise.resolve();
+                            }
+                        }).filter(Boolean));
+                    });
+
+                    return Promise.all(encryptionPromises);
+                });
+            }).then(() => {
+                let newForkMemberMessages = response_data.messages.map(msg => ({
+                    msg_id: msg.mess_id,
+                    sender_id: msg.sender_id,
+                    receiver_id: msg.receiver_id,
+                    message: msg.message,
+                    iv: msg.iv,
+                    created_at: msg.timestamp,
+                    enc_aes_keys: forkKeys
+                }));
+
+                self.set('newForkMemberMessages', newForkMemberMessages);
+
+                return Ember.$.ajax({
+                    url: 'http://localhost:8080/chatApplication_war_exploded/CreateForkMessage',
+                    type: 'POST',
+                    data: JSON.stringify({
+                        isGroup: isGroup,
+                        fork_id: self.get('forkID'),
+                        messages: newForkMemberMessages,
+                        receiver_id_file: receiver_id,
+                        msg_time: self.get('forkedmsg').timestamp,
+                    }),
+                    xhrFields: { withCredentials: true }
+                });
+            }).then(() => {
+                console.log("Fork message created successfully");
+            }).catch(error => console.error(error));
         }
+
+
+
 
 
     }

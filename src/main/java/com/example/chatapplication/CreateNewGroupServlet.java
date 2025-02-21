@@ -52,6 +52,8 @@ public class CreateNewGroupServlet extends HttpServlet {
                     ps.setString(3, admin_id);
                     int rowinserted = ps.executeUpdate();
                     if(rowinserted>0){
+
+                        jsonResponse.put("grp_id", grp_id);
                         jsonResponse.put("success", "Group created");
                     }
                     else{
@@ -68,7 +70,8 @@ public class CreateNewGroupServlet extends HttpServlet {
 
                         rowinserted = ps.executeUpdate();
                         if(rowinserted>0){
-                            jsonResponse.put("success", "Group MEmbers Added");
+
+                            jsonResponse.put("success", "Group  Added");
                         }
                         else{
                             jsonResponse.put("error", "Error on add Members");

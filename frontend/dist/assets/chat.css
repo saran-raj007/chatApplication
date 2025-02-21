@@ -217,7 +217,6 @@ section {
 }
 .recevName{
     font-size: large;
-    font-style: ;
 }
 
 .ChatHead .group:hover {
@@ -330,6 +329,7 @@ section {
     flex-direction: column;
     border-radius: 5px;
     margin:5px;
+    cursor: pointer;
     position: relative;
 
 }
@@ -392,6 +392,7 @@ section {
     height: 95%;
     display: none;
     overflow: hidden;
+    border-radius: 10px;
 }
 
 .logout{
@@ -410,6 +411,7 @@ section {
 }
 .createGroup{
     display: none;
+    height: 95%;
 }
 .createGroup {
     max-width: 600px;
@@ -421,6 +423,11 @@ section {
 }
 
 .grp-field {
+    display: flex;
+    flex-direction: column;
+    gap :20px;
+    height: 400px;
+    overflow-y: auto ;
     margin-bottom: 20px;
 }
 
@@ -438,6 +445,7 @@ section {
     font-size: 16px;
 }
 .groupnew {
+
     display: flex;
     flex-direction: row;
     gap : 15px;
@@ -460,7 +468,6 @@ section {
 
 
 input[type="checkbox"] {
-    margin-left: 15px;
 }
 
 
@@ -532,6 +539,7 @@ hr {
 .ViewGrpMember{
     display: none;
     max-width: 600px;
+    height: 95%;
     margin: 0 auto;
     padding: 20px;
     border: 1px solid #ccc;
@@ -556,6 +564,7 @@ hr {
 .addMembers{
     display: none;
     max-width: 600px;
+    height: 95%;
     margin: 0 auto;
     padding: 20px;
     border: 1px solid #ccc;
@@ -645,4 +654,85 @@ hr {
 
 .icon-container i:hover {
     transform: scale(1.2);
+}
+.context-menu {
+    display: none;
+    background: white;
+    width: 10%;
+    border: 1px solid #ccc;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+}
+.context-menu ul {
+    list-style: none;
+    padding: 5px;
+    margin: 0;
+}
+.context-menu ul li {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+.context-menu ul li:hover {
+    background: #f0f0f0;
+}
+.forkmsg{
+    display: none;
+    height: 95%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+
+}
+.start-fork{
+    display: flex;
+    flex-direction: column;
+    gap :10px;
+    justify-content: center;
+    width: 400px;
+
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin: 20px 20px 20px 70px;
+    height: fit-content;
+    background: white;
+
+}
+.forkmsg form{
+    padding: 20px;
+}
+.fork-user{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap : 20px;
+    width: auto;
+    overflow: auto;
+    margin-left: 20px;
+    padding: 10px;
+    list-style-type: none;
+    border-radius: 15px;
+    user-select: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Soft shadow */
+    cursor: pointer;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+
+}
+.chat-title{
+    display: flex;
+    gap :20px;
+}
+.chat-title input[type="text"] {
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+}
+.data-field{
+    display: flex;
+    flex-direction: column;
+    gap :10px;
 }
