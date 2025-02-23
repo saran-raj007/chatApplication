@@ -28,10 +28,9 @@ public class FetchMessageForFork extends HttpServlet {
 
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json");
-        String stoken = cookieExtract(request);
-        String sender_id = UserSessionGenerate.validateToken(stoken,request);
+        String sender_id = UserSessionGenerate.validateToken(request);
         JSONObject jsonResponse = new JSONObject();
-        if(stoken != null &&sender_id != null){
+        if(sender_id != null){
             JsonObject jsonObject = JsonParser.parseReader(new InputStreamReader(request.getInputStream())).getAsJsonObject();
             String msg_id = jsonObject.get("msg_id").getAsString();
             String timeString = jsonObject.get("msg_time").getAsString();
@@ -69,14 +68,8 @@ public class FetchMessageForFork extends HttpServlet {
                         ps.setTimestamp(5, timestamp);
                         rs=ps.executeQuery();
 
-                        ps=con.prepareStatement(qryPvtfile);
-                        ps.setString(1, sender_id);
-                        ps.setString(2, receiver_id);
-                        ps.setString(3, receiver_id);
-                        ps.setString(4, senderID);
-                        ps.setTimestamp(5, timestamp);
-                        rss=ps.executeQuery();
-                        msgList=MsgPackForPrivate(rs,rss);
+
+                        msgList=MsgPackForPrivate(rs);
 
 
                     }catch (SQLException e){
@@ -99,7 +92,7 @@ public class FetchMessageForFork extends HttpServlet {
                         ps.setTimestamp(2, timestamp);
                        // ps.setString(3, sender_id);
                         rss = ps.executeQuery();
-                        msgList=msgPackForGroup(rs,rss);
+                        msgList=msgPackForGroup(rs);
 
                     }catch (SQLException e){
                         e.printStackTrace();
@@ -125,24 +118,10 @@ public class FetchMessageForFork extends HttpServlet {
             response.getWriter().write(jsonResponse.toString());
         }
     }
-    private String cookieExtract(HttpServletRequest request){
-        Cookie[] cookies = request.getCookies();
 
-        if (cookies != null){
-            for (Cookie cookie : cookies){
-                if("SessID".equals(cookie.getName())){
-                    return  cookie.getValue();
-
-                }
-            }
-        }
-        return null;
-
-    }
-    private List<JSONObject> MsgPackForPrivate(ResultSet rs, ResultSet rss) throws SQLException {
+    private List<JSONObject> MsgPackForPrivate(ResultSet rs) throws SQLException {
         List<JSONObject> msgList = new ArrayList<>();
         boolean textMsg = rs.next();
-        boolean stickerMsg = rss.next();
         while(textMsg) {
             JSONObject msg = new JSONObject();
             msg.put("dataFormat","Text");
@@ -157,26 +136,15 @@ public class FetchMessageForFork extends HttpServlet {
             msgList.add(msg);
             textMsg=rs.next();
         }
-        while(stickerMsg){
-            JSONObject msg = new JSONObject();
-            msg.put("dataFormat","Sticker");
-            msg.put("file_id", rss.getString("file_id"));
-            msg.put("sender_id", rss.getString("sender_id"));
-            msg.put("receiver_id", rss.getString("receiver_id"));
-            msg.put("file_name", rss.getString("file_name"));
-            msg.put("timestamp", rss.getString("created_at"));
-            msgList.add(msg);
-            stickerMsg=rss.next();
 
-        }
         return msgList;
 
 
     }
-    private List<JSONObject> msgPackForGroup(ResultSet rs, ResultSet rss) throws SQLException{
+    private List<JSONObject> msgPackForGroup(ResultSet rs) throws SQLException{
         List<JSONObject> msgList = new ArrayList<>();
         boolean textMsg = rs.next();
-        boolean stickerMsg = rss.next();
+
         while (textMsg) {
             JSONObject msg = new JSONObject();
             msg.put("dataFormat","Text");
@@ -191,19 +159,6 @@ public class FetchMessageForFork extends HttpServlet {
             msgList.add(msg);
             textMsg=rs.next();
 
-        }
-
-        while(stickerMsg){
-            JSONObject msg = new JSONObject();
-            msg.put("dataFormat","Sticker");
-            msg.put("file_id", rss.getString("file_id"));
-            msg.put("sender_id", rss.getString("sender_id"));
-            msg.put("receiver_id", rss.getString("receiver_id"));
-            msg.put("file_name", rss.getString("file_name"));
-            msg.put("timestamp", rss.getString("created_at"));
-            // msg.put("sender_name", rs.getString("name"));
-            msgList.add(msg);
-            stickerMsg=rss.next();
         }
 
 

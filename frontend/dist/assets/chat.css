@@ -17,6 +17,7 @@ body {
     /*background: url("https://4kwallpapers.com/images/walls/thumbs_3t/12662.jpg");*/
     background-size: 100% 100%;
     display: grid;
+    overflow: hidden;
 }
 
 main {
@@ -35,14 +36,14 @@ main {
     height: 95%;
     width: 100%;
     box-shadow: var(--box-shadow);
-
+    overflow: hidden;
     backdrop-filter: blur(55px);
     border-radius: 3%;
-    overflow: auto;
     border: 1px solid #ffffff21;
 }
 
 .SideNavhead {
+
     text-align: center;
     padding: 20px;
     background-color: #18b5f1;
@@ -137,7 +138,7 @@ section {
     display: grid;
     grid-template-columns: 55px calc(100% - 55px);
     grid-template-rows: repeat(2, 30px);
-    width: auto;
+    justify-content: center;
     margin: 10px;
     padding: 10px;
     list-style-type: none;
@@ -170,6 +171,7 @@ section {
 .GroupName {
     font-weight: 900;
     padding: 5px 10px;
+    align-items: center;
 }
 
 .group:hover {
@@ -735,4 +737,12 @@ hr {
     display: flex;
     flex-direction: column;
     gap :10px;
+}
+.friends{
+    position: absolute;
+    left: 0;
+    scroll-behavior: smooth;
+    overflow-y: auto;
+    max-height: 100%;
+    width: 100%;
 }

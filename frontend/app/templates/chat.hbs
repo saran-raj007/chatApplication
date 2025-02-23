@@ -14,24 +14,26 @@
                 <i class="fas fa-users create-group-icon" title="Create Group" {{action "showGrpCreate" on="click"}}></i>
             </div>
         </div>
-    {{#each model.users as |message|}}
-        <li class="group" {{action "fetchchat" message "Private" }}>
-            <div class="avatar"><img src="assets/profile.png" alt=""></div>
-            <p class="GroupName">{{message.name}}</p>
-            <span class="GroupDescrp">{{message.mobile_number}}</span>
+        <div class="friends">
+            {{#each model.users as |message|}}
+                <li class="group" {{action "fetchchat" message "Private" }}>
+                    <div class="avatar"><img src="assets/profile.png" alt=""></div>
+                    <p class="GroupName">{{message.name}}</p>
+                    <span class="GroupDescrp">{{message.mobile_number}}</span>
 
-        </li>
+                </li>
 
-    {{/each}}
-        {{#each model.groups as |group|}}
-            <li class="group" {{action "fetchchat" group "Group" }}>
-                <div class="avatar"><img src="assets/profile.png" alt=""></div>
-                <p class="GroupName">{{group.name}}</p>
-                <span class="GroupDescrp"></span>
+            {{/each}}
+            {{#each model.groups as |group|}}
+                <li class="group" {{action "fetchchat" group "Group" }}>
+                    <div class="avatar"><img src="assets/profile.png" alt=""></div>
+                    <p class="GroupName">{{group.name}}</p>
 
-            </li>
+                </li>
 
-        {{/each}}
+            {{/each}}
+        </div>
+
 
 
     </div>
@@ -73,7 +75,7 @@
                         </div>
                     {{else}}
                         <div class="message me">
-                            <button>Fork Message from here</button>
+                            <button {{action "ForkMessage" message on="click"}}>Fork Message from here</button>
                             <div class="messageHeader">
                             </div>
                             <p class="messageContent">{{message.message}}</p>
@@ -100,10 +102,10 @@
         </div>
 
         <div class="messageCenter">
-        <form id="MessageForm" {{action (if isGroup "SendMessageOnGroup" "sendMessage") on="submit" }}>
+        <form id="MessageForm" >
             <input type="text" id="MessageInput" name="MessageInput">
             <button type="button" {{action "openStickerPicker"}}>stickers</button>
-            <button type="submit" class="Send">send</button>
+            <button type="submit" {{action (if isGroup "SendMessageOnGroup" "sendMessage") on="click" }}class="Send">send</button>
         </form>
         {{#if showStickerPicker}}
             <div class="sticker-picker" >
@@ -123,7 +125,7 @@
             <div class="grp-field">
                 <h3>Add Members</h3>
                 {{#each model.users as |message|}}
-                    <div class="groupnew" >
+                    <div class="group" >
                         <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
                         <p class="GroupName">{{message.name}}</p>
                         <span class="GroupDescrp">{{message.mobile_number}}</span>

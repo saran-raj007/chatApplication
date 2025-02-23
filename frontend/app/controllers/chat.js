@@ -197,6 +197,7 @@ export default Ember.Controller.extend({
                             // write code for group chat decrypt
                             var promises = [];
                             self.set('isAdmin',response.isAdmin);
+                            console.log(response.messages);
                             for(let msg of response.messages){
                                 let msg_pack;
                                 if(msg.dataFormat==="Text"){
@@ -709,7 +710,6 @@ export default Ember.Controller.extend({
             let isChecked = Ember.$("#all").prop("checked");
             let response_data;
 
-            // ✅ Fix: Handle member retrieval properly
             let getMembersPromise = Promise.resolve();
 
             if (isGroup && isChecked) {
@@ -733,6 +733,7 @@ export default Ember.Controller.extend({
 
             return getMembersPromise.then(() => {
                 let tempfork = forkNewMembers.concat(forkOldMembers);
+                forkOldMembers.pushObject(sender_id);
                 self.set('tempfork', tempfork);
 
                 let msg_pack = {
@@ -780,56 +781,81 @@ export default Ember.Controller.extend({
                     console.log(ViewGrpMembers);
                     console.log("ViewGrpMembers Length:", ViewGrpMembers.length);
 
-                    let encryptionPromises = response_data.messages.map(msg => {
-                        return Promise.allSettled(ViewGrpMembers.map(member => {
+                    let encryptionPromises = [];
+                    self.set('newForkMemberMessages', []); // Ensure it's initialized as an empty array
+
+                    for (let msg of response_data.messages) {
+                        let promises = [];
+                        let forkKeys = [];
+
+                        for (let member of ViewGrpMembers) {
                             if (!forkOldMembers.includes(member.user_id)) {
                                 let key = isGroup ? msg.enc_aes_key :
                                     (msg.sender_id === sender_id ? msg.aes_key_sender : msg.aes_key_receiver);
-
-                                // ✅ Return the promise correctly
-                                return CryptoUtils.decryptAESKey(key, RSAPrivateKey)
-                                    .then(dec_aes => CryptoUtils.encryptAESKey(dec_aes, member.rsa_public_key))
+                               // console.log(key);
+                                console.log(member.rsa_public_key);
+                                let promise = CryptoUtils.decryptAESKey(key, RSAPrivateKey)
+                                    .then(dec_aes => {
+                                        // Export the CryptoKey as raw ArrayBuffer
+                                        return window.crypto.subtle.exportKey("raw", dec_aes);
+                                    })
+                                    .then(arrayBuffer => {
+                                        // Encrypt the ArrayBuffer with the member's RSA public key
+                                        return CryptoUtils.encryptAESKey(arrayBuffer, member.rsa_public_key);
+                                    })
                                     .then(enc_aes => {
-                                        forkKeys.pushObject({ receiver_id: member.user_id, enc_aes });
+                                        forkKeys.push({ receiver_id: member.user_id, enc_aes: enc_aes });
+                                        console.log(forkKeys);
                                     });
+
+                                promises.push(promise);
                             } else if (!isGroup) {
-                                forkKeys.pushObject({ receiver_id: msg.receiver_id, enc_aes: msg.aes_key_receiver });
-                                forkKeys.pushObject({ receiver_id: msg.sender_id, enc_aes: msg.aes_key_sender });
-                                return Promise.resolve();
+                                forkKeys.push({ receiver_id: msg.receiver_id, enc_aes: msg.aes_key_receiver });
+                                forkKeys.push({ receiver_id: msg.sender_id, enc_aes: msg.aes_key_sender });
+                                break; // Stops the loop for this message
                             }
-                        }).filter(Boolean));
-                    });
+                        }
+                        console.log(promises);
+                        alert("^");
+                        // Create the message object
+                        let newForkMemberMessage = {
+                            mess_id: msg.mess_id,
+                            sender_id: msg.sender_id,
+                            receiver_id: isGroup ? msg.grp_id : msg.receiver_id,
+                            message: msg.message,
+                            iv: msg.iv,
+                            created_at: msg.timestamp,
+                            enc_aes_keys: forkKeys
+                        };
 
+                        // Wait for encryption before pushing the message
+                        let messagePromise = Promise.allSettled(promises).then(() => {
+                            self.get('newForkMemberMessages').pushObject(newForkMemberMessage);
+                        });
+
+                        encryptionPromises.push(messagePromise);
+                    }
+
+                    // Wait for all encryption to complete
                     return Promise.all(encryptionPromises);
-                });
-            }).then(() => {
-                let newForkMemberMessages = response_data.messages.map(msg => ({
-                    mess_id: msg.mess_id,
-                    sender_id: msg.sender_id,
-                    receiver_id: msg.receiver_id,
-                    message: msg.message,
-                    iv: msg.iv,
-                    created_at: msg.timestamp,
-                    enc_aes_keys: forkKeys
-                }));
+                }).then(() => {
+                    return Ember.$.ajax({
+                        url: 'http://localhost:8080/chatApplication_war_exploded/CreateForkMessage',
+                        type: 'POST',
+                        data: JSON.stringify({
+                            isGroup: isGroup,
+                            fork_id: self.get('forkID'),
+                            messages: self.get('newForkMemberMessages'),
+                            receiver_id_file: receiver_id,
+                            msg_time: self.get('forkedmsg').timestamp,
+                        }),
+                        xhrFields: { withCredentials: true }
+                    });
+                }).then(() => {
+                    console.log("Fork message created successfully");
+                }).catch(error => console.error(error));
 
-                self.set('newForkMemberMessages', newForkMemberMessages);
-
-                return Ember.$.ajax({
-                    url: 'http://localhost:8080/chatApplication_war_exploded/CreateForkMessage',
-                    type: 'POST',
-                    data: JSON.stringify({
-                        isGroup: isGroup,
-                        fork_id: self.get('forkID'),
-                        messages: newForkMemberMessages,
-                        receiver_id_file: receiver_id,
-                        msg_time: self.get('forkedmsg').timestamp,
-                    }),
-                    xhrFields: { withCredentials: true }
-                });
-            }).then(() => {
-                console.log("Fork message created successfully");
-            }).catch(error => console.error(error));
+            });
         }
 
 

@@ -3,6 +3,7 @@ package com.example.chatapplication;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Date;
@@ -23,8 +24,12 @@ public class UserSessionGenerate {
         return builder().setSubject(user_id).setIssuedAt(new Date()).claim("ip", userIp).claim("ua", userAgent).setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)).signWith(SignatureAlgorithm.HS256, SECRET_KEY).compact();
     }
 
-    public static String  validateToken(String token,  HttpServletRequest request){
-        Claims cal = Jwts.parser().setSigningKey(SECRET_KEY).build().parseClaimsJws(token).getBody();
+    public static String  validateToken(HttpServletRequest request){
+        String stoken =cookieExtract(request);
+        if(stoken == null){
+            return stoken;
+        }
+        Claims cal = Jwts.parser().setSigningKey(SECRET_KEY).build().parseClaimsJws(stoken).getBody();
         String user_id = cal.getSubject();
         String tokenIp = cal.get("ip", String.class);
         String tokenUa = cal.get("ua", String.class);
@@ -57,5 +62,20 @@ public class UserSessionGenerate {
         return null;
 
     }
+    private static String cookieExtract(HttpServletRequest request){
+        Cookie[] cookies = request.getCookies();
+
+        if (cookies != null){
+            for (Cookie cookie : cookies){
+                if("SessID".equals(cookie.getName())){
+                    return  cookie.getValue();
+
+                }
+            }
+        }
+        return null;
+
+    }
+
 
 }

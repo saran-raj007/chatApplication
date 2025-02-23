@@ -23,10 +23,9 @@ import org.json.JSONObject;
 public class FetchchatServlet extends HttpServlet {
 
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String stoken =cookieExtract(request);
-        String sender_id = UserSessionGenerate.validateToken(stoken,request);
+        String sender_id = UserSessionGenerate.validateToken(request);
         JSONObject jsonResponse = new JSONObject();
-        if(stoken!=null && sender_id!=null ){
+        if(sender_id!=null ){
 
             JsonObject jsonObject = JsonParser.parseReader(new InputStreamReader(request.getInputStream())).getAsJsonObject();
             String receiver_id = jsonObject.get("userid").getAsString();
@@ -64,6 +63,7 @@ public class FetchchatServlet extends HttpServlet {
 
                         }
                         else{
+                            System.out.println(receiver_id+"^^"+sender_id);
                             ps = con.prepareStatement(qryForgrpMsg);
                             ps.setString(1, receiver_id);
                             ps.setString(2, sender_id);
@@ -116,20 +116,7 @@ public class FetchchatServlet extends HttpServlet {
 
 
     }
-    private String cookieExtract(HttpServletRequest request){
-        Cookie[] cookies = request.getCookies();
 
-        if (cookies != null){
-            for (Cookie cookie : cookies){
-                if("SessID".equals(cookie.getName())){
-                    return  cookie.getValue();
-
-                }
-            }
-        }
-        return null;
-
-    }
     private List<JSONObject> MsgPackForPrivate(ResultSet rs, ResultSet rss) throws SQLException {
         List<JSONObject> msgList = new ArrayList<>();
         boolean textMsg = rs.next();

@@ -25,9 +25,8 @@ import org.json.JSONObject;
 public class FetchUsersForGroup extends HttpServlet {
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json");
-        String stoken =cookieExtract(request);
-        String sender_id = UserSessionGenerate.validateToken(stoken,request);
-        if(stoken != null &&sender_id != null){
+        String sender_id = UserSessionGenerate.validateToken(request);
+        if(sender_id != null){
             JsonObject jsonObject = JsonParser.parseReader(new InputStreamReader(request.getInputStream())).getAsJsonObject();
             String grp_id = jsonObject.get("grp_id").getAsString();
             Connection con =DBconnection.getConnection();

@@ -24,9 +24,8 @@ public class FetchGroupMembersServlet extends HttpServlet {
 
     public  void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json");
-        String stoken =cookieExtract(request);
-        String sender_id = UserSessionGenerate.validateToken(stoken,request);
-        if(stoken != null &&sender_id != null){
+        String sender_id = UserSessionGenerate.validateToken(request);
+        if(sender_id != null){
             JsonObject jsonObject = JsonParser.parseReader(new InputStreamReader(request.getInputStream())).getAsJsonObject();
             String grp_id = jsonObject.get("grp_id").getAsString();
             Connection con =DBconnection.getConnection();
@@ -46,6 +45,7 @@ public class FetchGroupMembersServlet extends HttpServlet {
                         grpMember.put("name", rs.getString("name"));
                         grpMember.put("mobile_number", rs.getString("mobile_number"));
                         grpMember.put("isAdmin", rs.getBoolean("isAdmin"));
+                        grpMember.put("rsa_public_key",rs.getString("rsa_public_key"));
                         grpMembers.add(grpMember);
                     }
                     JSONObject jsonResponse = new JSONObject();
@@ -67,19 +67,6 @@ public class FetchGroupMembersServlet extends HttpServlet {
 
         }
     }
-    private String cookieExtract(HttpServletRequest request){
-        Cookie[] cookies = request.getCookies();
 
-        if (cookies != null){
-            for (Cookie cookie : cookies){
-                if("SessID".equals(cookie.getName())){
-                    return  cookie.getValue();
-
-                }
-            }
-        }
-        return null;
-
-    }
 
 }

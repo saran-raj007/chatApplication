@@ -22,13 +22,10 @@ import org.json.JSONObject;
 public class ChatServlet extends HttpServlet {
 
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String stoken =cookieExtract(request);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        String usrid = UserSessionGenerate.validateToken(stoken,request);
-
-        if(stoken!=null && usrid!=null ){
-
+        String usrid = UserSessionGenerate.validateToken(request);
+        if(usrid!=null){
             List<JSONObject> userList = new ArrayList<>();
             List<JSONObject> groupList = new ArrayList<>();
 
@@ -89,19 +86,6 @@ public class ChatServlet extends HttpServlet {
         }
 
     }
-    private String cookieExtract(HttpServletRequest request){
-        Cookie[] cookies = request.getCookies();
 
-        if (cookies != null){
-            for (Cookie cookie : cookies){
-                if("SessID".equals(cookie.getName())){
-                    return  cookie.getValue();
-
-                }
-            }
-        }
-        return null;
-
-    }
 
 }

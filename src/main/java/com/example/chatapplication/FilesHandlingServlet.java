@@ -26,10 +26,9 @@ import org.json.JSONObject;
 public class FilesHandlingServlet extends HttpServlet {
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json");
-        String stoken =cookieExtract(request);
-        String sender_id = UserSessionGenerate.validateToken(stoken,request);
+        String sender_id = UserSessionGenerate.validateToken(request);
         JSONObject jsonResponse = new JSONObject();
-        if(stoken != null &&sender_id != null){
+        if(sender_id != null){
             Part filePart = request.getPart("sticker");
             String uniqueFileName = UUID.randomUUID().toString() + ".png";
             String uploadPath = getServletContext().getRealPath("") + File.separator + "uploads";
@@ -60,13 +59,5 @@ public class FilesHandlingServlet extends HttpServlet {
         return null;
 
     }
-    private String extractFileName(Part part) {
-        String contentDisp = part.getHeader("content-disposition");
-        for (String content : contentDisp.split(";")) {
-            if (content.trim().startsWith("filename")) {
-                return content.substring(content.indexOf("=") + 2, content.length() - 1);
-            }
-        }
-        return null;
-    }
+
 }

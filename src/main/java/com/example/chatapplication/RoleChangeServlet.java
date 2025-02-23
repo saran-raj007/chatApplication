@@ -24,10 +24,9 @@ public class RoleChangeServlet extends HttpServlet {
 
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json");
-        String stoken = cookieExtract(request);
-        String sender_id = UserSessionGenerate.validateToken(stoken, request);
+        String sender_id = UserSessionGenerate.validateToken(request);
         JSONObject jsonResponse = new JSONObject();
-        if(stoken != null && sender_id != null) {
+        if(sender_id != null) {
             JsonObject jsonObject = JsonParser.parseReader(new InputStreamReader(request.getInputStream())).getAsJsonObject();
             String member_id=jsonObject.get("member_id").getAsString();
             String grp_id=jsonObject.get("grp_id").getAsString();
@@ -67,19 +66,6 @@ public class RoleChangeServlet extends HttpServlet {
         }
     }
 
-    private String cookieExtract(HttpServletRequest request){
-        Cookie[] cookies = request.getCookies();
 
-        if (cookies != null){
-            for (Cookie cookie : cookies){
-                if("SessID".equals(cookie.getName())){
-                    return  cookie.getValue();
-
-                }
-            }
-        }
-        return null;
-
-    }
 
 }
