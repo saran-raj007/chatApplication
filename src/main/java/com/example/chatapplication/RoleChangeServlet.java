@@ -30,6 +30,11 @@ public class RoleChangeServlet extends HttpServlet {
             JsonObject jsonObject = JsonParser.parseReader(new InputStreamReader(request.getInputStream())).getAsJsonObject();
             String member_id=jsonObject.get("member_id").getAsString();
             String grp_id=jsonObject.get("grp_id").getAsString();
+            if(!AdminVerification.adminVerfiy(sender_id,grp_id)){
+                jsonResponse.put("message","unauthorized access");
+                response.getWriter().write(jsonResponse.toString());
+                return;
+            }
             boolean state=jsonObject.get("state").getAsBoolean();
             Connection con =DBconnection.getConnection();
             PreparedStatement ps =null;

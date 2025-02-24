@@ -1,9 +1,10 @@
 import Ember from 'ember';
+import ENV from 'demoapp/config/environment';
 
 export default Ember.Route.extend({
     model() {
         return Ember.$.ajax({
-            url: 'http://localhost:8080/chatApplication_war_exploded/ChatServlet',
+            url: ENV.apiHost+'ChatServlet',
             type: 'GET',
             xhrFields: { withCredentials: true }
         }).fail((error) => {

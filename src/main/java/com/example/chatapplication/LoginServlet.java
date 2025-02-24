@@ -51,10 +51,11 @@ public class LoginServlet extends HttpServlet {
                         Cookie jwtCookie = new Cookie("SessID", token);
                         jwtCookie.setPath("/");
                         jwtCookie.setHttpOnly(true);
-                        jwtCookie.setSecure(true);
+                        jwtCookie.setSecure(!request.getServerName().equals("localhost"));
                         jwtCookie.setMaxAge(60*10);
-                        jwtCookie.setAttribute("SameSite", "Lax");
+                        jwtCookie.setAttribute("SameSite", "None");
                         response.addCookie(jwtCookie);
+                        response.setHeader("Set-Cookie", "SessID=" + token + "; Path=/; HttpOnly; Secure; SameSite=None");
                         respo.put("message", "Login Successful");
                         response.getWriter().write(respo.toString());
                         response.setStatus(HttpServletResponse.SC_OK);

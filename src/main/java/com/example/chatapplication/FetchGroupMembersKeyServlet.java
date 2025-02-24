@@ -32,11 +32,6 @@ public class FetchGroupMembersKeyServlet extends HttpServlet {
         if(sender_id != null){
             JsonObject jsonObject = JsonParser.parseReader(new InputStreamReader(request.getInputStream())).getAsJsonObject();
             String group_id = jsonObject.get("group_id").getAsString();
-//            JsonArray jsonArray = jsonObject.getAsJsonArray("grpMembers");
-//            List<String> groupMembers = new ArrayList<>();
-//            for (JsonElement element : jsonArray) {
-//                groupMembers.add(element.getAsString());
-//            }
             List<JSONObject> membersKeys = new ArrayList<>();
 
             Connection con = DBconnection.getConnection();
@@ -44,10 +39,8 @@ public class FetchGroupMembersKeyServlet extends HttpServlet {
             ResultSet rs = null;
 
             if(con!=null){
-               // String qry ="insert into chat_groups (group_id, name, created_by) values (?,?,?)";
-                //String qry_gm ="insert into group_members (id, grp_id,user_id,role,added_by) values (?,?,?,?,?)";
+
                 String qryforkey ="select * from users where user_id !=? and user_id in (select user_id from group_members where grp_id =?)";
-                //String grp_id = IdGeneration.generateRandomID();
                 try{
                     ps =con.prepareStatement(qryforkey);
                     ps.setString(1,sender_id);

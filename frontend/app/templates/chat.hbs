@@ -1,5 +1,11 @@
-<link rel="stylesheet" href="assets/chat.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; report-uri http://localhost:4200/csp-report;">
+<link rel="stylesheet" href="assets/chat.css">
+
+
 <main>
     <div class="sideNav1">
 
@@ -50,11 +56,11 @@
             </li>
             <div class="grpOperations">
                 {{#if isGroup}}
-                    <i class="fas fa-sign-out-alt logout-icon" title="Logout" {{action "ExitGroup" model.curruser.user_id on="click"}}>></i>
+                    <i class="bi bi-box-arrow-right text-danger  fs-1" title="Exit"  style="cursor: pointer;" {{action "ExitGroup" model.curruser.user_id on="click"}}></i>
                     {{#if isAdmin}}
-                     <button {{action "addMembers" on="click"}}>Add Member</button>
+                        <i class="bi bi-person-add add fs-1" title="Add members" {{action "addMembers" on="click"}} style="cursor: pointer;"></i>
                     {{/if}}
-                    <button {{action "OpenViweMember" on="click"}}>View Members</button>
+                    <i class="bi bi-eye-fill text-warning fs-1" title="View members" {{action "OpenViweMember" on="click"}} style="cursor: pointer;"></i>
                 {{/if}}
             </div>
         </div>
@@ -63,26 +69,56 @@
             {{#each AllMessage as |message|}}
                 {{#if (eq message.dataFormat "Text")}}
                     {{#if (neq message.sender_id model.curruser.user_id)}}
-                        <div class="message you" {{action "showForkMessageOption" on="click"}}>
-                            <button {{action "ForkMessage" message on="click"}}>Fork Message from here</button>
-                            <div class="messageHeader">
+                        <div class="message  card d-flex flex-column w-25 you" {{action "toggleMenu"   on="click"}}>
+                            <div class="d-flex flex-row justify-content-between">
                                 <span class="senderName">{{message.sender_name}}</span>
+                                <div class="dropdown">
+                                    <button class="btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <svg width="12" height="14" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
+                                            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+                                        </svg>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-dark bg-dark">
+                                        <li><a class="dropdown-item" {{action "ForkMessage" message on="click"}}>fork from here</a></li>
+
+                                    </ul>
+                                </div>
+
                             </div>
+                            <hr>
+
                             <p class="messageContent">{{message.message}}</p>
-                            <div class="messageDetails">
-                                <span class="messageTime">{{message.timestamp}}</span>
-                            </div>
+
                         </div>
+
                     {{else}}
-                        <div class="message me">
-                            <button {{action "ForkMessage" message on="click"}}>Fork Message from here</button>
-                            <div class="messageHeader">
+                        <div class="message me  card d-flex flex-column w-25">
+                            <div class="d-flex flex-row justify-content-between">
+                                <span class="senderName">you</span>
+                                <div class="dropdown">
+                                    <button class="btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <svg width="12" height="14" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
+                                            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+                                        </svg>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-dark bg-dark">
+                                        <li><a class="dropdown-item" {{action "ForkMessage" message on="click"}}>fork from here</a></li>
+
+                                    </ul>
+                                </div>
                             </div>
-                            <p class="messageContent">{{message.message}}</p>
+                            <hr>
+
+                            <div class="d-flex justify-content-start">
+                                <p class="messageContent">{{message.message}}</p>
+                            </div>
+
                             <div class="messageDetails">
                                 <span class="messageTime">{{message.timestamp}}</span>
                             </div>
+
                         </div>
+
                     {{/if}}
                 {{/if}}
                 {{#if (eq message.dataFormat "Sticker")}}
@@ -110,27 +146,30 @@
         {{#if showStickerPicker}}
             <div class="sticker-picker" >
                 {{#each stickers as |sticker|}}
-                    <img src="{{sticker.url}}" class="sticker-icon" {{action "extractSticker" sticker.url}}>
+                    <img src="{{sticker.url}}" class="sticker-icon" {{action "extractSticker" sticker.url on="click"}}>
                 {{/each}}
             </div>
         {{/if}}
         </div>
     </section>
     <section class="createGroup">
-
         <form {{action "CreateNewGroup" model.curruser.user_id on="submit" }}>
-            <div class="grp-field">
-                <label for="grpName">Group Name: </label><input type="text" name="grpNmae" id="grpName" required>
-            </div>
-            <div class="grp-field">
-                <h3>Add Members</h3>
+            <div class="d-flex justify-content-between">
+                <h3 class="bg-green">Create New Group</h3>
+                <button type="button" class="btn-close" {{action "closeCreateGrp" on="click"}} aria-label="Close"></button>
+            </div><br>
+            <div class="d-flex align-items-center gap-4">
+                <label for="grpName">Group Name: </label><input type="text" name="grpNmae" id="grpName" style="width: 70%;padding: 10px;" required>
+            </div><br>
+            <br>
+            <div class="d-flex flex-column gap-2">
+                <h3>Add Members</h3><br>
                 {{#each model.users as |message|}}
-                    <div class="group" >
+                    <div class=" d-flex justify-content-around align-items-center" >
                         <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
-                        <p class="GroupName">{{message.name}}</p>
-                        <span class="GroupDescrp">{{message.mobile_number}}</span>
-                        <input type="checkbox"   class="GroupDescrp" {{action "addUsertoGroup" message.user_id on="change"}}  >
-
+                        <p>{{message.name}}</p>
+                        <span >{{message.mobile_number}}</span>
+                        <input type="checkbox"  {{action "addUsertoGroup" message.user_id on="change"}}  >
                     </div>
                     <hr>
                 {{/each}}
@@ -142,14 +181,14 @@
     </section>
 
     <section class="ViewGrpMember">
-        <div class="viewHeader">
+        <div class="d-flex justify-content-between">
             <h1>Group Members</h1><br>
-            <button {{action "closeViewMember" on="click"}}>Close</button>
+            <button type="button" class="btn-close" {{action "closeViewMember" on="click"}} aria-label="Close"></button>
         </div><br>
 
         <form {{action "RemoveMember" model.curruser.user_id on="submit" }}>
             {{#each ViewGrpMembers as |member|}}
-                <div class="groupnew" >
+                <div class="card d-flex align-items-center gap-4 flex-row p-2" >
                     <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
                     <p class="GroupName">{{member.name}}</p>
                     <span class="">{{member.mobile_number}}</span>
@@ -161,13 +200,16 @@
                         {{#if (eq model.curruser.user_id  member.user_id)}}
                         <span>(YOU)</span>
                     {{/if}}
+
+
                         {{#if isAdmin}}
                             {{#if (neq model.curruser.user_id member.user_id)}}
-                                <button {{action "ExitGroup" member.user_id}}>Remove</button>
+                                <i class="bi bi-person-x-fill fs-1 text-danger" title="Remove" style="cursor: pointer;" {{action "ExitGroup" member.user_id on="click"}}></i>
                                 {{#if  member.isAdmin}}
-                                    <button {{action "makeAdmin" member.user_id false}}>Dismiss as Admin</button>
+                                    <i class="bi bi-person-fill-down fs-1 text-danger" title="Dismiss as Admin" style="cursor: pointer;" {{action "makeAdmin" member.user_id false on="click"}}></i>
                                 {{else}}
-                                    <button {{action "makeAdmin" member.user_id true}}>Make as Admin</button>
+                                    <i class="bi bi-person-fill-up fs-1 text-success" title="Make as Admin" style="cursor: pointer;" {{action "makeAdmin" member.user_id true on="click"}}></i>
+
                                 {{/if}}
                             {{/if}}
                         {{/if}}
@@ -181,17 +223,17 @@
 
     <section class="addMembers">
         <form {{action "addNewMember"  on="submit" }}>
-            <div class="viewHeader">
-                <h1>Add Members</h1><br>
-                <button {{action "closeViewMember" on="click"}}>Close</button>
+            <div class="d-flex justify-content-between">
+                <h1>Add New Members</h1><br>
+                <button type="button" class="btn-close" {{action "closeViewMember" on="click"}} aria-label="Close"></button>
             </div><br>
-            <div class="grp-field">
+            <div class="d-flex- flex-column">
                 {{#each ViewGrpMembers as |member|}}
-                    <div class="groupnew" >
+                    <div class="card d-flex justify-content-around align-items-center flex-row p-3" >
                         <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
                         <p class="">{{member.name}}</p>
                         <span class="">{{member.mobile_number}}</span>
-                        <input type="checkbox"   class="GroupDescrp" {{action "addUsertoGroup" member.user_id on="change"}}  >
+                        <input type="checkbox"    {{action "addUsertoGroup" member.user_id on="change"}}  >
 
                     </div>
                     <hr>
@@ -204,7 +246,11 @@
     </section>
 
     <section class="forkmsg">
-        <h1><strong>Add users to forked chat</strong></h1><br>
+        <div class="d-flex justify-content-between">
+            <h1><strong>Add users to forked chat</strong></h1><br>
+            <button type="button" class="btn-close" {{action "closeFork" on="click"}} aria-label="Close"></button>
+        </div>
+
         <form {{action "CreatForkMessage"  on="submit" }}>
             <div class="start-fork">
                 <strong id="fork-sender">sender</strong>
@@ -213,7 +259,7 @@
             </div>
             <div class="grp-field">
                 <h3>Add Users</h3>
-                {{#each model.users as |message|}}
+                {{#each newMembersForFork as |message|}}
                     <div class="fork-user" >
                         <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
                         <p class="GroupName">{{message.name}}</p>
@@ -225,7 +271,7 @@
             </div>
             <div class="data-field">
             <div class="chat-title">
-                <label for="grpName">Chat Title: </label><input type="text" name="chat-title" id="chat-title" required>
+                <label for="chat-title">Chat Title: </label><input type="text" name="chat-title" id="chat-title" required>
             </div>
             <label><input type="checkbox" id="all" name="all"> Include all participants of this conversation</label>
             </div>

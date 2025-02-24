@@ -32,9 +32,7 @@ define('demoapp/components/app-version', ['exports', 'ember-cli-app-version/comp
 define('demoapp/controllers/array', ['exports', '@ember/controller'], function (exports, _emberController) {
   exports['default'] = _emberController['default'];
 });
-define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", "demoapp/services/storage-service"], function (exports, _ember, _demoappUtilsCrypto, _demoappServicesStorageService) {
-    //import {console} from "ember-cli-qunit";
-
+define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", "demoapp/services/storage-service", "demoapp/config/environment"], function (exports, _ember, _demoappUtilsCrypto, _demoappServicesStorageService, _demoappConfigEnvironment) {
     exports["default"] = _ember["default"].Controller.extend({
         AllMessage: _ember["default"].A(),
         sender_id: '',
@@ -60,6 +58,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
         secretKey: null,
         newForkMemberMessages: _ember["default"].A(),
         forkKeys: _ember["default"].A(),
+        newMembersForFork: _ember["default"].A(),
         stickers: [{ url: "/Stickers/dumbbell.png" }, { url: "/Stickers/laptop.png" }, { url: "/Stickers/listening.png" }, { url: "/Stickers/tea-time.png" }],
 
         init: function init() {
@@ -81,7 +80,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     var receivedMessage = JSON.parse(event.data);
                     var msg_pack = undefined;
                     if (receivedMessage.dataFormat === "Text") {
-                        _demoappServicesStorageService["default"].getPrivateKey("privateKey").then(function (privateKey) {
+                        _demoappServicesStorageService["default"].getPrivateKey(self.get('sender_id')).then(function (privateKey) {
                             _demoappUtilsCrypto["default"].decryptMessage(receivedMessage.message, receivedMessage.aes_key_receiver, privateKey, receivedMessage.iv).then(function (message) {
                                 msg_pack = {
                                     sender_id: receivedMessage.sender_id,
@@ -143,7 +142,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                 self.get('AllMessage').clear();
                 self.get('ViewGrpMembers').clear();
                 _ember["default"].$.ajax({
-                    url: 'http://localhost:8080/chatApplication_war_exploded/FetchchatServlet',
+                    url: _demoappConfigEnvironment["default"].apiHost + 'FetchchatServlet',
                     type: 'POST',
                     contentType: 'application/json',
                     dataType: 'json',
@@ -155,7 +154,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                         _ember["default"].$(".createGroup").css("display", "none");
                         _ember["default"].$(".ViewGrpMember").css("display", "none");
                         _ember["default"].$(".Chat").css("display", "block");
-                        _demoappServicesStorageService["default"].getPrivateKey("privateKey").then(function (privateKey) {
+                        _demoappServicesStorageService["default"].getPrivateKey(self.get('sender_id')).then(function (privateKey) {
                             if (chat === "Private") {
                                 var promises = [];
                                 var _iteratorNormalCompletion = true;
@@ -318,8 +317,6 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                         })["catch"](function (error) {
                             console.log("Error on fetch key form indexDB:", error);
                         });
-
-                        //self.set('AllMessage', response.messages);
                         _demoappUtilsCrypto["default"].generateAESKey().then(function (aesKey) {
                             var receiverPublicKey = response.key;
                             var ownPublicKey = self.get('rsaPubown');
@@ -333,7 +330,6 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                                 });
                             }
                             _demoappUtilsCrypto["default"].encryptAESKey(aesKey, ownPublicKey).then(function (encryptedAESKey) {
-                                // console.log("Encrypted AES Key:", encryptedAESKey);
                                 self.set('own', encryptedAESKey);
                             })["catch"](function (error) {
                                 console.error("Error encrypting AES Key:", error);
@@ -409,13 +405,18 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                 _ember["default"].$("ViewMember").css("display", "none");
                 _ember["default"].$(".createGroup").css("display", "block");
             },
+            closeCreateGrp: function closeCreateGrp() {
+                _ember["default"].$(".Chat").css("display", "none");
+                _ember["default"].$("ViewMember").css("display", "none");
+                _ember["default"].$(".createGroup").css("display", "none");
+                _ember["default"].$(".empty-page").css("display", "block");
+            },
             addUsertoGroup: function addUsertoGroup(user_id) {
                 if (event.target.checked) {
                     this.get('groupMembers').pushObject(user_id);
                 } else {
                     this.get('groupMembers').removeObject(user_id);
                 }
-                // console.log(this.get('groupMembers'));
             },
             CreateNewGroup: function CreateNewGroup(creater_id) {
                 var self = this;
@@ -429,7 +430,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                 };
 
                 _ember["default"].$.ajax({
-                    url: 'http://localhost:8080/chatApplication_war_exploded/CreateNewGroup',
+                    url: _demoappConfigEnvironment["default"].apiHost + 'CreateNewGroup',
                     type: 'POST',
                     data: JSON.stringify(grpDetails),
                     xhrFields: { withCredentials: true },
@@ -464,7 +465,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                 var socket = self.get('socket');
                 var AESkey = self.get("AESkey");
                 _ember["default"].$.ajax({
-                    url: 'http://localhost:8080/chatApplication_war_exploded/FetchGroupMembersKey',
+                    url: _demoappConfigEnvironment["default"].apiHost + 'FetchGroupMembersKey',
                     type: 'POST',
                     contentType: 'application/json',
                     dataType: 'json',
@@ -522,7 +523,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     grp_id: self.get('receiver_id')
                 };
                 _ember["default"].$.ajax({
-                    url: 'http://localhost:8080/chatApplication_war_exploded/ExitGroupServlet',
+                    url: _demoappConfigEnvironment["default"].apiHost + 'ExitGroupServlet',
                     type: 'POST',
                     contentType: 'application/json',
                     dataType: 'json',
@@ -551,7 +552,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                 self.get('ViewGrpMembers').clear();
 
                 _ember["default"].$.ajax({
-                    url: 'http://localhost:8080/chatApplication_war_exploded/FetchGroupMembers',
+                    url: _demoappConfigEnvironment["default"].apiHost + 'FetchGroupMembers',
                     type: 'POST',
                     contentType: 'application/json',
                     dataType: 'json',
@@ -606,7 +607,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                 };
 
                 _ember["default"].$.ajax({
-                    url: 'http://localhost:8080/chatApplication_war_exploded/RoleChange',
+                    url: _demoappConfigEnvironment["default"].apiHost + 'RoleChange',
                     type: 'POST',
                     contentType: 'application/json',
                     dataType: 'json',
@@ -633,7 +634,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                 _ember["default"].$(".Chat").css("display", "none");
                 _ember["default"].$(".addMembers").css("display", "block");
                 _ember["default"].$.ajax({
-                    url: 'http://localhost:8080/chatApplication_war_exploded/FetchUsers',
+                    url: _demoappConfigEnvironment["default"].apiHost + 'FetchUsers',
                     type: 'POST',
                     contentType: 'application/json',
                     dataType: 'json',
@@ -679,7 +680,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     grpMembers: self.get('groupMembers')
                 };
                 _ember["default"].$.ajax({
-                    url: 'http://localhost:8080/chatApplication_war_exploded/AddNewMembers',
+                    url: _demoappConfigEnvironment["default"].apiHost + 'AddNewMembers',
                     type: 'POST',
                     data: JSON.stringify(newMembers),
                     xhrFields: { withCredentials: true },
@@ -721,7 +722,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                 formData.append('sticker', sticker);
 
                 _ember["default"].$.ajax({
-                    url: 'http://localhost:8080/chatApplication_war_exploded/FilesHandling',
+                    url: _demoappConfigEnvironment["default"].apiHost + 'FilesHandling',
                     type: 'POST',
                     data: formData,
                     processData: false,
@@ -756,12 +757,56 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
             },
             ForkMessage: function ForkMessage(message) {
                 var self = this;
+                self.get('newMembersForFork').clear();
+                var isGroup = self.get('isGroup');
+                var url = isGroup ? _demoappConfigEnvironment["default"].apiHost + "FetchUsers" : _demoappConfigEnvironment["default"].apiHost + "FetchNewUsersForFork";
+                var datas = {
+                    grp_id: self.get('receiver_id')
+                };
+                _ember["default"].$.ajax({
+                    url: url,
+                    type: 'POST',
+                    data: JSON.stringify(datas),
+                    contentType: 'json',
+                    xhrFields: { withCredentials: true },
+                    success: function success(response) {
+                        var _iteratorNormalCompletion5 = true;
+                        var _didIteratorError5 = false;
+                        var _iteratorError5 = undefined;
+
+                        try {
+                            for (var _iterator5 = response.users[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+                                var user = _step5.value;
+
+                                self.get('newMembersForFork').pushObject(user);
+                            }
+                        } catch (err) {
+                            _didIteratorError5 = true;
+                            _iteratorError5 = err;
+                        } finally {
+                            try {
+                                if (!_iteratorNormalCompletion5 && _iterator5["return"]) {
+                                    _iterator5["return"]();
+                                }
+                            } finally {
+                                if (_didIteratorError5) {
+                                    throw _iteratorError5;
+                                }
+                            }
+                        }
+                    },
+                    error: function error(_error9) {
+                        console.log(_error9);
+                    }
+
+                });
+
                 _ember["default"].$(".createGroup").css("display", "none");
                 _ember["default"].$(".ViewGrpMember").css("display", "none");
                 _ember["default"].$(".addMembers").css("display", "none");
                 _ember["default"].$(".Chat").css("display", "none");
                 _ember["default"].$(".forkmsg").css("display", "block");
-                document.getElementById("fork-sender").textContent = message.sender_id;
+                document.getElementById("fork-sender").textContent = message.sender_name;
                 document.getElementById("fork-msg").textContent = message.message;
                 document.getElementById("fork-time").textContent = message.timestamp;
                 self.set('forkedmsg', message);
@@ -812,7 +857,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
 
                     // 1️⃣ Create new group chat
                     return _ember["default"].$.ajax({
-                        url: 'http://localhost:8080/chatApplication_war_exploded/CreateNewGroup',
+                        url: _demoappConfigEnvironment["default"].apiHost + 'CreateNewGroup',
                         type: 'POST',
                         data: JSON.stringify(msg_pack),
                         xhrFields: { withCredentials: true }
@@ -820,7 +865,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                 }).then(function (response) {
                     self.set('forkID', response.grp_id);
                     return _ember["default"].$.ajax({
-                        url: 'http://localhost:8080/chatApplication_war_exploded/FetchMessageFork',
+                        url: _demoappConfigEnvironment["default"].apiHost + 'FetchMessageFork',
                         type: 'POST',
                         data: JSON.stringify({
                             msg_id: self.get('forkedmsg').mess_id,
@@ -844,42 +889,40 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                         }, 500);
                     });
                 }).then(function (ViewGrpMembers) {
-                    return _demoappServicesStorageService["default"].getPrivateKey("privateKey").then(function (RSAPrivateKey) {
+                    return _demoappServicesStorageService["default"].getPrivateKey(self.get('sender_id')).then(function (RSAPrivateKey) {
                         self.set('secretKey', RSAPrivateKey);
                         console.log(ViewGrpMembers);
                         console.log("ViewGrpMembers Length:", ViewGrpMembers.length);
 
                         var encryptionPromises = [];
-                        self.set('newForkMemberMessages', []); // Ensure it's initialized as an empty array
+                        self.set('newForkMemberMessages', []);
 
-                        var _iteratorNormalCompletion5 = true;
-                        var _didIteratorError5 = false;
-                        var _iteratorError5 = undefined;
+                        var _iteratorNormalCompletion6 = true;
+                        var _didIteratorError6 = false;
+                        var _iteratorError6 = undefined;
 
                         try {
                             var _loop3 = function () {
-                                var msg = _step5.value;
+                                var msg = _step6.value;
 
                                 var promises = [];
                                 var forkKeys = [];
 
-                                _iteratorNormalCompletion6 = true;
-                                _didIteratorError6 = false;
-                                _iteratorError6 = undefined;
+                                _iteratorNormalCompletion7 = true;
+                                _didIteratorError7 = false;
+                                _iteratorError7 = undefined;
 
                                 try {
                                     var _loop4 = function () {
-                                        var member = _step6.value;
+                                        var member = _step7.value;
 
                                         if (!forkOldMembers.includes(member.user_id)) {
                                             var key = isGroup ? msg.enc_aes_key : msg.sender_id === sender_id ? msg.aes_key_sender : msg.aes_key_receiver;
-                                            // console.log(key);
+
                                             console.log(member.rsa_public_key);
                                             var promise = _demoappUtilsCrypto["default"].decryptAESKey(key, RSAPrivateKey).then(function (dec_aes) {
-                                                // Export the CryptoKey as raw ArrayBuffer
                                                 return window.crypto.subtle.exportKey("raw", dec_aes);
                                             }).then(function (arrayBuffer) {
-                                                // Encrypt the ArrayBuffer with the member's RSA public key
                                                 return _demoappUtilsCrypto["default"].encryptAESKey(arrayBuffer, member.rsa_public_key);
                                             }).then(function (enc_aes) {
                                                 forkKeys.push({ receiver_id: member.user_id, enc_aes: enc_aes });
@@ -890,33 +933,32 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                                         } else if (!isGroup) {
                                             forkKeys.push({ receiver_id: msg.receiver_id, enc_aes: msg.aes_key_receiver });
                                             forkKeys.push({ receiver_id: msg.sender_id, enc_aes: msg.aes_key_sender });
-                                            return "break"; // Stops the loop for this message
+                                            return "break";
                                         }
                                     };
 
-                                    for (_iterator6 = ViewGrpMembers[Symbol.iterator](); !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+                                    for (_iterator7 = ViewGrpMembers[Symbol.iterator](); !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
                                         var _ret5 = _loop4();
 
                                         if (_ret5 === "break") break;
                                     }
                                 } catch (err) {
-                                    _didIteratorError6 = true;
-                                    _iteratorError6 = err;
+                                    _didIteratorError7 = true;
+                                    _iteratorError7 = err;
                                 } finally {
                                     try {
-                                        if (!_iteratorNormalCompletion6 && _iterator6["return"]) {
-                                            _iterator6["return"]();
+                                        if (!_iteratorNormalCompletion7 && _iterator7["return"]) {
+                                            _iterator7["return"]();
                                         }
                                     } finally {
-                                        if (_didIteratorError6) {
-                                            throw _iteratorError6;
+                                        if (_didIteratorError7) {
+                                            throw _iteratorError7;
                                         }
                                     }
                                 }
 
                                 console.log(promises);
-                                alert("^");
-                                // Create the message object
+
                                 var newForkMemberMessage = {
                                     mess_id: msg.mess_id,
                                     sender_id: msg.sender_id,
@@ -927,7 +969,6 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                                     enc_aes_keys: forkKeys
                                 };
 
-                                // Wait for encryption before pushing the message
                                 var messagePromise = Promise.allSettled(promises).then(function () {
                                     self.get('newForkMemberMessages').pushObject(newForkMemberMessage);
                                 });
@@ -935,30 +976,28 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                                 encryptionPromises.push(messagePromise);
                             };
 
-                            for (var _iterator5 = response_data.messages[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-                                var _iteratorNormalCompletion6;
+                            for (var _iterator6 = response_data.messages[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+                                var _iteratorNormalCompletion7;
 
-                                var _didIteratorError6;
+                                var _didIteratorError7;
 
-                                var _iteratorError6;
+                                var _iteratorError7;
 
-                                var _iterator6, _step6;
+                                var _iterator7, _step7;
 
                                 _loop3();
                             }
-
-                            // Wait for all encryption to complete
                         } catch (err) {
-                            _didIteratorError5 = true;
-                            _iteratorError5 = err;
+                            _didIteratorError6 = true;
+                            _iteratorError6 = err;
                         } finally {
                             try {
-                                if (!_iteratorNormalCompletion5 && _iterator5["return"]) {
-                                    _iterator5["return"]();
+                                if (!_iteratorNormalCompletion6 && _iterator6["return"]) {
+                                    _iterator6["return"]();
                                 }
                             } finally {
-                                if (_didIteratorError5) {
-                                    throw _iteratorError5;
+                                if (_didIteratorError6) {
+                                    throw _iteratorError6;
                                 }
                             }
                         }
@@ -966,7 +1005,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                         return Promise.all(encryptionPromises);
                     }).then(function () {
                         return _ember["default"].$.ajax({
-                            url: 'http://localhost:8080/chatApplication_war_exploded/CreateForkMessage',
+                            url: _demoappConfigEnvironment["default"].apiHost + 'CreateForkMessage',
                             type: 'POST',
                             data: JSON.stringify({
                                 isGroup: isGroup,
@@ -979,17 +1018,31 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                         });
                     }).then(function () {
                         console.log("Fork message created successfully");
+                        window.location.href = "chat";
                     })["catch"](function (error) {
                         return console.error(error);
                     });
                 });
+            },
+            closeFork: function closeFork() {
+                _ember["default"].$(".createGroup").css("display", "none");
+                _ember["default"].$(".ViewGrpMember").css("display", "none");
+                _ember["default"].$(".addMembers").css("display", "none");
+                _ember["default"].$(".forkmsg").css("display", "none");
+                _ember["default"].$(".Chat").css("display", "block");
             }
 
         }
 
     });
+
+    // document.addEventListener("click", () => {
+    //     document.querySelectorAll(".message-menu").forEach(menu => menu.style.display = "none");
+    // });
 });
-define('demoapp/controllers/login', ['exports', 'ember'], function (exports, _ember) {
+
+//import {console} from "ember-cli-qunit";
+define('demoapp/controllers/login', ['exports', 'ember', 'demoapp/config/environment'], function (exports, _ember, _demoappConfigEnvironment) {
     exports['default'] = _ember['default'].Controller.extend({
         actions: {
             login: function login() {
@@ -1001,7 +1054,7 @@ define('demoapp/controllers/login', ['exports', 'ember'], function (exports, _em
                     return;
                 }
                 $.ajax({
-                    url: 'http://localhost:8080/chatApplication_war_exploded/LoginServlet',
+                    url: _demoappConfigEnvironment['default'].apiHost + 'LoginServlet',
                     type: 'POST',
                     contentType: 'application/json',
                     xhrFields: { withCredentials: true },
@@ -1041,7 +1094,7 @@ define("demoapp/controllers/signup", ["exports", "ember", "demoapp/utils/crypto"
 
                     _ember["default"].$.ajax({
 
-                        url: 'http://localhost:8080/chatApplication_war_exploded/SignupServlet',
+                        url: ENV.apiHost + 'SignupServlet',
                         type: 'POST',
                         contentType: 'application/json',
                         data: JSON.stringify({
@@ -1156,13 +1209,13 @@ define('demoapp/router', ['exports', 'ember', 'demoapp/config/environment'], fun
 
   exports['default'] = Router;
 });
-define('demoapp/routes/chat', ['exports', 'ember'], function (exports, _ember) {
+define('demoapp/routes/chat', ['exports', 'ember', 'demoapp/config/environment'], function (exports, _ember, _demoappConfigEnvironment) {
     exports['default'] = _ember['default'].Route.extend({
         model: function model() {
             var _this = this;
 
             return _ember['default'].$.ajax({
-                url: 'http://localhost:8080/chatApplication_war_exploded/ChatServlet',
+                url: _demoappConfigEnvironment['default'].apiHost + 'ChatServlet',
                 type: 'GET',
                 xhrFields: { withCredentials: true }
             }).fail(function (error) {
@@ -1260,11 +1313,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 18,
+              "line": 24,
               "column": 12
             },
             "end": {
-              "line": 26,
+              "line": 32,
               "column": 12
             }
           },
@@ -1310,14 +1363,14 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           return el0;
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var element23 = dom.childAt(fragment, [1]);
+          var element24 = dom.childAt(fragment, [1]);
           var morphs = new Array(3);
-          morphs[0] = dom.createElementMorph(element23);
-          morphs[1] = dom.createMorphAt(dom.childAt(element23, [3]), 0, 0);
-          morphs[2] = dom.createMorphAt(dom.childAt(element23, [5]), 0, 0);
+          morphs[0] = dom.createElementMorph(element24);
+          morphs[1] = dom.createMorphAt(dom.childAt(element24, [3]), 0, 0);
+          morphs[2] = dom.createMorphAt(dom.childAt(element24, [5]), 0, 0);
           return morphs;
         },
-        statements: [["element", "action", ["fetchchat", ["get", "message", ["loc", [null, [19, 55], [19, 62]]]], "Private"], [], ["loc", [null, [19, 34], [19, 75]]]], ["content", "message.name", ["loc", [null, [21, 41], [21, 57]]]], ["content", "message.mobile_number", ["loc", [null, [22, 46], [22, 71]]]]],
+        statements: [["element", "action", ["fetchchat", ["get", "message", ["loc", [null, [25, 55], [25, 62]]]], "Private"], [], ["loc", [null, [25, 34], [25, 75]]]], ["content", "message.name", ["loc", [null, [27, 41], [27, 57]]]], ["content", "message.mobile_number", ["loc", [null, [28, 46], [28, 71]]]]],
         locals: ["message"],
         templates: []
       };
@@ -1329,11 +1382,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 27,
+              "line": 33,
               "column": 12
             },
             "end": {
-              "line": 34,
+              "line": 40,
               "column": 12
             }
           },
@@ -1372,13 +1425,13 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           return el0;
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var element22 = dom.childAt(fragment, [1]);
+          var element23 = dom.childAt(fragment, [1]);
           var morphs = new Array(2);
-          morphs[0] = dom.createElementMorph(element22);
-          morphs[1] = dom.createMorphAt(dom.childAt(element22, [3]), 0, 0);
+          morphs[0] = dom.createElementMorph(element23);
+          morphs[1] = dom.createMorphAt(dom.childAt(element23, [3]), 0, 0);
           return morphs;
         },
-        statements: [["element", "action", ["fetchchat", ["get", "group", ["loc", [null, [28, 55], [28, 60]]]], "Group"], [], ["loc", [null, [28, 34], [28, 71]]]], ["content", "group.name", ["loc", [null, [30, 41], [30, 55]]]]],
+        statements: [["element", "action", ["fetchchat", ["get", "group", ["loc", [null, [34, 55], [34, 60]]]], "Group"], [], ["loc", [null, [34, 34], [34, 71]]]], ["content", "group.name", ["loc", [null, [36, 41], [36, 55]]]]],
         locals: ["group"],
         templates: []
       };
@@ -1391,11 +1444,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 54,
+                "line": 60,
                 "column": 20
               },
               "end": {
-                "line": 56,
+                "line": 62,
                 "column": 20
               }
             },
@@ -1406,23 +1459,24 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           hasRendered: false,
           buildFragment: function buildFragment(dom) {
             var el0 = dom.createDocumentFragment();
-            var el1 = dom.createTextNode("                     ");
+            var el1 = dom.createTextNode("                        ");
             dom.appendChild(el0, el1);
-            var el1 = dom.createElement("button");
-            var el2 = dom.createTextNode("Add Member");
-            dom.appendChild(el1, el2);
+            var el1 = dom.createElement("i");
+            dom.setAttribute(el1, "class", "bi bi-person-add add fs-1");
+            dom.setAttribute(el1, "title", "Add members");
+            dom.setAttribute(el1, "style", "cursor: pointer;");
             dom.appendChild(el0, el1);
             var el1 = dom.createTextNode("\n");
             dom.appendChild(el0, el1);
             return el0;
           },
           buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var element19 = dom.childAt(fragment, [1]);
+            var element20 = dom.childAt(fragment, [1]);
             var morphs = new Array(1);
-            morphs[0] = dom.createElementMorph(element19);
+            morphs[0] = dom.createElementMorph(element20);
             return morphs;
           },
-          statements: [["element", "action", ["addMembers"], ["on", "click"], ["loc", [null, [55, 29], [55, 63]]]]],
+          statements: [["element", "action", ["addMembers"], ["on", "click"], ["loc", [null, [61, 81], [61, 115]]]]],
           locals: [],
           templates: []
         };
@@ -1433,11 +1487,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 52,
+              "line": 58,
               "column": 16
             },
             "end": {
-              "line": 58,
+              "line": 64,
               "column": 16
             }
           },
@@ -1451,10 +1505,9 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           var el1 = dom.createTextNode("                    ");
           dom.appendChild(el0, el1);
           var el1 = dom.createElement("i");
-          dom.setAttribute(el1, "class", "fas fa-sign-out-alt logout-icon");
-          dom.setAttribute(el1, "title", "Logout");
-          var el2 = dom.createTextNode(">");
-          dom.appendChild(el1, el2);
+          dom.setAttribute(el1, "class", "bi bi-box-arrow-right text-danger  fs-1");
+          dom.setAttribute(el1, "title", "Exit");
+          dom.setAttribute(el1, "style", "cursor: pointer;");
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
@@ -1462,24 +1515,25 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("                    ");
           dom.appendChild(el0, el1);
-          var el1 = dom.createElement("button");
-          var el2 = dom.createTextNode("View Members");
-          dom.appendChild(el1, el2);
+          var el1 = dom.createElement("i");
+          dom.setAttribute(el1, "class", "bi bi-eye-fill text-warning fs-1");
+          dom.setAttribute(el1, "title", "View members");
+          dom.setAttribute(el1, "style", "cursor: pointer;");
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var element20 = dom.childAt(fragment, [1]);
-          var element21 = dom.childAt(fragment, [5]);
+          var element21 = dom.childAt(fragment, [1]);
+          var element22 = dom.childAt(fragment, [5]);
           var morphs = new Array(3);
-          morphs[0] = dom.createElementMorph(element20);
+          morphs[0] = dom.createElementMorph(element21);
           morphs[1] = dom.createMorphAt(fragment, 3, 3, contextualElement);
-          morphs[2] = dom.createElementMorph(element21);
+          morphs[2] = dom.createElementMorph(element22);
           return morphs;
         },
-        statements: [["element", "action", ["ExitGroup", ["get", "model.curruser.user_id", ["loc", [null, [53, 99], [53, 121]]]]], ["on", "click"], ["loc", [null, [53, 78], [53, 134]]]], ["block", "if", [["get", "isAdmin", ["loc", [null, [54, 26], [54, 33]]]]], [], 0, null, ["loc", [null, [54, 20], [56, 27]]]], ["element", "action", ["OpenViweMember"], ["on", "click"], ["loc", [null, [57, 28], [57, 66]]]]],
+        statements: [["element", "action", ["ExitGroup", ["get", "model.curruser.user_id", ["loc", [null, [59, 131], [59, 153]]]]], ["on", "click"], ["loc", [null, [59, 110], [59, 166]]]], ["block", "if", [["get", "isAdmin", ["loc", [null, [60, 26], [60, 33]]]]], [], 0, null, ["loc", [null, [60, 20], [62, 27]]]], ["element", "action", ["OpenViweMember"], ["on", "click"], ["loc", [null, [63, 85], [63, 123]]]]],
         locals: [],
         templates: [child0]
       };
@@ -1493,11 +1547,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               "loc": {
                 "source": null,
                 "start": {
-                  "line": 65,
+                  "line": 71,
                   "column": 20
                 },
                 "end": {
-                  "line": 76,
+                  "line": 94,
                   "column": 20
                 }
               },
@@ -1511,17 +1565,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               var el1 = dom.createTextNode("                        ");
               dom.appendChild(el0, el1);
               var el1 = dom.createElement("div");
-              dom.setAttribute(el1, "class", "message you");
-              var el2 = dom.createTextNode("\n                            ");
-              dom.appendChild(el1, el2);
-              var el2 = dom.createElement("button");
-              var el3 = dom.createTextNode("Fork Message from here");
-              dom.appendChild(el2, el3);
-              dom.appendChild(el1, el2);
+              dom.setAttribute(el1, "class", "message  card d-flex flex-column w-25 you");
               var el2 = dom.createTextNode("\n                            ");
               dom.appendChild(el1, el2);
               var el2 = dom.createElement("div");
-              dom.setAttribute(el2, "class", "messageHeader");
+              dom.setAttribute(el2, "class", "d-flex flex-row justify-content-between");
               var el3 = dom.createTextNode("\n                                ");
               dom.appendChild(el2, el3);
               var el3 = dom.createElement("span");
@@ -1529,49 +1577,90 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               var el4 = dom.createComment("");
               dom.appendChild(el3, el4);
               dom.appendChild(el2, el3);
-              var el3 = dom.createTextNode("\n                            ");
+              var el3 = dom.createTextNode("\n                                ");
+              dom.appendChild(el2, el3);
+              var el3 = dom.createElement("div");
+              dom.setAttribute(el3, "class", "dropdown");
+              var el4 = dom.createTextNode("\n                                    ");
+              dom.appendChild(el3, el4);
+              var el4 = dom.createElement("button");
+              dom.setAttribute(el4, "class", "btn");
+              dom.setAttribute(el4, "type", "button");
+              dom.setAttribute(el4, "data-bs-toggle", "dropdown");
+              dom.setAttribute(el4, "aria-expanded", "false");
+              var el5 = dom.createTextNode("\n                                        ");
+              dom.appendChild(el4, el5);
+              dom.setNamespace("http://www.w3.org/2000/svg");
+              var el5 = dom.createElement("svg");
+              dom.setAttribute(el5, "width", "12");
+              dom.setAttribute(el5, "height", "14");
+              dom.setAttribute(el5, "fill", "currentColor");
+              dom.setAttribute(el5, "class", "bi bi-three-dots-vertical");
+              dom.setAttribute(el5, "viewBox", "0 0 16 16");
+              var el6 = dom.createTextNode("\n                                            ");
+              dom.appendChild(el5, el6);
+              var el6 = dom.createElement("path");
+              dom.setAttribute(el6, "d", "M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z");
+              dom.appendChild(el5, el6);
+              var el6 = dom.createTextNode("\n                                        ");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createTextNode("\n                                    ");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createTextNode("\n                                    ");
+              dom.appendChild(el3, el4);
+              dom.setNamespace(null);
+              var el4 = dom.createElement("ul");
+              dom.setAttribute(el4, "class", "dropdown-menu dropdown-menu-dark bg-dark");
+              var el5 = dom.createTextNode("\n                                        ");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("li");
+              var el6 = dom.createElement("a");
+              dom.setAttribute(el6, "class", "dropdown-item");
+              var el7 = dom.createTextNode("fork from here");
+              dom.appendChild(el6, el7);
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createTextNode("\n\n                                    ");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createTextNode("\n                                ");
+              dom.appendChild(el3, el4);
+              dom.appendChild(el2, el3);
+              var el3 = dom.createTextNode("\n\n                            ");
               dom.appendChild(el2, el3);
               dom.appendChild(el1, el2);
               var el2 = dom.createTextNode("\n                            ");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createElement("hr");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("\n\n                            ");
               dom.appendChild(el1, el2);
               var el2 = dom.createElement("p");
               dom.setAttribute(el2, "class", "messageContent");
               var el3 = dom.createComment("");
               dom.appendChild(el2, el3);
               dom.appendChild(el1, el2);
-              var el2 = dom.createTextNode("\n                            ");
-              dom.appendChild(el1, el2);
-              var el2 = dom.createElement("div");
-              dom.setAttribute(el2, "class", "messageDetails");
-              var el3 = dom.createTextNode("\n                                ");
-              dom.appendChild(el2, el3);
-              var el3 = dom.createElement("span");
-              dom.setAttribute(el3, "class", "messageTime");
-              var el4 = dom.createComment("");
-              dom.appendChild(el3, el4);
-              dom.appendChild(el2, el3);
-              var el3 = dom.createTextNode("\n                            ");
-              dom.appendChild(el2, el3);
-              dom.appendChild(el1, el2);
-              var el2 = dom.createTextNode("\n                        ");
+              var el2 = dom.createTextNode("\n\n                        ");
               dom.appendChild(el1, el2);
               dom.appendChild(el0, el1);
-              var el1 = dom.createTextNode("\n");
+              var el1 = dom.createTextNode("\n\n");
               dom.appendChild(el0, el1);
               return el0;
             },
             buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
               var element17 = dom.childAt(fragment, [1]);
               var element18 = dom.childAt(element17, [1]);
-              var morphs = new Array(5);
+              var element19 = dom.childAt(element18, [3, 3, 1, 0]);
+              var morphs = new Array(4);
               morphs[0] = dom.createElementMorph(element17);
-              morphs[1] = dom.createElementMorph(element18);
-              morphs[2] = dom.createMorphAt(dom.childAt(element17, [3, 1]), 0, 0);
+              morphs[1] = dom.createMorphAt(dom.childAt(element18, [1]), 0, 0);
+              morphs[2] = dom.createElementMorph(element19);
               morphs[3] = dom.createMorphAt(dom.childAt(element17, [5]), 0, 0);
-              morphs[4] = dom.createMorphAt(dom.childAt(element17, [7, 1]), 0, 0);
               return morphs;
             },
-            statements: [["element", "action", ["showForkMessageOption"], ["on", "click"], ["loc", [null, [66, 49], [66, 94]]]], ["element", "action", ["ForkMessage", ["get", "message", ["loc", [null, [67, 59], [67, 66]]]]], ["on", "click"], ["loc", [null, [67, 36], [67, 79]]]], ["content", "message.sender_name", ["loc", [null, [69, 57], [69, 80]]]], ["content", "message.message", ["loc", [null, [71, 54], [71, 73]]]], ["content", "message.timestamp", ["loc", [null, [73, 58], [73, 79]]]]],
+            statements: [["element", "action", ["toggleMenu"], ["on", "click"], ["loc", [null, [72, 79], [72, 115]]]], ["content", "message.sender_name", ["loc", [null, [74, 57], [74, 80]]]], ["element", "action", ["ForkMessage", ["get", "message", ["loc", [null, [82, 92], [82, 99]]]]], ["on", "click"], ["loc", [null, [82, 69], [82, 112]]]], ["content", "message.message", ["loc", [null, [90, 54], [90, 73]]]]],
             locals: [],
             templates: []
           };
@@ -1583,11 +1672,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               "loc": {
                 "source": null,
                 "start": {
-                  "line": 76,
+                  "line": 94,
                   "column": 20
                 },
                 "end": {
-                  "line": 86,
+                  "line": 122,
                   "column": 20
                 }
               },
@@ -1601,28 +1690,91 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               var el1 = dom.createTextNode("                        ");
               dom.appendChild(el0, el1);
               var el1 = dom.createElement("div");
-              dom.setAttribute(el1, "class", "message me");
-              var el2 = dom.createTextNode("\n                            ");
-              dom.appendChild(el1, el2);
-              var el2 = dom.createElement("button");
-              var el3 = dom.createTextNode("Fork Message from here");
-              dom.appendChild(el2, el3);
-              dom.appendChild(el1, el2);
+              dom.setAttribute(el1, "class", "message me  card d-flex flex-column w-25");
               var el2 = dom.createTextNode("\n                            ");
               dom.appendChild(el1, el2);
               var el2 = dom.createElement("div");
-              dom.setAttribute(el2, "class", "messageHeader");
+              dom.setAttribute(el2, "class", "d-flex flex-row justify-content-between");
+              var el3 = dom.createTextNode("\n                                ");
+              dom.appendChild(el2, el3);
+              var el3 = dom.createElement("span");
+              dom.setAttribute(el3, "class", "senderName");
+              var el4 = dom.createTextNode("you");
+              dom.appendChild(el3, el4);
+              dom.appendChild(el2, el3);
+              var el3 = dom.createTextNode("\n                                ");
+              dom.appendChild(el2, el3);
+              var el3 = dom.createElement("div");
+              dom.setAttribute(el3, "class", "dropdown");
+              var el4 = dom.createTextNode("\n                                    ");
+              dom.appendChild(el3, el4);
+              var el4 = dom.createElement("button");
+              dom.setAttribute(el4, "class", "btn");
+              dom.setAttribute(el4, "type", "button");
+              dom.setAttribute(el4, "data-bs-toggle", "dropdown");
+              dom.setAttribute(el4, "aria-expanded", "false");
+              var el5 = dom.createTextNode("\n                                        ");
+              dom.appendChild(el4, el5);
+              dom.setNamespace("http://www.w3.org/2000/svg");
+              var el5 = dom.createElement("svg");
+              dom.setAttribute(el5, "width", "12");
+              dom.setAttribute(el5, "height", "14");
+              dom.setAttribute(el5, "fill", "currentColor");
+              dom.setAttribute(el5, "class", "bi bi-three-dots-vertical");
+              dom.setAttribute(el5, "viewBox", "0 0 16 16");
+              var el6 = dom.createTextNode("\n                                            ");
+              dom.appendChild(el5, el6);
+              var el6 = dom.createElement("path");
+              dom.setAttribute(el6, "d", "M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z");
+              dom.appendChild(el5, el6);
+              var el6 = dom.createTextNode("\n                                        ");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createTextNode("\n                                    ");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createTextNode("\n                                    ");
+              dom.appendChild(el3, el4);
+              dom.setNamespace(null);
+              var el4 = dom.createElement("ul");
+              dom.setAttribute(el4, "class", "dropdown-menu dropdown-menu-dark bg-dark");
+              var el5 = dom.createTextNode("\n                                        ");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("li");
+              var el6 = dom.createElement("a");
+              dom.setAttribute(el6, "class", "dropdown-item");
+              var el7 = dom.createTextNode("fork from here");
+              dom.appendChild(el6, el7);
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createTextNode("\n\n                                    ");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createTextNode("\n                                ");
+              dom.appendChild(el3, el4);
+              dom.appendChild(el2, el3);
               var el3 = dom.createTextNode("\n                            ");
               dom.appendChild(el2, el3);
               dom.appendChild(el1, el2);
               var el2 = dom.createTextNode("\n                            ");
               dom.appendChild(el1, el2);
-              var el2 = dom.createElement("p");
-              dom.setAttribute(el2, "class", "messageContent");
-              var el3 = dom.createComment("");
+              var el2 = dom.createElement("hr");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("\n\n                            ");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createElement("div");
+              dom.setAttribute(el2, "class", "d-flex justify-content-start");
+              var el3 = dom.createTextNode("\n                                ");
+              dom.appendChild(el2, el3);
+              var el3 = dom.createElement("p");
+              dom.setAttribute(el3, "class", "messageContent");
+              var el4 = dom.createComment("");
+              dom.appendChild(el3, el4);
+              dom.appendChild(el2, el3);
+              var el3 = dom.createTextNode("\n                            ");
               dom.appendChild(el2, el3);
               dom.appendChild(el1, el2);
-              var el2 = dom.createTextNode("\n                            ");
+              var el2 = dom.createTextNode("\n\n                            ");
               dom.appendChild(el1, el2);
               var el2 = dom.createElement("div");
               dom.setAttribute(el2, "class", "messageDetails");
@@ -1636,23 +1788,23 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               var el3 = dom.createTextNode("\n                            ");
               dom.appendChild(el2, el3);
               dom.appendChild(el1, el2);
-              var el2 = dom.createTextNode("\n                        ");
+              var el2 = dom.createTextNode("\n\n                        ");
               dom.appendChild(el1, el2);
               dom.appendChild(el0, el1);
-              var el1 = dom.createTextNode("\n");
+              var el1 = dom.createTextNode("\n\n");
               dom.appendChild(el0, el1);
               return el0;
             },
             buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
               var element15 = dom.childAt(fragment, [1]);
-              var element16 = dom.childAt(element15, [1]);
+              var element16 = dom.childAt(element15, [1, 3, 3, 1, 0]);
               var morphs = new Array(3);
               morphs[0] = dom.createElementMorph(element16);
-              morphs[1] = dom.createMorphAt(dom.childAt(element15, [5]), 0, 0);
+              morphs[1] = dom.createMorphAt(dom.childAt(element15, [5, 1]), 0, 0);
               morphs[2] = dom.createMorphAt(dom.childAt(element15, [7, 1]), 0, 0);
               return morphs;
             },
-            statements: [["element", "action", ["ForkMessage", ["get", "message", ["loc", [null, [78, 59], [78, 66]]]]], ["on", "click"], ["loc", [null, [78, 36], [78, 79]]]], ["content", "message.message", ["loc", [null, [81, 54], [81, 73]]]], ["content", "message.timestamp", ["loc", [null, [83, 58], [83, 79]]]]],
+            statements: [["element", "action", ["ForkMessage", ["get", "message", ["loc", [null, [105, 92], [105, 99]]]]], ["on", "click"], ["loc", [null, [105, 69], [105, 112]]]], ["content", "message.message", ["loc", [null, [113, 58], [113, 77]]]], ["content", "message.timestamp", ["loc", [null, [117, 58], [117, 79]]]]],
             locals: [],
             templates: []
           };
@@ -1663,11 +1815,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 64,
+                "line": 70,
                 "column": 16
               },
               "end": {
-                "line": 87,
+                "line": 123,
                 "column": 16
               }
             },
@@ -1689,7 +1841,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             dom.insertBoundary(fragment, null);
             return morphs;
           },
-          statements: [["block", "if", [["subexpr", "neq", [["get", "message.sender_id", ["loc", [null, [65, 31], [65, 48]]]], ["get", "model.curruser.user_id", ["loc", [null, [65, 49], [65, 71]]]]], [], ["loc", [null, [65, 26], [65, 72]]]]], [], 0, 1, ["loc", [null, [65, 20], [86, 27]]]]],
+          statements: [["block", "if", [["subexpr", "neq", [["get", "message.sender_id", ["loc", [null, [71, 31], [71, 48]]]], ["get", "model.curruser.user_id", ["loc", [null, [71, 49], [71, 71]]]]], [], ["loc", [null, [71, 26], [71, 72]]]]], [], 0, 1, ["loc", [null, [71, 20], [122, 27]]]]],
           locals: [],
           templates: [child0, child1]
         };
@@ -1702,11 +1854,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               "loc": {
                 "source": null,
                 "start": {
-                  "line": 89,
+                  "line": 125,
                   "column": 20
                 },
                 "end": {
-                  "line": 94,
+                  "line": 130,
                   "column": 20
                 }
               },
@@ -1747,7 +1899,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               morphs[1] = dom.createAttrMorph(element14, 'src');
               return morphs;
             },
-            statements: [["content", "message.sender_name", ["loc", [null, [91, 34], [91, 57]]]], ["attribute", "src", ["concat", ["http://localhost:8080/chatApplication_war_exploded/uploads/", ["get", "message.file_name", ["loc", [null, [92, 95], [92, 112]]]]]]]],
+            statements: [["content", "message.sender_name", ["loc", [null, [127, 34], [127, 57]]]], ["attribute", "src", ["concat", ["http://localhost:8080/chatApplication_war_exploded/uploads/", ["get", "message.file_name", ["loc", [null, [128, 95], [128, 112]]]]]]]],
             locals: [],
             templates: []
           };
@@ -1759,11 +1911,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               "loc": {
                 "source": null,
                 "start": {
-                  "line": 94,
+                  "line": 130,
                   "column": 20
                 },
                 "end": {
-                  "line": 99,
+                  "line": 135,
                   "column": 20
                 }
               },
@@ -1804,7 +1956,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               morphs[1] = dom.createAttrMorph(element12, 'src');
               return morphs;
             },
-            statements: [["content", "message.sender_name", ["loc", [null, [96, 34], [96, 57]]]], ["attribute", "src", ["concat", ["http://localhost:8080/chatApplication_war_exploded/uploads/", ["get", "message.file_name", ["loc", [null, [97, 99], [97, 116]]]]]]]],
+            statements: [["content", "message.sender_name", ["loc", [null, [132, 34], [132, 57]]]], ["attribute", "src", ["concat", ["http://localhost:8080/chatApplication_war_exploded/uploads/", ["get", "message.file_name", ["loc", [null, [133, 99], [133, 116]]]]]]]],
             locals: [],
             templates: []
           };
@@ -1815,11 +1967,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 88,
+                "line": 124,
                 "column": 16
               },
               "end": {
-                "line": 100,
+                "line": 136,
                 "column": 16
               }
             },
@@ -1841,7 +1993,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             dom.insertBoundary(fragment, null);
             return morphs;
           },
-          statements: [["block", "if", [["subexpr", "neq", [["get", "message.sender_id", ["loc", [null, [89, 31], [89, 48]]]], ["get", "model.curruser.user_id", ["loc", [null, [89, 49], [89, 71]]]]], [], ["loc", [null, [89, 26], [89, 72]]]]], [], 0, 1, ["loc", [null, [89, 20], [99, 27]]]]],
+          statements: [["block", "if", [["subexpr", "neq", [["get", "message.sender_id", ["loc", [null, [125, 31], [125, 48]]]], ["get", "model.curruser.user_id", ["loc", [null, [125, 49], [125, 71]]]]], [], ["loc", [null, [125, 26], [125, 72]]]]], [], 0, 1, ["loc", [null, [125, 20], [135, 27]]]]],
           locals: [],
           templates: [child0, child1]
         };
@@ -1852,11 +2004,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 63,
+              "line": 69,
               "column": 12
             },
             "end": {
-              "line": 101,
+              "line": 137,
               "column": 12
             }
           },
@@ -1881,7 +2033,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           dom.insertBoundary(fragment, null);
           return morphs;
         },
-        statements: [["block", "if", [["subexpr", "eq", [["get", "message.dataFormat", ["loc", [null, [64, 26], [64, 44]]]], "Text"], [], ["loc", [null, [64, 22], [64, 52]]]]], [], 0, null, ["loc", [null, [64, 16], [87, 23]]]], ["block", "if", [["subexpr", "eq", [["get", "message.dataFormat", ["loc", [null, [88, 26], [88, 44]]]], "Sticker"], [], ["loc", [null, [88, 22], [88, 55]]]]], [], 1, null, ["loc", [null, [88, 16], [100, 23]]]]],
+        statements: [["block", "if", [["subexpr", "eq", [["get", "message.dataFormat", ["loc", [null, [70, 26], [70, 44]]]], "Text"], [], ["loc", [null, [70, 22], [70, 52]]]]], [], 0, null, ["loc", [null, [70, 16], [123, 23]]]], ["block", "if", [["subexpr", "eq", [["get", "message.dataFormat", ["loc", [null, [124, 26], [124, 44]]]], "Sticker"], [], ["loc", [null, [124, 22], [124, 55]]]]], [], 1, null, ["loc", [null, [124, 16], [136, 23]]]]],
         locals: ["message"],
         templates: [child0, child1]
       };
@@ -1894,11 +2046,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 112,
+                "line": 148,
                 "column": 16
               },
               "end": {
-                "line": 114,
+                "line": 150,
                 "column": 16
               }
             },
@@ -1925,7 +2077,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             morphs[1] = dom.createElementMorph(element10);
             return morphs;
           },
-          statements: [["attribute", "src", ["concat", [["get", "sticker.url", ["loc", [null, [113, 32], [113, 43]]]]]]], ["element", "action", ["extractSticker", ["get", "sticker.url", ["loc", [null, [113, 94], [113, 105]]]]], [], ["loc", [null, [113, 68], [113, 107]]]]],
+          statements: [["attribute", "src", ["concat", [["get", "sticker.url", ["loc", [null, [149, 32], [149, 43]]]]]]], ["element", "action", ["extractSticker", ["get", "sticker.url", ["loc", [null, [149, 94], [149, 105]]]]], ["on", "click"], ["loc", [null, [149, 68], [149, 118]]]]],
           locals: ["sticker"],
           templates: []
         };
@@ -1936,11 +2088,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 110,
+              "line": 146,
               "column": 8
             },
             "end": {
-              "line": 116,
+              "line": 152,
               "column": 8
             }
           },
@@ -1971,7 +2123,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 1, 1);
           return morphs;
         },
-        statements: [["block", "each", [["get", "stickers", ["loc", [null, [112, 24], [112, 32]]]]], [], 0, null, ["loc", [null, [112, 16], [114, 25]]]]],
+        statements: [["block", "each", [["get", "stickers", ["loc", [null, [148, 24], [148, 32]]]]], [], 0, null, ["loc", [null, [148, 16], [150, 25]]]]],
         locals: [],
         templates: [child0]
       };
@@ -1983,11 +2135,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 127,
+              "line": 167,
               "column": 16
             },
             "end": {
-              "line": 136,
+              "line": 175,
               "column": 16
             }
           },
@@ -2001,7 +2153,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           var el1 = dom.createTextNode("                    ");
           dom.appendChild(el0, el1);
           var el1 = dom.createElement("div");
-          dom.setAttribute(el1, "class", "group");
+          dom.setAttribute(el1, "class", " d-flex justify-content-around align-items-center");
           var el2 = dom.createTextNode("\n                        ");
           dom.appendChild(el1, el2);
           var el2 = dom.createElement("div");
@@ -2014,14 +2166,12 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           var el2 = dom.createTextNode("\n                        ");
           dom.appendChild(el1, el2);
           var el2 = dom.createElement("p");
-          dom.setAttribute(el2, "class", "GroupName");
           var el3 = dom.createComment("");
           dom.appendChild(el2, el3);
           dom.appendChild(el1, el2);
           var el2 = dom.createTextNode("\n                        ");
           dom.appendChild(el1, el2);
           var el2 = dom.createElement("span");
-          dom.setAttribute(el2, "class", "GroupDescrp");
           var el3 = dom.createComment("");
           dom.appendChild(el2, el3);
           dom.appendChild(el1, el2);
@@ -2029,9 +2179,8 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           dom.appendChild(el1, el2);
           var el2 = dom.createElement("input");
           dom.setAttribute(el2, "type", "checkbox");
-          dom.setAttribute(el2, "class", "GroupDescrp");
           dom.appendChild(el1, el2);
-          var el2 = dom.createTextNode("\n\n                    ");
+          var el2 = dom.createTextNode("\n                    ");
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n                    ");
@@ -2051,7 +2200,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           morphs[2] = dom.createElementMorph(element9);
           return morphs;
         },
-        statements: [["content", "message.name", ["loc", [null, [130, 45], [130, 61]]]], ["content", "message.mobile_number", ["loc", [null, [131, 50], [131, 75]]]], ["element", "action", ["addUsertoGroup", ["get", "message.user_id", ["loc", [null, [132, 95], [132, 110]]]]], ["on", "change"], ["loc", [null, [132, 69], [132, 124]]]]],
+        statements: [["content", "message.name", ["loc", [null, [170, 27], [170, 43]]]], ["content", "message.mobile_number", ["loc", [null, [171, 31], [171, 56]]]], ["element", "action", ["addUsertoGroup", ["get", "message.user_id", ["loc", [null, [172, 74], [172, 89]]]]], ["on", "change"], ["loc", [null, [172, 48], [172, 103]]]]],
         locals: ["message"],
         templates: []
       };
@@ -2064,11 +2213,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 156,
+                "line": 195,
                 "column": 20
               },
               "end": {
-                "line": 158,
+                "line": 197,
                 "column": 20
               }
             },
@@ -2104,11 +2253,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 158,
+                "line": 197,
                 "column": 20
               },
               "end": {
-                "line": 160,
+                "line": 199,
                 "column": 20
               }
             },
@@ -2144,11 +2293,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 161,
+                "line": 200,
                 "column": 24
               },
               "end": {
-                "line": 163,
+                "line": 202,
                 "column": 20
               }
             },
@@ -2186,11 +2335,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
                 "loc": {
                   "source": null,
                   "start": {
-                    "line": 167,
+                    "line": 208,
                     "column": 32
                   },
                   "end": {
-                    "line": 169,
+                    "line": 210,
                     "column": 32
                   }
                 },
@@ -2203,9 +2352,10 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
                 var el0 = dom.createDocumentFragment();
                 var el1 = dom.createTextNode("                                    ");
                 dom.appendChild(el0, el1);
-                var el1 = dom.createElement("button");
-                var el2 = dom.createTextNode("Dismiss as Admin");
-                dom.appendChild(el1, el2);
+                var el1 = dom.createElement("i");
+                dom.setAttribute(el1, "class", "bi bi-person-fill-down fs-1 text-danger");
+                dom.setAttribute(el1, "title", "Dismiss as Admin");
+                dom.setAttribute(el1, "style", "cursor: pointer;");
                 dom.appendChild(el0, el1);
                 var el1 = dom.createTextNode("\n");
                 dom.appendChild(el0, el1);
@@ -2217,7 +2367,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
                 morphs[0] = dom.createElementMorph(element5);
                 return morphs;
               },
-              statements: [["element", "action", ["makeAdmin", ["get", "member.user_id", ["loc", [null, [168, 65], [168, 79]]]], false], [], ["loc", [null, [168, 44], [168, 87]]]]],
+              statements: [["element", "action", ["makeAdmin", ["get", "member.user_id", ["loc", [null, [209, 158], [209, 172]]]], false], ["on", "click"], ["loc", [null, [209, 137], [209, 191]]]]],
               locals: [],
               templates: []
             };
@@ -2229,11 +2379,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
                 "loc": {
                   "source": null,
                   "start": {
-                    "line": 169,
+                    "line": 210,
                     "column": 32
                   },
                   "end": {
-                    "line": 171,
+                    "line": 213,
                     "column": 32
                   }
                 },
@@ -2246,11 +2396,12 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
                 var el0 = dom.createDocumentFragment();
                 var el1 = dom.createTextNode("                                    ");
                 dom.appendChild(el0, el1);
-                var el1 = dom.createElement("button");
-                var el2 = dom.createTextNode("Make as Admin");
-                dom.appendChild(el1, el2);
+                var el1 = dom.createElement("i");
+                dom.setAttribute(el1, "class", "bi bi-person-fill-up fs-1 text-success");
+                dom.setAttribute(el1, "title", "Make as Admin");
+                dom.setAttribute(el1, "style", "cursor: pointer;");
                 dom.appendChild(el0, el1);
-                var el1 = dom.createTextNode("\n");
+                var el1 = dom.createTextNode("\n\n");
                 dom.appendChild(el0, el1);
                 return el0;
               },
@@ -2260,7 +2411,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
                 morphs[0] = dom.createElementMorph(element4);
                 return morphs;
               },
-              statements: [["element", "action", ["makeAdmin", ["get", "member.user_id", ["loc", [null, [170, 65], [170, 79]]]], true], [], ["loc", [null, [170, 44], [170, 86]]]]],
+              statements: [["element", "action", ["makeAdmin", ["get", "member.user_id", ["loc", [null, [211, 154], [211, 168]]]], true], ["on", "click"], ["loc", [null, [211, 133], [211, 186]]]]],
               locals: [],
               templates: []
             };
@@ -2271,11 +2422,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               "loc": {
                 "source": null,
                 "start": {
-                  "line": 165,
+                  "line": 206,
                   "column": 28
                 },
                 "end": {
-                  "line": 172,
+                  "line": 214,
                   "column": 28
                 }
               },
@@ -2288,9 +2439,10 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               var el0 = dom.createDocumentFragment();
               var el1 = dom.createTextNode("                                ");
               dom.appendChild(el0, el1);
-              var el1 = dom.createElement("button");
-              var el2 = dom.createTextNode("Remove");
-              dom.appendChild(el1, el2);
+              var el1 = dom.createElement("i");
+              dom.setAttribute(el1, "class", "bi bi-person-x-fill fs-1 text-danger");
+              dom.setAttribute(el1, "title", "Remove");
+              dom.setAttribute(el1, "style", "cursor: pointer;");
               dom.appendChild(el0, el1);
               var el1 = dom.createTextNode("\n");
               dom.appendChild(el0, el1);
@@ -2306,7 +2458,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
               dom.insertBoundary(fragment, null);
               return morphs;
             },
-            statements: [["element", "action", ["ExitGroup", ["get", "member.user_id", ["loc", [null, [166, 61], [166, 75]]]]], [], ["loc", [null, [166, 40], [166, 77]]]], ["block", "if", [["get", "member.isAdmin", ["loc", [null, [167, 39], [167, 53]]]]], [], 0, 1, ["loc", [null, [167, 32], [171, 39]]]]],
+            statements: [["element", "action", ["ExitGroup", ["get", "member.user_id", ["loc", [null, [207, 141], [207, 155]]]]], ["on", "click"], ["loc", [null, [207, 120], [207, 168]]]], ["block", "if", [["get", "member.isAdmin", ["loc", [null, [208, 39], [208, 53]]]]], [], 0, 1, ["loc", [null, [208, 32], [213, 39]]]]],
             locals: [],
             templates: [child0, child1]
           };
@@ -2317,11 +2469,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 164,
+                "line": 205,
                 "column": 24
               },
               "end": {
-                "line": 173,
+                "line": 215,
                 "column": 24
               }
             },
@@ -2343,7 +2495,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             dom.insertBoundary(fragment, null);
             return morphs;
           },
-          statements: [["block", "if", [["subexpr", "neq", [["get", "model.curruser.user_id", ["loc", [null, [165, 39], [165, 61]]]], ["get", "member.user_id", ["loc", [null, [165, 62], [165, 76]]]]], [], ["loc", [null, [165, 34], [165, 77]]]]], [], 0, null, ["loc", [null, [165, 28], [172, 35]]]]],
+          statements: [["block", "if", [["subexpr", "neq", [["get", "model.curruser.user_id", ["loc", [null, [206, 39], [206, 61]]]], ["get", "member.user_id", ["loc", [null, [206, 62], [206, 76]]]]], [], ["loc", [null, [206, 34], [206, 77]]]]], [], 0, null, ["loc", [null, [206, 28], [214, 35]]]]],
           locals: [],
           templates: [child0]
         };
@@ -2354,11 +2506,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 151,
+              "line": 190,
               "column": 12
             },
             "end": {
-              "line": 177,
+              "line": 219,
               "column": 12
             }
           },
@@ -2372,7 +2524,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           var el1 = dom.createTextNode("                ");
           dom.appendChild(el0, el1);
           var el1 = dom.createElement("div");
-          dom.setAttribute(el1, "class", "groupnew");
+          dom.setAttribute(el1, "class", "card d-flex align-items-center gap-4 flex-row p-2");
           var el2 = dom.createTextNode("\n                    ");
           dom.appendChild(el1, el2);
           var el2 = dom.createElement("div");
@@ -2402,6 +2554,8 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           dom.appendChild(el1, el2);
           var el2 = dom.createComment("");
           dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n\n");
+          dom.appendChild(el1, el2);
           var el2 = dom.createComment("");
           dom.appendChild(el1, el2);
           var el2 = dom.createTextNode("\n                ");
@@ -2422,10 +2576,10 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           morphs[1] = dom.createMorphAt(dom.childAt(element7, [5]), 0, 0);
           morphs[2] = dom.createMorphAt(element7, 7, 7);
           morphs[3] = dom.createMorphAt(element7, 8, 8);
-          morphs[4] = dom.createMorphAt(element7, 9, 9);
+          morphs[4] = dom.createMorphAt(element7, 10, 10);
           return morphs;
         },
-        statements: [["content", "member.name", ["loc", [null, [154, 41], [154, 56]]]], ["content", "member.mobile_number", ["loc", [null, [155, 35], [155, 59]]]], ["block", "if", [["get", "member.isAdmin", ["loc", [null, [156, 26], [156, 40]]]]], [], 0, 1, ["loc", [null, [156, 20], [160, 27]]]], ["block", "if", [["subexpr", "eq", [["get", "model.curruser.user_id", ["loc", [null, [161, 34], [161, 56]]]], ["get", "member.user_id", ["loc", [null, [161, 58], [161, 72]]]]], [], ["loc", [null, [161, 30], [161, 73]]]]], [], 2, null, ["loc", [null, [161, 24], [163, 27]]]], ["block", "if", [["get", "isAdmin", ["loc", [null, [164, 30], [164, 37]]]]], [], 3, null, ["loc", [null, [164, 24], [173, 31]]]]],
+        statements: [["content", "member.name", ["loc", [null, [193, 41], [193, 56]]]], ["content", "member.mobile_number", ["loc", [null, [194, 35], [194, 59]]]], ["block", "if", [["get", "member.isAdmin", ["loc", [null, [195, 26], [195, 40]]]]], [], 0, 1, ["loc", [null, [195, 20], [199, 27]]]], ["block", "if", [["subexpr", "eq", [["get", "model.curruser.user_id", ["loc", [null, [200, 34], [200, 56]]]], ["get", "member.user_id", ["loc", [null, [200, 58], [200, 72]]]]], [], ["loc", [null, [200, 30], [200, 73]]]]], [], 2, null, ["loc", [null, [200, 24], [202, 27]]]], ["block", "if", [["get", "isAdmin", ["loc", [null, [205, 30], [205, 37]]]]], [], 3, null, ["loc", [null, [205, 24], [215, 31]]]]],
         locals: ["member"],
         templates: [child0, child1, child2, child3]
       };
@@ -2437,11 +2591,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 189,
+              "line": 231,
               "column": 16
             },
             "end": {
-              "line": 198,
+              "line": 240,
               "column": 16
             }
           },
@@ -2455,7 +2609,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           var el1 = dom.createTextNode("                    ");
           dom.appendChild(el0, el1);
           var el1 = dom.createElement("div");
-          dom.setAttribute(el1, "class", "groupnew");
+          dom.setAttribute(el1, "class", "card d-flex justify-content-around align-items-center flex-row p-3");
           var el2 = dom.createTextNode("\n                        ");
           dom.appendChild(el1, el2);
           var el2 = dom.createElement("div");
@@ -2483,7 +2637,6 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           dom.appendChild(el1, el2);
           var el2 = dom.createElement("input");
           dom.setAttribute(el2, "type", "checkbox");
-          dom.setAttribute(el2, "class", "GroupDescrp");
           dom.appendChild(el1, el2);
           var el2 = dom.createTextNode("\n\n                    ");
           dom.appendChild(el1, el2);
@@ -2505,7 +2658,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           morphs[2] = dom.createElementMorph(element3);
           return morphs;
         },
-        statements: [["content", "member.name", ["loc", [null, [192, 36], [192, 51]]]], ["content", "member.mobile_number", ["loc", [null, [193, 39], [193, 63]]]], ["element", "action", ["addUsertoGroup", ["get", "member.user_id", ["loc", [null, [194, 95], [194, 109]]]]], ["on", "change"], ["loc", [null, [194, 69], [194, 123]]]]],
+        statements: [["content", "member.name", ["loc", [null, [234, 36], [234, 51]]]], ["content", "member.mobile_number", ["loc", [null, [235, 39], [235, 63]]]], ["element", "action", ["addUsertoGroup", ["get", "member.user_id", ["loc", [null, [236, 76], [236, 90]]]]], ["on", "change"], ["loc", [null, [236, 50], [236, 104]]]]],
         locals: ["member"],
         templates: []
       };
@@ -2517,11 +2670,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 216,
+              "line": 262,
               "column": 16
             },
             "end": {
-              "line": 224,
+              "line": 270,
               "column": 16
             }
           },
@@ -2581,7 +2734,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
           morphs[2] = dom.createElementMorph(element1);
           return morphs;
         },
-        statements: [["content", "message.name", ["loc", [null, [219, 45], [219, 61]]]], ["content", "message.mobile_number", ["loc", [null, [220, 50], [220, 75]]]], ["element", "action", ["addUserToFork", ["get", "message.user_id", ["loc", [null, [221, 94], [221, 109]]]]], ["on", "change"], ["loc", [null, [221, 69], [221, 123]]]]],
+        statements: [["content", "message.name", ["loc", [null, [265, 45], [265, 61]]]], ["content", "message.mobile_number", ["loc", [null, [266, 50], [266, 75]]]], ["element", "action", ["addUserToFork", ["get", "message.user_id", ["loc", [null, [267, 94], [267, 109]]]]], ["on", "change"], ["loc", [null, [267, 69], [267, 123]]]]],
         locals: ["message"],
         templates: []
       };
@@ -2596,7 +2749,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 238,
+            "line": 284,
             "column": 7
           }
         },
@@ -2609,15 +2762,38 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
         var el0 = dom.createDocumentFragment();
         var el1 = dom.createElement("link");
         dom.setAttribute(el1, "rel", "stylesheet");
-        dom.setAttribute(el1, "href", "assets/chat.css");
+        dom.setAttribute(el1, "href", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("script");
+        dom.setAttribute(el1, "src", "https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("link");
+        dom.setAttribute(el1, "href", "https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css");
+        dom.setAttribute(el1, "rel", "stylesheet");
         dom.appendChild(el0, el1);
         var el1 = dom.createTextNode("\n");
         dom.appendChild(el0, el1);
         var el1 = dom.createElement("link");
         dom.setAttribute(el1, "rel", "stylesheet");
-        dom.setAttribute(el1, "href", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css");
+        dom.setAttribute(el1, "href", "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");
         dom.appendChild(el0, el1);
         var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("meta");
+        dom.setAttribute(el1, "http-equiv", "Content-Security-Policy");
+        dom.setAttribute(el1, "content", "default-src 'self'; report-uri http://localhost:4200/csp-report;");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("link");
+        dom.setAttribute(el1, "rel", "stylesheet");
+        dom.setAttribute(el1, "href", "assets/chat.css");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n\n\n");
         dom.appendChild(el0, el1);
         var el1 = dom.createElement("main");
         var el2 = dom.createTextNode("\n    ");
@@ -2801,13 +2977,36 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
         dom.appendChild(el1, el2);
         var el2 = dom.createElement("section");
         dom.setAttribute(el2, "class", "createGroup");
-        var el3 = dom.createTextNode("\n\n        ");
+        var el3 = dom.createTextNode("\n        ");
         dom.appendChild(el2, el3);
         var el3 = dom.createElement("form");
         var el4 = dom.createTextNode("\n            ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("div");
-        dom.setAttribute(el4, "class", "grp-field");
+        dom.setAttribute(el4, "class", "d-flex justify-content-between");
+        var el5 = dom.createTextNode("\n                ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("h3");
+        dom.setAttribute(el5, "class", "bg-green");
+        var el6 = dom.createTextNode("Create New Group");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n                ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("button");
+        dom.setAttribute(el5, "type", "button");
+        dom.setAttribute(el5, "class", "btn-close");
+        dom.setAttribute(el5, "aria-label", "Close");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n            ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("br");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n            ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4, "class", "d-flex align-items-center gap-4");
         var el5 = dom.createTextNode("\n                ");
         dom.appendChild(el4, el5);
         var el5 = dom.createElement("label");
@@ -2819,20 +3018,29 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
         dom.setAttribute(el5, "type", "text");
         dom.setAttribute(el5, "name", "grpNmae");
         dom.setAttribute(el5, "id", "grpName");
+        dom.setAttribute(el5, "style", "width: 70%;padding: 10px;");
         dom.setAttribute(el5, "required", "");
         dom.appendChild(el4, el5);
         var el5 = dom.createTextNode("\n            ");
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
+        var el4 = dom.createElement("br");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n            ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("br");
+        dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n            ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("div");
-        dom.setAttribute(el4, "class", "grp-field");
+        dom.setAttribute(el4, "class", "d-flex flex-column gap-2");
         var el5 = dom.createTextNode("\n                ");
         dom.appendChild(el4, el5);
         var el5 = dom.createElement("h3");
         var el6 = dom.createTextNode("Add Members");
         dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("br");
         dom.appendChild(el4, el5);
         var el5 = dom.createTextNode("\n");
         dom.appendChild(el4, el5);
@@ -2869,7 +3077,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
         var el3 = dom.createTextNode("\n        ");
         dom.appendChild(el2, el3);
         var el3 = dom.createElement("div");
-        dom.setAttribute(el3, "class", "viewHeader");
+        dom.setAttribute(el3, "class", "d-flex justify-content-between");
         var el4 = dom.createTextNode("\n            ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("h1");
@@ -2881,8 +3089,9 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
         var el4 = dom.createTextNode("\n            ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("button");
-        var el5 = dom.createTextNode("Close");
-        dom.appendChild(el4, el5);
+        dom.setAttribute(el4, "type", "button");
+        dom.setAttribute(el4, "class", "btn-close");
+        dom.setAttribute(el4, "aria-label", "Close");
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n        ");
         dom.appendChild(el3, el4);
@@ -2912,11 +3121,11 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
         var el4 = dom.createTextNode("\n            ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("div");
-        dom.setAttribute(el4, "class", "viewHeader");
+        dom.setAttribute(el4, "class", "d-flex justify-content-between");
         var el5 = dom.createTextNode("\n                ");
         dom.appendChild(el4, el5);
         var el5 = dom.createElement("h1");
-        var el6 = dom.createTextNode("Add Members");
+        var el6 = dom.createTextNode("Add New Members");
         dom.appendChild(el5, el6);
         dom.appendChild(el4, el5);
         var el5 = dom.createElement("br");
@@ -2924,8 +3133,9 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
         var el5 = dom.createTextNode("\n                ");
         dom.appendChild(el4, el5);
         var el5 = dom.createElement("button");
-        var el6 = dom.createTextNode("Close");
-        dom.appendChild(el5, el6);
+        dom.setAttribute(el5, "type", "button");
+        dom.setAttribute(el5, "class", "btn-close");
+        dom.setAttribute(el5, "aria-label", "Close");
         dom.appendChild(el4, el5);
         var el5 = dom.createTextNode("\n            ");
         dom.appendChild(el4, el5);
@@ -2935,7 +3145,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
         var el4 = dom.createTextNode("\n            ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("div");
-        dom.setAttribute(el4, "class", "grp-field");
+        dom.setAttribute(el4, "class", "d-flex- flex-column");
         var el5 = dom.createTextNode("\n");
         dom.appendChild(el4, el5);
         var el5 = dom.createComment("");
@@ -2970,15 +3180,29 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
         dom.setAttribute(el2, "class", "forkmsg");
         var el3 = dom.createTextNode("\n        ");
         dom.appendChild(el2, el3);
-        var el3 = dom.createElement("h1");
-        var el4 = dom.createElement("strong");
-        var el5 = dom.createTextNode("Add users to forked chat");
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "d-flex justify-content-between");
+        var el4 = dom.createTextNode("\n            ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("h1");
+        var el5 = dom.createElement("strong");
+        var el6 = dom.createTextNode("Add users to forked chat");
+        dom.appendChild(el5, el6);
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
+        var el4 = dom.createElement("br");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n            ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("button");
+        dom.setAttribute(el4, "type", "button");
+        dom.setAttribute(el4, "class", "btn-close");
+        dom.setAttribute(el4, "aria-label", "Close");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n        ");
+        dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
-        var el3 = dom.createElement("br");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n        ");
+        var el3 = dom.createTextNode("\n\n        ");
         dom.appendChild(el2, el3);
         var el3 = dom.createElement("form");
         var el4 = dom.createTextNode("\n            ");
@@ -3037,7 +3261,7 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
         var el6 = dom.createTextNode("\n                ");
         dom.appendChild(el5, el6);
         var el6 = dom.createElement("label");
-        dom.setAttribute(el6, "for", "grpName");
+        dom.setAttribute(el6, "for", "chat-title");
         var el7 = dom.createTextNode("Chat Title: ");
         dom.appendChild(el6, el7);
         dom.appendChild(el5, el6);
@@ -3091,53 +3315,58 @@ define("demoapp/templates/chat", ["exports"], function (exports) {
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element24 = dom.childAt(fragment, [4]);
-        var element25 = dom.childAt(element24, [3]);
-        var element26 = dom.childAt(element25, [1]);
-        var element27 = dom.childAt(element26, [3]);
-        var element28 = dom.childAt(element26, [5]);
-        var element29 = dom.childAt(element28, [1]);
-        var element30 = dom.childAt(element28, [3]);
-        var element31 = dom.childAt(element25, [3]);
-        var element32 = dom.childAt(element24, [7]);
-        var element33 = dom.childAt(element32, [1]);
-        var element34 = dom.childAt(element32, [5]);
-        var element35 = dom.childAt(element34, [1]);
-        var element36 = dom.childAt(element35, [3]);
-        var element37 = dom.childAt(element35, [5]);
-        var element38 = dom.childAt(element24, [9, 1]);
-        var element39 = dom.childAt(element24, [11]);
-        var element40 = dom.childAt(element39, [1, 4]);
-        var element41 = dom.childAt(element39, [4]);
-        var element42 = dom.childAt(element24, [13, 1]);
-        var element43 = dom.childAt(element42, [1, 4]);
-        var element44 = dom.childAt(element24, [15, 4]);
-        var morphs = new Array(22);
-        morphs[0] = dom.createMorphAt(dom.childAt(element26, [1]), 1, 1);
-        morphs[1] = dom.createAttrMorph(element27, 'value');
-        morphs[2] = dom.createElementMorph(element29);
-        morphs[3] = dom.createElementMorph(element30);
-        morphs[4] = dom.createMorphAt(element31, 1, 1);
-        morphs[5] = dom.createMorphAt(element31, 2, 2);
-        morphs[6] = dom.createMorphAt(dom.childAt(element33, [1, 3]), 0, 0);
-        morphs[7] = dom.createMorphAt(dom.childAt(element33, [3]), 1, 1);
-        morphs[8] = dom.createMorphAt(dom.childAt(element32, [3]), 3, 3);
-        morphs[9] = dom.createElementMorph(element36);
-        morphs[10] = dom.createElementMorph(element37);
-        morphs[11] = dom.createMorphAt(element34, 3, 3);
-        morphs[12] = dom.createElementMorph(element38);
-        morphs[13] = dom.createMorphAt(dom.childAt(element38, [3]), 3, 3);
-        morphs[14] = dom.createElementMorph(element40);
-        morphs[15] = dom.createElementMorph(element41);
-        morphs[16] = dom.createMorphAt(element41, 1, 1);
-        morphs[17] = dom.createElementMorph(element42);
-        morphs[18] = dom.createElementMorph(element43);
-        morphs[19] = dom.createMorphAt(dom.childAt(element42, [4]), 1, 1);
-        morphs[20] = dom.createElementMorph(element44);
-        morphs[21] = dom.createMorphAt(dom.childAt(element44, [3]), 3, 3);
+        var element25 = dom.childAt(fragment, [12]);
+        var element26 = dom.childAt(element25, [3]);
+        var element27 = dom.childAt(element26, [1]);
+        var element28 = dom.childAt(element27, [3]);
+        var element29 = dom.childAt(element27, [5]);
+        var element30 = dom.childAt(element29, [1]);
+        var element31 = dom.childAt(element29, [3]);
+        var element32 = dom.childAt(element26, [3]);
+        var element33 = dom.childAt(element25, [7]);
+        var element34 = dom.childAt(element33, [1]);
+        var element35 = dom.childAt(element33, [5]);
+        var element36 = dom.childAt(element35, [1]);
+        var element37 = dom.childAt(element36, [3]);
+        var element38 = dom.childAt(element36, [5]);
+        var element39 = dom.childAt(element25, [9, 1]);
+        var element40 = dom.childAt(element39, [1, 3]);
+        var element41 = dom.childAt(element25, [11]);
+        var element42 = dom.childAt(element41, [1, 4]);
+        var element43 = dom.childAt(element41, [4]);
+        var element44 = dom.childAt(element25, [13, 1]);
+        var element45 = dom.childAt(element44, [1, 4]);
+        var element46 = dom.childAt(element25, [15]);
+        var element47 = dom.childAt(element46, [1, 4]);
+        var element48 = dom.childAt(element46, [3]);
+        var morphs = new Array(24);
+        morphs[0] = dom.createMorphAt(dom.childAt(element27, [1]), 1, 1);
+        morphs[1] = dom.createAttrMorph(element28, 'value');
+        morphs[2] = dom.createElementMorph(element30);
+        morphs[3] = dom.createElementMorph(element31);
+        morphs[4] = dom.createMorphAt(element32, 1, 1);
+        morphs[5] = dom.createMorphAt(element32, 2, 2);
+        morphs[6] = dom.createMorphAt(dom.childAt(element34, [1, 3]), 0, 0);
+        morphs[7] = dom.createMorphAt(dom.childAt(element34, [3]), 1, 1);
+        morphs[8] = dom.createMorphAt(dom.childAt(element33, [3]), 3, 3);
+        morphs[9] = dom.createElementMorph(element37);
+        morphs[10] = dom.createElementMorph(element38);
+        morphs[11] = dom.createMorphAt(element35, 3, 3);
+        morphs[12] = dom.createElementMorph(element39);
+        morphs[13] = dom.createElementMorph(element40);
+        morphs[14] = dom.createMorphAt(dom.childAt(element39, [9]), 4, 4);
+        morphs[15] = dom.createElementMorph(element42);
+        morphs[16] = dom.createElementMorph(element43);
+        morphs[17] = dom.createMorphAt(element43, 1, 1);
+        morphs[18] = dom.createElementMorph(element44);
+        morphs[19] = dom.createElementMorph(element45);
+        morphs[20] = dom.createMorphAt(dom.childAt(element44, [4]), 1, 1);
+        morphs[21] = dom.createElementMorph(element47);
+        morphs[22] = dom.createElementMorph(element48);
+        morphs[23] = dom.createMorphAt(dom.childAt(element48, [3]), 3, 3);
         return morphs;
       },
-      statements: [["content", "model.curruser.name", ["loc", [null, [10, 25], [10, 48]]]], ["attribute", "value", ["concat", [["get", "model.curruser.user_id", ["loc", [null, [11, 42], [11, 64]]]]]]], ["element", "action", ["logout"], [], ["loc", [null, [13, 74], [13, 94]]]], ["element", "action", ["showGrpCreate"], ["on", "click"], ["loc", [null, [14, 79], [14, 116]]]], ["block", "each", [["get", "model.users", ["loc", [null, [18, 20], [18, 31]]]]], [], 0, null, ["loc", [null, [18, 12], [26, 21]]]], ["block", "each", [["get", "model.groups", ["loc", [null, [27, 20], [27, 32]]]]], [], 1, null, ["loc", [null, [27, 12], [34, 21]]]], ["content", "selectedUsername", ["loc", [null, [49, 37], [49, 57]]]], ["block", "if", [["get", "isGroup", ["loc", [null, [52, 22], [52, 29]]]]], [], 2, null, ["loc", [null, [52, 16], [58, 23]]]], ["block", "each", [["get", "AllMessage", ["loc", [null, [63, 20], [63, 30]]]]], [], 3, null, ["loc", [null, [63, 12], [101, 21]]]], ["element", "action", ["openStickerPicker"], [], ["loc", [null, [107, 34], [107, 64]]]], ["element", "action", [["subexpr", "if", [["get", "isGroup", ["loc", [null, [108, 47], [108, 54]]]], "SendMessageOnGroup", "sendMessage"], [], ["loc", [null, [108, 43], [108, 90]]]]], ["on", "click"], ["loc", [null, [108, 34], [108, 104]]]], ["block", "if", [["get", "showStickerPicker", ["loc", [null, [110, 14], [110, 31]]]]], [], 4, null, ["loc", [null, [110, 8], [116, 15]]]], ["element", "action", ["CreateNewGroup", ["get", "model.curruser.user_id", ["loc", [null, [121, 40], [121, 62]]]]], ["on", "submit"], ["loc", [null, [121, 14], [121, 77]]]], ["block", "each", [["get", "model.users", ["loc", [null, [127, 24], [127, 35]]]]], [], 5, null, ["loc", [null, [127, 16], [136, 25]]]], ["element", "action", ["closeViewMember"], ["on", "click"], ["loc", [null, [147, 20], [147, 59]]]], ["element", "action", ["RemoveMember", ["get", "model.curruser.user_id", ["loc", [null, [150, 38], [150, 60]]]]], ["on", "submit"], ["loc", [null, [150, 14], [150, 75]]]], ["block", "each", [["get", "ViewGrpMembers", ["loc", [null, [151, 20], [151, 34]]]]], [], 6, null, ["loc", [null, [151, 12], [177, 21]]]], ["element", "action", ["addNewMember"], ["on", "submit"], ["loc", [null, [183, 14], [183, 53]]]], ["element", "action", ["closeViewMember"], ["on", "click"], ["loc", [null, [186, 24], [186, 63]]]], ["block", "each", [["get", "ViewGrpMembers", ["loc", [null, [189, 24], [189, 38]]]]], [], 7, null, ["loc", [null, [189, 16], [198, 25]]]], ["element", "action", ["CreatForkMessage"], ["on", "submit"], ["loc", [null, [208, 14], [208, 57]]]], ["block", "each", [["get", "model.users", ["loc", [null, [216, 24], [216, 35]]]]], [], 8, null, ["loc", [null, [216, 16], [224, 25]]]]],
+      statements: [["content", "model.curruser.name", ["loc", [null, [16, 25], [16, 48]]]], ["attribute", "value", ["concat", [["get", "model.curruser.user_id", ["loc", [null, [17, 42], [17, 64]]]]]]], ["element", "action", ["logout"], [], ["loc", [null, [19, 74], [19, 94]]]], ["element", "action", ["showGrpCreate"], ["on", "click"], ["loc", [null, [20, 79], [20, 116]]]], ["block", "each", [["get", "model.users", ["loc", [null, [24, 20], [24, 31]]]]], [], 0, null, ["loc", [null, [24, 12], [32, 21]]]], ["block", "each", [["get", "model.groups", ["loc", [null, [33, 20], [33, 32]]]]], [], 1, null, ["loc", [null, [33, 12], [40, 21]]]], ["content", "selectedUsername", ["loc", [null, [55, 37], [55, 57]]]], ["block", "if", [["get", "isGroup", ["loc", [null, [58, 22], [58, 29]]]]], [], 2, null, ["loc", [null, [58, 16], [64, 23]]]], ["block", "each", [["get", "AllMessage", ["loc", [null, [69, 20], [69, 30]]]]], [], 3, null, ["loc", [null, [69, 12], [137, 21]]]], ["element", "action", ["openStickerPicker"], [], ["loc", [null, [143, 34], [143, 64]]]], ["element", "action", [["subexpr", "if", [["get", "isGroup", ["loc", [null, [144, 47], [144, 54]]]], "SendMessageOnGroup", "sendMessage"], [], ["loc", [null, [144, 43], [144, 90]]]]], ["on", "click"], ["loc", [null, [144, 34], [144, 104]]]], ["block", "if", [["get", "showStickerPicker", ["loc", [null, [146, 14], [146, 31]]]]], [], 4, null, ["loc", [null, [146, 8], [152, 15]]]], ["element", "action", ["CreateNewGroup", ["get", "model.curruser.user_id", ["loc", [null, [156, 40], [156, 62]]]]], ["on", "submit"], ["loc", [null, [156, 14], [156, 77]]]], ["element", "action", ["closeCreateGrp"], ["on", "click"], ["loc", [null, [159, 56], [159, 94]]]], ["block", "each", [["get", "model.users", ["loc", [null, [167, 24], [167, 35]]]]], [], 5, null, ["loc", [null, [167, 16], [175, 25]]]], ["element", "action", ["closeViewMember"], ["on", "click"], ["loc", [null, [186, 52], [186, 91]]]], ["element", "action", ["RemoveMember", ["get", "model.curruser.user_id", ["loc", [null, [189, 38], [189, 60]]]]], ["on", "submit"], ["loc", [null, [189, 14], [189, 75]]]], ["block", "each", [["get", "ViewGrpMembers", ["loc", [null, [190, 20], [190, 34]]]]], [], 6, null, ["loc", [null, [190, 12], [219, 21]]]], ["element", "action", ["addNewMember"], ["on", "submit"], ["loc", [null, [225, 14], [225, 53]]]], ["element", "action", ["closeViewMember"], ["on", "click"], ["loc", [null, [228, 56], [228, 95]]]], ["block", "each", [["get", "ViewGrpMembers", ["loc", [null, [231, 24], [231, 38]]]]], [], 7, null, ["loc", [null, [231, 16], [240, 25]]]], ["element", "action", ["closeFork"], ["on", "click"], ["loc", [null, [251, 52], [251, 85]]]], ["element", "action", ["CreatForkMessage"], ["on", "submit"], ["loc", [null, [254, 14], [254, 57]]]], ["block", "each", [["get", "newMembersForFork", ["loc", [null, [262, 24], [262, 41]]]]], [], 8, null, ["loc", [null, [262, 16], [270, 25]]]]],
       locals: [],
       templates: [child0, child1, child2, child3, child4, child5, child6, child7, child8]
     };
@@ -3602,7 +3831,7 @@ catch(err) {
 });
 
 if (!runningTests) {
-  require("demoapp/app")["default"].create({"name":"demoapp","version":"0.0.0+677e71f2"});
+  require("demoapp/app")["default"].create({"name":"demoapp","version":"0.0.0+4bd2dc32"});
 }
 
 /* jshint ignore:end */

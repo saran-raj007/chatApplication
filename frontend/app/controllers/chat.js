@@ -4,6 +4,8 @@ import StorageService from "../services/storage-service";
 import storageService from "../services/storage-service";
 import crypto from "../utils/crypto";
 //import {console} from "ember-cli-qunit";
+import ENV from 'demoapp/config/environment';
+
 
 
 
@@ -32,6 +34,7 @@ export default Ember.Controller.extend({
     secretKey :null,
     newForkMemberMessages : Ember.A(),
     forkKeys :Ember.A(),
+    newMembersForFork :Ember.A(),
     stickers: [
         { url: "/Stickers/dumbbell.png" },
         { url: "/Stickers/laptop.png" },
@@ -60,7 +63,7 @@ export default Ember.Controller.extend({
                 let receivedMessage = JSON.parse(event.data);
                 let msg_pack;
                 if(receivedMessage.dataFormat==="Text") {
-                    StorageService.getPrivateKey("privateKey").then(function (privateKey) {
+                    StorageService.getPrivateKey(self.get('sender_id')).then(function (privateKey) {
                         CryptoUtils.decryptMessage(receivedMessage.message, receivedMessage.aes_key_receiver, privateKey, receivedMessage.iv).then(function (message) {
                             msg_pack = {
                                 sender_id: receivedMessage.sender_id,
@@ -130,7 +133,7 @@ export default Ember.Controller.extend({
             self.get('AllMessage').clear();
             self.get('ViewGrpMembers').clear();
             Ember.$.ajax({
-                url : 'http://localhost:8080/chatApplication_war_exploded/FetchchatServlet',
+                url : ENV.apiHost+'FetchchatServlet',
                 type: 'POST',
                 contentType: 'application/json',
                 dataType : 'json',
@@ -142,7 +145,7 @@ export default Ember.Controller.extend({
                     Ember.$(".createGroup").css("display", "none");
                     Ember.$(".ViewGrpMember").css("display","none");
                     Ember.$(".Chat").css("display", "block");
-                    StorageService.getPrivateKey("privateKey").then( function (privateKey){
+                    StorageService.getPrivateKey(self.get('sender_id')).then( function (privateKey){
                         if(chat==="Private"){
                             var promises = [];
                             for (let msg of response.messages) {
@@ -250,8 +253,6 @@ export default Ember.Controller.extend({
                         console.log("Error on fetch key form indexDB:", error);
 
                     });
-
-                    //self.set('AllMessage', response.messages);
                     CryptoUtils.generateAESKey().then(function (aesKey) {
                         var receiverPublicKey = response.key;
                         var ownPublicKey =self.get('rsaPubown');
@@ -265,7 +266,6 @@ export default Ember.Controller.extend({
                             });
                         }
                         CryptoUtils.encryptAESKey(aesKey, ownPublicKey).then(function (encryptedAESKey) {
-                            // console.log("Encrypted AES Key:", encryptedAESKey);
                             self.set('own',encryptedAESKey);
                         }).catch(function (error) {
                             console.error("Error encrypting AES Key:", error);
@@ -349,6 +349,13 @@ export default Ember.Controller.extend({
             Ember.$(".createGroup").css("display", "block");
 
         },
+        closeCreateGrp : function (){
+            Ember.$(".Chat").css("display", "none");
+            Ember.$("ViewMember").css("display","none");
+            Ember.$(".createGroup").css("display", "none");
+            Ember.$(".empty-page").css("display", "block");
+
+        },
         addUsertoGroup(user_id){
                 if(event.target.checked){
                     this.get('groupMembers').pushObject(user_id);
@@ -356,7 +363,6 @@ export default Ember.Controller.extend({
                 else{
                     this.get('groupMembers').removeObject(user_id);
                 }
-               // console.log(this.get('groupMembers'));
         },
         CreateNewGroup(creater_id){
             let self =this;
@@ -370,7 +376,7 @@ export default Ember.Controller.extend({
             };
 
             Ember.$.ajax({
-                url : 'http://localhost:8080/chatApplication_war_exploded/CreateNewGroup',
+                url : ENV.apiHost+'CreateNewGroup',
                 type :'POST',
                 data : JSON.stringify(grpDetails),
                 xhrFields : {withCredentials : true},
@@ -410,7 +416,7 @@ export default Ember.Controller.extend({
             let socket = self.get('socket');
             let AESkey = self.get("AESkey");
             Ember.$.ajax({
-                url: 'http://localhost:8080/chatApplication_war_exploded/FetchGroupMembersKey',
+                url: ENV.apiHost+'FetchGroupMembersKey',
                 type: 'POST',
                 contentType: 'application/json',
                 dataType: 'json',
@@ -441,7 +447,7 @@ export default Ember.Controller.extend({
                             return CryptoUtils.encryptMessage(message, aesKeyObj);
                         })
                         .then(function (encryptedMessage) {
-                            self.get('AllMessage').pushObject({ sender_id: sender_id, message: message,dataFormat : "Text",timestamp: time,});
+                            self.get('AllMessage').pushObject({ sender_id: sender_id, message: message,dataFormat : "Text",timestamp: time});
                             if (socket) {
                                 socket.send(JSON.stringify({
                                     type: "Group",
@@ -473,7 +479,7 @@ export default Ember.Controller.extend({
                 grp_id : self.get('receiver_id')
             };
             Ember.$.ajax({
-                url: 'http://localhost:8080/chatApplication_war_exploded/ExitGroupServlet',
+                url: ENV.apiHost+'ExitGroupServlet',
                 type: 'POST',
                 contentType: 'application/json',
                 dataType: 'json',
@@ -504,7 +510,7 @@ export default Ember.Controller.extend({
             self.get('ViewGrpMembers').clear();
 
             Ember.$.ajax({
-                url: 'http://localhost:8080/chatApplication_war_exploded/FetchGroupMembers',
+                url: ENV.apiHost+'FetchGroupMembers',
                 type: 'POST',
                 contentType: 'application/json',
                 dataType: 'json',
@@ -542,7 +548,7 @@ export default Ember.Controller.extend({
             };
 
             Ember.$.ajax({
-                url : 'http://localhost:8080/chatApplication_war_exploded/RoleChange',
+                url : ENV.apiHost+'RoleChange',
                 type : 'POST',
                 contentType: 'application/json',
                 dataType: 'json',
@@ -572,7 +578,7 @@ export default Ember.Controller.extend({
             Ember.$(".Chat").css("display", "none");
             Ember.$(".addMembers").css("display","block");
             Ember.$.ajax({
-                url: 'http://localhost:8080/chatApplication_war_exploded/FetchUsers',
+                url: ENV.apiHost+'FetchUsers',
                 type: 'POST',
                 contentType: 'application/json',
                 dataType: 'json',
@@ -600,7 +606,7 @@ export default Ember.Controller.extend({
                 grpMembers : self.get('groupMembers'),
             };
             Ember.$.ajax({
-                url : 'http://localhost:8080/chatApplication_war_exploded/AddNewMembers',
+                url : ENV.apiHost+'AddNewMembers',
                 type :'POST',
                 data : JSON.stringify(newMembers),
                 xhrFields : {withCredentials : true},
@@ -649,7 +655,7 @@ export default Ember.Controller.extend({
             formData.append('sticker',sticker);
 
             Ember.$.ajax({
-                url : 'http://localhost:8080/chatApplication_war_exploded/FilesHandling',
+                url : ENV.apiHost+'FilesHandling',
                 type :'POST',
                 data : formData,
                 processData: false,
@@ -688,12 +694,35 @@ export default Ember.Controller.extend({
         },
         ForkMessage : function (message) {
             const self = this;
+            self.get('newMembersForFork').clear();
+            let isGroup =self.get('isGroup');
+            let url =(isGroup) ? ENV.apiHost+"FetchUsers": ENV.apiHost+"FetchNewUsersForFork";
+            let datas ={
+                grp_id :self.get('receiver_id'),
+            }
+            Ember.$.ajax({
+                url :url,
+                type :'POST',
+                data : JSON.stringify(datas),
+                contentType : 'json',
+                xhrFields : {withCredentials : true},
+                success : function (response){
+                    for(let user of response.users){
+                        self.get('newMembersForFork').pushObject(user);
+                    }
+                },
+                error : function (error){
+                    console.log(error);
+                }
+
+            });
+
             Ember.$(".createGroup").css("display", "none");
             Ember.$(".ViewGrpMember").css("display", "none");
             Ember.$(".addMembers").css("display", "none");
             Ember.$(".Chat").css("display", "none");
             Ember.$(".forkmsg").css("display", "block");
-            document.getElementById("fork-sender").textContent = message.sender_id;
+            document.getElementById("fork-sender").textContent = message.sender_name;
             document.getElementById("fork-msg").textContent = message.message;
             document.getElementById("fork-time").textContent = message.timestamp;
             self.set('forkedmsg', message);
@@ -744,7 +773,7 @@ export default Ember.Controller.extend({
 
                 // 1️⃣ Create new group chat
                 return Ember.$.ajax({
-                    url: 'http://localhost:8080/chatApplication_war_exploded/CreateNewGroup',
+                    url: ENV.apiHost+'CreateNewGroup',
                     type: 'POST',
                     data: JSON.stringify(msg_pack),
                     xhrFields: { withCredentials: true }
@@ -752,7 +781,7 @@ export default Ember.Controller.extend({
             }).then(response => {
                 self.set('forkID', response.grp_id);
                 return Ember.$.ajax({
-                    url: 'http://localhost:8080/chatApplication_war_exploded/FetchMessageFork',
+                    url: ENV.apiHost+'FetchMessageFork',
                     type: 'POST',
                     data: JSON.stringify({
                         msg_id: self.get('forkedmsg').mess_id,
@@ -776,13 +805,13 @@ export default Ember.Controller.extend({
                     }, 500);
                 });
             }).then(ViewGrpMembers => {
-                return StorageService.getPrivateKey("privateKey").then(RSAPrivateKey => {
+                return StorageService.getPrivateKey(self.get('sender_id')).then(RSAPrivateKey => {
                     self.set('secretKey', RSAPrivateKey);
                     console.log(ViewGrpMembers);
                     console.log("ViewGrpMembers Length:", ViewGrpMembers.length);
 
                     let encryptionPromises = [];
-                    self.set('newForkMemberMessages', []); // Ensure it's initialized as an empty array
+                    self.set('newForkMemberMessages', []);
 
                     for (let msg of response_data.messages) {
                         let promises = [];
@@ -792,15 +821,13 @@ export default Ember.Controller.extend({
                             if (!forkOldMembers.includes(member.user_id)) {
                                 let key = isGroup ? msg.enc_aes_key :
                                     (msg.sender_id === sender_id ? msg.aes_key_sender : msg.aes_key_receiver);
-                               // console.log(key);
+
                                 console.log(member.rsa_public_key);
                                 let promise = CryptoUtils.decryptAESKey(key, RSAPrivateKey)
                                     .then(dec_aes => {
-                                        // Export the CryptoKey as raw ArrayBuffer
                                         return window.crypto.subtle.exportKey("raw", dec_aes);
                                     })
                                     .then(arrayBuffer => {
-                                        // Encrypt the ArrayBuffer with the member's RSA public key
                                         return CryptoUtils.encryptAESKey(arrayBuffer, member.rsa_public_key);
                                     })
                                     .then(enc_aes => {
@@ -812,12 +839,11 @@ export default Ember.Controller.extend({
                             } else if (!isGroup) {
                                 forkKeys.push({ receiver_id: msg.receiver_id, enc_aes: msg.aes_key_receiver });
                                 forkKeys.push({ receiver_id: msg.sender_id, enc_aes: msg.aes_key_sender });
-                                break; // Stops the loop for this message
+                                break;
                             }
                         }
                         console.log(promises);
-                        alert("^");
-                        // Create the message object
+
                         let newForkMemberMessage = {
                             mess_id: msg.mess_id,
                             sender_id: msg.sender_id,
@@ -828,7 +854,6 @@ export default Ember.Controller.extend({
                             enc_aes_keys: forkKeys
                         };
 
-                        // Wait for encryption before pushing the message
                         let messagePromise = Promise.allSettled(promises).then(() => {
                             self.get('newForkMemberMessages').pushObject(newForkMemberMessage);
                         });
@@ -836,11 +861,10 @@ export default Ember.Controller.extend({
                         encryptionPromises.push(messagePromise);
                     }
 
-                    // Wait for all encryption to complete
                     return Promise.all(encryptionPromises);
                 }).then(() => {
                     return Ember.$.ajax({
-                        url: 'http://localhost:8080/chatApplication_war_exploded/CreateForkMessage',
+                        url: ENV.apiHost+'CreateForkMessage',
                         type: 'POST',
                         data: JSON.stringify({
                             isGroup: isGroup,
@@ -853,9 +877,19 @@ export default Ember.Controller.extend({
                     });
                 }).then(() => {
                     console.log("Fork message created successfully");
+                    window.location.href="chat";
                 }).catch(error => console.error(error));
 
             });
+        },
+        closeFork: function (){
+            Ember.$(".createGroup").css("display", "none");
+            Ember.$(".ViewGrpMember").css("display", "none");
+            Ember.$(".addMembers").css("display", "none");
+            Ember.$(".forkmsg").css("display", "none");
+            Ember.$(".Chat").css("display", "block");
+
+
         }
 
 
@@ -865,4 +899,12 @@ export default Ember.Controller.extend({
     }
 
 
+
+
 });
+
+
+// document.addEventListener("click", () => {
+//     document.querySelectorAll(".message-menu").forEach(menu => menu.style.display = "none");
+// });
+

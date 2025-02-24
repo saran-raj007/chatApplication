@@ -1,5 +1,6 @@
 package com.example.chatapplication;
 
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import jakarta.servlet.*;
@@ -21,23 +22,27 @@ import java.util.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-@WebServlet("/FetchUsers")
-public class FetchUsersForGroup extends HttpServlet {
+
+@WebServlet("/FetchNewUsersForFork")
+public class FetchNewUsersForFork extends HttpServlet {
+
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json");
         String sender_id = UserSessionGenerate.validateToken(request);
+        JSONObject jsonResponse = new JSONObject();
         if(sender_id != null){
             JsonObject jsonObject = JsonParser.parseReader(new InputStreamReader(request.getInputStream())).getAsJsonObject();
-            String grp_id = jsonObject.get("grp_id").getAsString();
+            String user_id = jsonObject.get("grp_id").getAsString();
             Connection con =DBconnection.getConnection();
             PreparedStatement ps = null;
             ResultSet rs = null;
             List<JSONObject> users = new ArrayList<>();
             if(con != null){
-                String qryForuser ="select * from users where user_id not in (select user_id from group_members where grp_id=?)";
+                String qryForuser ="select * from users where user_id !=? and user_id != ?";
                 try{
                     ps = con.prepareStatement(qryForuser);
-                    ps.setString(1,grp_id);
+                    ps.setString(1,sender_id);
+                    ps.setString(2,user_id);
                     rs = ps.executeQuery();
 
                     while(rs.next()){
@@ -47,13 +52,13 @@ public class FetchUsersForGroup extends HttpServlet {
                         user.put("mobile_number", rs.getString("mobile_number"));
                         users.add(user);
                     }
-                    JSONObject jsonResponse = new JSONObject();
                     jsonResponse.put("users", new JSONArray(users));
                     response.getWriter().write(jsonResponse.toString());
 
                 }catch (SQLException e){
                     e.printStackTrace();
-                    response.getWriter().write(e.toString());
+                    jsonResponse.put("error", "SQL Error");
+                    response.getWriter().write(jsonResponse.toString());
 
                 }
 
@@ -62,10 +67,8 @@ public class FetchUsersForGroup extends HttpServlet {
 
         }
         else{
-            response.getWriter().write("{\"error\": \"Invalid token\"}");
-
+            jsonResponse.put("error", "Invalid token");
+            response.getWriter().write(jsonResponse.toString());
         }
-
     }
-
 }

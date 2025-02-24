@@ -17,7 +17,7 @@ export default Ember.Controller.extend({
 
                  Ember.$.ajax({
 
-                     url: 'http://localhost:8080/chatApplication_war_exploded/SignupServlet',
+                     url: ENV.apiHost+'SignupServlet',
                      type: 'POST',
                      contentType: 'application/json',
                      data:  JSON.stringify({

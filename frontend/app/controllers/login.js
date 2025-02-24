@@ -1,4 +1,5 @@
 import Ember from 'ember';
+import ENV from 'demoapp/config/environment';
 
 export default Ember.Controller.extend({
     actions: {
@@ -11,7 +12,7 @@ export default Ember.Controller.extend({
                 return ;
             }
             $.ajax({
-                url: 'http://localhost:8080/chatApplication_war_exploded/LoginServlet',
+                url: ENV.apiHost+'LoginServlet',
                 type: 'POST',
                 contentType: 'application/json',
                 xhrFields: { withCredentials: true },
