@@ -21,7 +21,6 @@ export default Ember.Controller.extend({
                     user_pass: user_pass
                 }),
                 success: function(response) {
-
                     window.location.href="chat";
                 },
                 error: function(error) {

@@ -147,6 +147,7 @@ const CryptoUtils = {
     },
 
     decryptMessage: function (message, aesKey, rsaKey, iv) {
+
         return this.decryptAESKey(aesKey, rsaKey).then(function (daesKey) {
             let encryptedMessage = new Uint8Array(atob(message).split("").map(c => c.charCodeAt(0)));
             let iv_new = new Uint8Array(atob(iv).split("").map(c => c.charCodeAt(0)));

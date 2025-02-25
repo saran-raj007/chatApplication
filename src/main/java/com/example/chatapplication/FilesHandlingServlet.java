@@ -5,14 +5,9 @@ import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
-import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,19 +40,6 @@ public class FilesHandlingServlet extends HttpServlet {
 
 
     }
-    private String cookieExtract(HttpServletRequest request){
-        Cookie[] cookies = request.getCookies();
 
-        if (cookies != null){
-            for (Cookie cookie : cookies){
-                if("SessID".equals(cookie.getName())){
-                    return  cookie.getValue();
-
-                }
-            }
-        }
-        return null;
-
-    }
 
 }

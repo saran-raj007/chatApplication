@@ -57,7 +57,7 @@ export default Ember.Controller.extend({
                 self.set('sender_id', curruser.user_id);
                 self.set('rsaPubown',curruser.rsa_public_key);
             }
-            let socket = new WebSocket(`ws://localhost:8080/chatApplication_war_exploded/LiveChat/${this.sender_id}`);
+            let socket = new WebSocket(`wss://localhost:8443/chatApplication_war_exploded/LiveChat/${this.sender_id}`);
             socket.onopen = () => console.log('WebSocket Connected');
             socket.onmessage = (event) => {
                 let receivedMessage = JSON.parse(event.data);
@@ -83,12 +83,14 @@ export default Ember.Controller.extend({
                     });
                 }
                 else{
+                    let imageUrl = `https://localhost:8443/chatApplication_war_exploded/RetriveFile?file_name=${encodeURIComponent(receivedMessage.file_name)}`;
                     msg_pack = {
                         sender_id: receivedMessage.sender_id,
-                        file_name: receivedMessage.file_name,
+                        file_name: imageUrl,
                         sender_name: receivedMessage.sender_name,
                         dataFormat : 'Sticker',
                     };
+
                     self.get('AllMessage').pushObject(msg_pack);
                 }
             };
@@ -169,10 +171,12 @@ export default Ember.Controller.extend({
                                     });
                                     promises.push(promise);
                                 } else {
+                                    let imageUrl = `https://localhost:8443/chatApplication_war_exploded/RetriveFile?file_name=${encodeURIComponent(msg.file_name)}`;
+
                                     let stickerPromise = Ember.RSVP.resolve({
                                         mess_id :msg.mess_id,
                                         sender_id: msg.sender_id,
-                                        file_name: msg.file_name,
+                                        file_name: imageUrl,
                                         dataFormat: "Sticker",
                                         timestamp: msg.timestamp
                                     });
@@ -223,10 +227,12 @@ export default Ember.Controller.extend({
                                     promises.push(promise);
                                 }
                                 else{
+                                    let imageUrl = `https://localhost:8443/chatApplication_war_exploded/RetriveFile?file_name=${encodeURIComponent(msg.file_name)}`;
+
                                     let stickerPromise = Ember.RSVP.resolve({
                                         mess_id :msg.mess_id,
                                         sender_id: msg.sender_id,
-                                        file_name: msg.file_name,
+                                        file_name: imageUrl,
                                         dataFormat: "Sticker",
                                         sender_name : msg.sender_name,
                                         timestamp: msg.timestamp,
@@ -391,8 +397,6 @@ export default Ember.Controller.extend({
 
             });
             console.log("Private key stored successfully!");
-
-
 
         },
 
@@ -662,9 +666,11 @@ export default Ember.Controller.extend({
                 contentType : false,
                 xhrFields : {withCredentials : true},
                 success : function (response) {
+                    let imageUrl = `https://localhost:8443/chatApplication_war_exploded/RetriveFile?file_name=${encodeURIComponent(response.file_name)}`;
+
                     let sticker_details = {
                         sender_id: self.get('sender_id'),
-                        file_name: response.file_name,
+                        file_name: imageUrl,
                         dataFormat: "Sticker",
                         type: self.get('isGroup') ? 'Group' : 'Private',
                         sender_name: self.get('model.curruser.name')
@@ -729,6 +735,7 @@ export default Ember.Controller.extend({
         },
         CreatForkMessage: function () {
             const self = this;
+            self.get('ViewGrpMembers').clear();
             let chatName = document.getElementById('chat-title').value;
             let isGroup = self.get('isGroup');
             let sender_id = self.get('sender_id');
@@ -755,6 +762,7 @@ export default Ember.Controller.extend({
                         }
                         resolve(ViewGrpMembers);
                     }, 500);
+                    self.get('ViewGrpMembers').clear();
                 });
             } else if (!isGroup && isChecked) {
                 forkOldMembers.pushObject(receiver_id);
@@ -819,9 +827,7 @@ export default Ember.Controller.extend({
 
                         for (let member of ViewGrpMembers) {
                             if (!forkOldMembers.includes(member.user_id)) {
-                                let key = isGroup ? msg.enc_aes_key :
-                                    (msg.sender_id === sender_id ? msg.aes_key_sender : msg.aes_key_receiver);
-
+                                let key = isGroup ? msg.enc_aes_key : (msg.sender_id === sender_id ? msg.aes_key_sender : msg.aes_key_receiver);
                                 console.log(member.rsa_public_key);
                                 let promise = CryptoUtils.decryptAESKey(key, RSAPrivateKey)
                                     .then(dec_aes => {
@@ -837,9 +843,9 @@ export default Ember.Controller.extend({
 
                                 promises.push(promise);
                             } else if (!isGroup) {
+
                                 forkKeys.push({ receiver_id: msg.receiver_id, enc_aes: msg.aes_key_receiver });
                                 forkKeys.push({ receiver_id: msg.sender_id, enc_aes: msg.aes_key_sender });
-                                break;
                             }
                         }
                         console.log(promises);
@@ -904,7 +910,4 @@ export default Ember.Controller.extend({
 });
 
 
-// document.addEventListener("click", () => {
-//     document.querySelectorAll(".message-menu").forEach(menu => menu.style.display = "none");
-// });
 

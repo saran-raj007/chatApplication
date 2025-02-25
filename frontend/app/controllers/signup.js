@@ -1,6 +1,8 @@
 import Ember from "ember";
 import CryptoUtils from "../utils/crypto";
 import StorageService from "../services/storage-service";
+import ENV from 'demoapp/config/environment';
+
 
 export default Ember.Controller.extend({
 

@@ -23,6 +23,7 @@ import org.json.JSONObject;
 public class FetchchatServlet extends HttpServlet {
 
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("application/json");
         String sender_id = UserSessionGenerate.validateToken(request);
         JSONObject jsonResponse = new JSONObject();
         if(sender_id!=null ){
@@ -105,8 +106,6 @@ public class FetchchatServlet extends HttpServlet {
                         response.getWriter().write("{\"status\":\"error\", \"message\":\"Something went wrong\"}");
 
                     }
-
-
             }
 
         }
@@ -149,7 +148,6 @@ public class FetchchatServlet extends HttpServlet {
         }
         return msgList;
 
-
     }
     private List<JSONObject> msgPackForGroup(ResultSet rs, ResultSet rss) throws SQLException{
         List<JSONObject> msgList = new ArrayList<>();
@@ -179,11 +177,10 @@ public class FetchchatServlet extends HttpServlet {
             msg.put("receiver_id", rss.getString("receiver_id"));
             msg.put("file_name", rss.getString("file_name"));
             msg.put("timestamp", rss.getString("created_at"));
-         //   msg.put("sender_name", rs.getString("name"));
+            msg.put("sender_name", rss.getString("name"));
             msgList.add(msg);
             stickerMsg=rss.next();
         }
-
 
         return msgList;
 
