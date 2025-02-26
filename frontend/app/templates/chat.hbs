@@ -22,17 +22,17 @@
         </div>
         <div class="friends">
             {{#each model.users as |message|}}
-                <li class="group" {{action "fetchchat" message "Private" }}>
-                    <div class="avatar"><img src="assets/profile.png" alt=""></div>
-                    <p class="GroupName">{{message.name}}</p>
-                    <span class="GroupDescrp">{{message.mobile_number}}</span>
-
+                <li class="card flex-row align-items-center justify-content-around   group "  {{action "fetchchat" message "Private" }}>
+                    <div class="avatar" style="width: 50px; height: 50px;"><img src="assets/profile.png" alt=""></div>
+                        <p class="align-items-center">{{message.name}}</p>
+                        <span class="">{{message.mobile_number}}</span>
+                        <span class="text-success">{{message.status}}</span>
                 </li>
 
             {{/each}}
             {{#each model.groups as |group|}}
-                <li class="group" {{action "fetchchat" group "Group" }}>
-                    <div class="avatar"><img src="assets/profile.png" alt=""></div>
+                <li class="card flex-row text-align-center group" {{action "fetchchat" group "Group" }}>
+                    <div class="avatar"style="width: 50px; height: 50px;"><img src="assets/profile.png" alt=""></div>
                     <p class="GroupName">{{group.name}}</p>
 
                 </li>
@@ -53,6 +53,7 @@
             <li class="chatDetails">
                 <img src="assets/profile.png" alt="">
                 <p class="recevName">{{selectedUsername}}</p>
+                <span>{{currentStatus}}</span>
             </li>
             <div class="grpOperations">
                 {{#if isGroup}}
@@ -80,6 +81,7 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-dark bg-dark">
                                         <li><a class="dropdown-item" {{action "ForkMessage" message on="click"}}>fork from here</a></li>
+                                        <li><a class="dropdown-item" {{action "DeleteMessage" message on="click"}}>Delete message</a></li>
 
                                     </ul>
                                 </div>
@@ -103,6 +105,8 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-dark bg-dark">
                                         <li><a class="dropdown-item" {{action "ForkMessage" message on="click"}}>fork from here</a></li>
+                                        <li><a class="dropdown-item" {{action "DeleteMessage" message on="click"}}>Delete message</a></li>
+
 
                                     </ul>
                                 </div>
@@ -135,6 +139,8 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-dark bg-dark">
                                         <li><a class="dropdown-item" {{action "ForkMessage" message on="click"}}>fork from here</a></li>
+                                        <li><a class="dropdown-item" {{action "DeleteMessage" message on="click"}}>Delete message</a></li>
+
 
                                     </ul>
                                 </div>
@@ -154,6 +160,7 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-dark bg-dark">
                                         <li><a class="dropdown-item" {{action "ForkMessage" message on="click"}}>fork from here</a></li>
+                                        <li><a class="dropdown-item" {{action "DeleteMessage" message on="click"}}>Delete message</a></li>
 
                                     </ul>
                                 </div>

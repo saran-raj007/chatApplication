@@ -6,18 +6,11 @@ import jakarta.servlet.*;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-
 import java.io.*;
-
 import java.net.URLDecoder;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.sql.*;
-import java.util.*;
-import org.json.JSONArray;
-import org.json.JSONObject;
+
+
 @WebServlet("/RetriveFile")
 public class FileRetriveServlet extends HttpServlet {
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

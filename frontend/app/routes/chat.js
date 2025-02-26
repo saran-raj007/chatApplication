@@ -9,6 +9,7 @@ export default Ember.Route.extend({
             xhrFields: { withCredentials: true }
         }).fail((error) => {
             alert(error.message);
+            this.replaceWith('Logout');
             alert("Unauthorized access! Redirecting to login...");
             Ember.run(() => {
                 this.replaceWith('login');

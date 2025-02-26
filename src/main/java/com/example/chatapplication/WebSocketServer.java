@@ -25,12 +25,13 @@ import java.sql.*;
 @ServerEndpoint("/LiveChat/{sender_id}")
 @MultipartConfig
 public class WebSocketServer  {
-    private static final Map<String, Session> userSessions = new ConcurrentHashMap<>();
+    public static final Map<String, Session> userSessions = new ConcurrentHashMap<>();
 
     @OnOpen
-    public void onOpen(Session session, @PathParam("sender_id") String sender_id) {
+    public void onOpen(Session session, @PathParam("sender_id") String sender_id) throws IOException {
         userSessions.put(sender_id, session);
         System.out.println("New connection: " + sender_id);
+        updateStatus(sender_id,"Online");
     }
 
 
@@ -59,7 +60,8 @@ public class WebSocketServer  {
                 jsonResponse.put("aes_key_receiver", aeskey_receiver);
                 jsonResponse.put("aes_key_sender", aeskey_sender);
 
-            } else {
+            }
+            else {
 
                 String file_name = msg.getString("file_name");
                 String sender_name = msg.getString("sender_name");
@@ -75,7 +77,8 @@ public class WebSocketServer  {
                 receiverSession.getBasicRemote().sendText(jsonResponse.toString());
             }
 
-        } else {
+        }
+        else {
             String grp_id = msg.getString("grp_id");
             String sender_name = msg.getString("sender_name");
 
@@ -92,7 +95,8 @@ public class WebSocketServer  {
                 }
                 sendMessageToGroup(grp_id, message_text, msg_iv, memberaesKeyMap, sender_id, sender_name);
                 storeGroupMessage(grp_id, sender_id, message_text, msg_iv, memberaesKeyMap);
-            } else {
+            }
+            else {
                 String file_name = msg.getString("file_name");
                 storeFiles(file_name, sender_id, grp_id);
                 JSONObject jsonResponse = new JSONObject();
@@ -133,13 +137,29 @@ public class WebSocketServer  {
 
 
     }
+    public void updateStatus(String user_id,String status) throws IOException {
+        JSONObject statusUpdate = new JSONObject();
+        statusUpdate.put("dataFormat", "status_update");
+        statusUpdate.put("user_id", user_id);
+        statusUpdate.put("status", status);
+        for(Session session : userSessions.values()){
+            session.getBasicRemote().sendText(statusUpdate.toString());
+        }
+    }
+
+    public static void deleteMessage(String msg_id) throws IOException {
+        JSONObject messageUpdate = new JSONObject();
+        messageUpdate.put("dataFormat", "message_update");
+        messageUpdate.put("msg_id", msg_id);
+    }
 
 
 
     @OnClose
-    public void onClose(Session session, @PathParam("sender_id") String sender_id) {
+    public void onClose(Session session, @PathParam("sender_id") String sender_id) throws IOException {
         userSessions.remove(sender_id);
         System.out.println("Connection closed: " + sender_id);
+        updateStatus(sender_id,"Offline");
     }
 
     @OnError

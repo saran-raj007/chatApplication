@@ -32,7 +32,6 @@ public class ChatServlet extends HttpServlet {
             Connection con=DBconnection.getConnection();
             PreparedStatement ps =null;
             JSONObject curruser = new JSONObject();
-
             if(con!=null){
                  String qry ="select * from users";
                  String qry_grp ="select * from chat_groups where group_id in (select grp_id from group_members where user_id =?)";
@@ -44,9 +43,16 @@ public class ChatServlet extends HttpServlet {
                      while(rs.next()){
                          JSONObject user = new JSONObject();
                          String userId = rs.getString("user_id");
+                         if(WebSocketServer.userSessions.containsKey(userId)){
+                             user.put("status", "online");
+                         }
+                         else{
+                             user.put("status", "offline");
+                         }
                          user.put("user_id", userId);
                          user.put("name", rs.getString("name"));
                          user.put("mobile_number", rs.getString("mobile_number"));
+                         user.put("last_seen", rs.getString("last_seen"));
                          user.put("rsa_public_key", rs.getString("rsa_public_key"));
                          if(userId.equals(usrid)) {
                              curruser = user;

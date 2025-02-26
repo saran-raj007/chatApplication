@@ -1,10 +1,9 @@
 import Ember from 'ember';
 import CryptoUtils from "../utils/crypto";
 import StorageService from "../services/storage-service";
-import storageService from "../services/storage-service";
-import crypto from "../utils/crypto";
-//import {console} from "ember-cli-qunit";
+
 import ENV from 'demoapp/config/environment';
+
 
 
 
@@ -35,6 +34,7 @@ export default Ember.Controller.extend({
     newForkMemberMessages : Ember.A(),
     forkKeys :Ember.A(),
     newMembersForFork :Ember.A(),
+    currentStatus : null,
     stickers: [
         { url: "/Stickers/dumbbell.png" },
         { url: "/Stickers/laptop.png" },
@@ -62,7 +62,13 @@ export default Ember.Controller.extend({
             socket.onmessage = (event) => {
                 let receivedMessage = JSON.parse(event.data);
                 let msg_pack;
-                if(receivedMessage.dataFormat==="Text") {
+                if(receivedMessage.dataFormat==="status_update"){
+                    let user = self.get('model.users').findBy('user_id', receivedMessage.user_id);
+                    if (user) {
+                        Ember.set(user, 'status', receivedMessage.status);
+                    }
+                }
+                else if(receivedMessage.dataFormat==="Text") {
                     StorageService.getPrivateKey(self.get('sender_id')).then(function (privateKey) {
                         CryptoUtils.decryptMessage(receivedMessage.message, receivedMessage.aes_key_receiver, privateKey, receivedMessage.iv).then(function (message) {
                             msg_pack = {
@@ -131,6 +137,7 @@ export default Ember.Controller.extend({
                 self.set('receiver_id',receiver.group_id);
 
             }
+            self.set('currentStatus', (receiver.status==="online") ? receiver.status : receiver.last_seen);
             self.set('selectedUsername',receiver.name);
             self.get('AllMessage').clear();
             self.get('ViewGrpMembers').clear();
@@ -264,7 +271,7 @@ export default Ember.Controller.extend({
                         var ownPublicKey =self.get('rsaPubown');
                         self.set('AESkey',aesKey);
                         self.set('rsapubkey',receiverPublicKey);
-                        if(chat=="Private") {
+                        if(chat==="Private") {
                             CryptoUtils.encryptAESKey(aesKey, receiverPublicKey).then(function (encryptedAESKey) {
                                 self.set('Ekey', encryptedAESKey);
                             }).catch(function (error) {
@@ -326,7 +333,6 @@ export default Ember.Controller.extend({
             }).catch(function (error) {
                 console.error("Error importing key:", error);
             });
-
 
         },
 
@@ -905,6 +911,33 @@ export default Ember.Controller.extend({
             Ember.$(".forkmsg").css("display", "none");
             Ember.$(".Chat").css("display", "block");
 
+
+        },
+        DeleteMessage : function (message){
+            const self =this;
+            let msg_pack ={
+                msg_id : message.mess_id,
+                isGroup : self.get('isGroup'),
+                dataFormat : message.dataFormat,
+            };
+
+            Ember.$.ajax({
+                url : ENV.apiHost + 'DeleteMessage',
+                type : 'POST',
+                contentType : 'application/json',
+                data : JSON.stringify(msg_pack),
+                xhrFields: { withCredentials: true },
+                success : function (response){
+                    self.set('AllMessage', self.get('AllMessage').filter(msg => msg.mess_id !== message.mess_id));
+                    console.log("Message Deleted")
+
+                },
+                error : function (error){
+                    console.error("Error on Deleting Message");
+
+                }
+
+            });
 
         }
 
