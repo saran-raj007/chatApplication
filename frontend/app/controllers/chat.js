@@ -451,7 +451,6 @@ export default Ember.Controller.extend({
                             return CryptoUtils.encryptMessage(message, aesKeyObj);
                         })
                         .then(function (encryptedMessage) {
-                            self.get('AllMessage').pushObject({ sender_id: sender_id, message: message,dataFormat : "Text",timestamp: time});
                             if (socket) {
                                 socket.send(JSON.stringify({
                                     type: "Group",
@@ -466,6 +465,7 @@ export default Ember.Controller.extend({
 
                                 }));
                             }
+
                         })
                         .catch(function (error) {
                             console.error("Error encrypting message:", error);
@@ -474,6 +474,8 @@ export default Ember.Controller.extend({
             }).fail(function (error) {
                 console.error("Error fetching group keys:", error);
             });
+            self.get('AllMessage').pushObject({ sender_id: sender_id, message: message,dataFormat : "Text",timestamp: time});
+
         },
 
         ExitGroup : function (member_id){
@@ -670,16 +672,24 @@ export default Ember.Controller.extend({
 
                     let sticker_details = {
                         sender_id: self.get('sender_id'),
+                        file_name: response.file_name,
+                        dataFormat: "Sticker",
+                        type: self.get('isGroup') ? 'Group' : 'Private',
+                        sender_name: self.get('model.curruser.name')
+                    };
+                    let sticker_details1 = {
+                        sender_id: self.get('sender_id'),
                         file_name: imageUrl,
                         dataFormat: "Sticker",
                         type: self.get('isGroup') ? 'Group' : 'Private',
                         sender_name: self.get('model.curruser.name')
                     };
+
                     sticker_details[self.get('isGroup') ? 'grp_id' : 'receiver_id'] = self.get('receiver_id');
                     if(socket){
                         socket.send(JSON.stringify(sticker_details));
                     }
-                    self.get('AllMessage').pushObject(sticker_details);
+                    self.get('AllMessage').pushObject(sticker_details1);
                 },
                 error : function (error){
                     console.log(error);

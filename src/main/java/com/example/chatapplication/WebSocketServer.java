@@ -189,8 +189,9 @@ public class WebSocketServer  {
             String member_id = entry.getKey();
             String key = entry.getValue();
             Session receiverSession = userSessions.get(member_id);
-            if(receiverSession != null && receiverSession.isOpen()) {
+            if(receiverSession != null && receiverSession.isOpen() && !member_id.equals(sender_id)) {
                 JSONObject jsonResponse = new JSONObject();
+                jsonResponse.put("dataFormat", "Text");
                 jsonResponse.put("grp_id", grp_id);
                 jsonResponse.put("member_id", member_id);
                 jsonResponse.put("sender_id",sender_id);

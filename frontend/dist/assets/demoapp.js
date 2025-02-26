@@ -498,7 +498,6 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                         _demoappUtilsCrypto["default"].importAESKey(AESkey).then(function (aesKeyObj) {
                             return _demoappUtilsCrypto["default"].encryptMessage(message, aesKeyObj);
                         }).then(function (encryptedMessage) {
-                            self.get('AllMessage').pushObject({ sender_id: sender_id, message: message, dataFormat: "Text", timestamp: time });
                             if (socket) {
                                 socket.send(JSON.stringify({
                                     type: "Group",
@@ -520,6 +519,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                 }).fail(function (error) {
                     console.error("Error fetching group keys:", error);
                 });
+                self.get('AllMessage').pushObject({ sender_id: sender_id, message: message, dataFormat: "Text", timestamp: time });
             },
 
             ExitGroup: function ExitGroup(member_id) {
@@ -739,16 +739,24 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
 
                         var sticker_details = {
                             sender_id: self.get('sender_id'),
+                            file_name: response.file_name,
+                            dataFormat: "Sticker",
+                            type: self.get('isGroup') ? 'Group' : 'Private',
+                            sender_name: self.get('model.curruser.name')
+                        };
+                        var sticker_details1 = {
+                            sender_id: self.get('sender_id'),
                             file_name: imageUrl,
                             dataFormat: "Sticker",
                             type: self.get('isGroup') ? 'Group' : 'Private',
                             sender_name: self.get('model.curruser.name')
                         };
+
                         sticker_details[self.get('isGroup') ? 'grp_id' : 'receiver_id'] = self.get('receiver_id');
                         if (socket) {
                             socket.send(JSON.stringify(sticker_details));
                         }
-                        self.get('AllMessage').pushObject(sticker_details);
+                        self.get('AllMessage').pushObject(sticker_details1);
                     },
                     error: function error(_error8) {
                         console.log(_error8);
@@ -3956,7 +3964,7 @@ catch(err) {
 });
 
 if (!runningTests) {
-  require("demoapp/app")["default"].create({"name":"demoapp","version":"0.0.0+8c8a3a72"});
+  require("demoapp/app")["default"].create({"name":"demoapp","version":"0.0.0+044cad22"});
 }
 
 /* jshint ignore:end */

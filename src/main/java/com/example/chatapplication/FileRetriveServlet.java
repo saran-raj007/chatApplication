@@ -9,6 +9,7 @@ import jakarta.servlet.http.*;
 
 import java.io.*;
 
+import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,15 +25,16 @@ public class FileRetriveServlet extends HttpServlet {
         String sender_id = UserSessionGenerate.validateToken(request);
 
         if(sender_id != null){
-            String file_name = request.getParameter("file_name");  // Use GET parameter
+            String file_name = request.getParameter("file_name");
+            file_name = URLDecoder.decode(file_name, "UTF-8");
+            System.out.println(file_name);
             File imageFile = new File(getServletContext().getRealPath("") + "/uploads/" + file_name);
 
             if (!imageFile.exists()) {
                 response.sendError(HttpServletResponse.SC_NOT_FOUND, "File not found");
                 return;
             }
-
-            response.setContentType(Files.probeContentType(imageFile.toPath())); // Set correct image type
+            response.setContentType(Files.probeContentType(imageFile.toPath()));
             response.setContentLength((int) imageFile.length());
 
             try (FileInputStream fis = new FileInputStream(imageFile);
