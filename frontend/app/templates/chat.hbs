@@ -3,7 +3,12 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; report-uri http://localhost:4200/csp-report;">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js"></script>
 <link rel="stylesheet" href="assets/chat.css">
+
+
+
 
 
 <main>
@@ -59,9 +64,9 @@
                 {{#if isGroup}}
                     <i class="bi bi-box-arrow-right text-danger  fs-1" title="Exit"  style="cursor: pointer;" {{action "ExitGroup" model.curruser.user_id on="click"}}></i>
                     {{#if isAdmin}}
-                        <i class="bi bi-person-add add fs-1" title="Add members" {{action "addMembers" on="click"}} style="cursor: pointer;"></i>
+                        <i class="bi bi-person-add add fs-1" title="Add members" {{action "addMembers" on="click"}} data-bs-toggle="modal" data-bs-target="#addmember" style="cursor: pointer;"></i>
                     {{/if}}
-                    <i class="bi bi-eye-fill text-warning fs-1" title="View members" {{action "OpenViweMember" on="click"}} style="cursor: pointer;"></i>
+                    <i class="bi bi-eye-fill text-warning fs-1" title="View members" {{action "OpenViweMember" on="click"}} data-bs-toggle="modal" data-bs-target="#viewmodal" style="cursor: pointer;"></i>
                 {{/if}}
             </div>
         </div>
@@ -70,8 +75,11 @@
             {{#each AllMessage as |message|}}
                 {{#if (eq message.dataFormat "Text")}}
                     {{#if (neq message.sender_id model.curruser.user_id)}}
-                        <div class="message  card d-flex flex-column w-25 you" {{action "toggleMenu"   on="click"}}>
+                        <div class="message  card d-flex flex-column w-25 you">
                             <div class="d-flex flex-row justify-content-between">
+                                {{#if messageForwardMode}}
+                                    <input type="checkbox" {{action "updateForwardMessage" message on="change" }}  id="mf" name="mf">
+                                {{/if}}
                                 <span class="senderName">{{message.sender_name}}</span>
                                 <div class="dropdown">
                                     <button class="btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -81,7 +89,9 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-dark bg-dark">
                                         <li><a class="dropdown-item" {{action "ForkMessage" message on="click"}}>fork from here</a></li>
-                                        <li><a class="dropdown-item" {{action "DeleteMessage" message on="click"}}>Delete message</a></li>
+                                        <li><a class="dropdown-item" {{action "DeleteMessage" message "DFM" on="click"}}>Delete for me message</a></li>
+                                        <li><a class="dropdown-item" {{action "ForwardMessage" true   on="click"}}>Forward message</a></li>
+
 
                                     </ul>
                                 </div>
@@ -96,6 +106,9 @@
                     {{else}}
                         <div class="message me  card d-flex flex-column w-25">
                             <div class="d-flex flex-row justify-content-between">
+                                {{#if messageForwardMode}}
+                                <input type="checkbox" {{action "updateForwardMessage" message on="change" }} id="mf" name="mf">
+                                {{/if}}
                                 <span class="senderName">you</span>
                                 <div class="dropdown">
                                     <button class="btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -105,7 +118,10 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-dark bg-dark">
                                         <li><a class="dropdown-item" {{action "ForkMessage" message on="click"}}>fork from here</a></li>
-                                        <li><a class="dropdown-item" {{action "DeleteMessage" message on="click"}}>Delete message</a></li>
+                                        <li><a class="dropdown-item" {{action "DeleteMessage" message "DFM" on="click"}}>Delete for me message</a></li>
+                                        <li><a class="dropdown-item" {{action "DeleteMessage" message "DFE" on="click"}}>Delete for everyone message</a></li>
+                                        <li><a class="dropdown-item" {{action "ForwardMessage" true   on="click"}}>Forward message</a></li>
+
 
 
                                     </ul>
@@ -129,6 +145,9 @@
                     {{#if (neq message.sender_id model.curruser.user_id)}}
                         <div class="message syou">
                             <div class="d-flex justify-content-between">
+                                {{#if messageForwardMode}}
+                                    <input type="checkbox" {{action "updateForwardMessage" message on="change" }}   id="mf" name="mf">
+                                {{/if}}
                                 <div class="dropdown">
                                     <span class="text-danger">{{message.sender_name}}</span>
 
@@ -139,7 +158,9 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-dark bg-dark">
                                         <li><a class="dropdown-item" {{action "ForkMessage" message on="click"}}>fork from here</a></li>
-                                        <li><a class="dropdown-item" {{action "DeleteMessage" message on="click"}}>Delete message</a></li>
+                                        <li><a class="dropdown-item" {{action "DeleteMessage" message "DFM" on="click"}}>Delete for me message</a></li>
+                                        <li><a class="dropdown-item" {{action "ForwardMessage" true   on="click"}}>Forward message</a></li>
+
 
 
                                     </ul>
@@ -150,6 +171,9 @@
                     {{else}}
                         <div class=" message sme">
                             <div class="d-flex justify-content-between">
+                                {{#if messageForwardMode}}
+                                    <input type="checkbox" {{action "updateForwardMessage" message on="change" }}  id="mf" name="mf" >
+                                {{/if}}
                                 <div class="dropdown">
                                     <span class="text-danger">you</span>
 
@@ -160,7 +184,10 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-dark bg-dark">
                                         <li><a class="dropdown-item" {{action "ForkMessage" message on="click"}}>fork from here</a></li>
-                                        <li><a class="dropdown-item" {{action "DeleteMessage" message on="click"}}>Delete message</a></li>
+                                        <li><a class="dropdown-item" {{action "DeleteMessage" message "DFM" on="click"}}>Delete for me message</a></li>
+                                        <li><a class="dropdown-item" {{action "DeleteMessage" message "DFE" on="click"}}>Delete for everyone message</a></li>
+                                        <li><a class="dropdown-item" {{action "ForwardMessage" true   on="click"}}>Forward message</a></li>
+
 
                                     </ul>
                                 </div>
@@ -173,10 +200,27 @@
         </div>
 
         <div class="messageCenter">
+
         <form id="MessageForm" >
+            {{#if messageForwardMode}}
+                <div class="card d-flex gap-3 w-100 p-2">
+                    <div class="card-title d-flex justify-content-between ">
+                        <h3>Forward Messages</h3>
+                        <button type="button" class="btn-close btn btn-danger" {{action "ForwardMessage" false on="click"}} aria-label="Close"></button>
+                    </div>
+                    <div class="d-flex justify-content-around">
+                        <span>{{countOfforwardMessage}} messages selected</span>
+                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#exampleModal" >forward</button>
+                    </div>
+                </div>
+
+            {{else}}
             <input type="text" id="MessageInput" name="MessageInput">
             <button type="button" {{action "openStickerPicker"}}>stickers</button>
             <button type="submit" {{action (if isGroup "SendMessageOnGroup" "sendMessage") on="click" }}class="Send">send</button>
+            {{/if}}
+
+
         </form>
         {{#if showStickerPicker}}
             <div class="sticker-picker" >
@@ -215,46 +259,7 @@
         </form>
     </section>
 
-    <section class="ViewGrpMember">
-        <div class="d-flex justify-content-between">
-            <h1>Group Members</h1><br>
-            <button type="button" class="btn-close" {{action "closeViewMember" on="click"}} aria-label="Close"></button>
-        </div><br>
 
-        <form {{action "RemoveMember" model.curruser.user_id on="submit" }}>
-            {{#each ViewGrpMembers as |member|}}
-                <div class="card d-flex align-items-center gap-4 flex-row p-2" >
-                    <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
-                    <p class="GroupName">{{member.name}}</p>
-                    <span class="">{{member.mobile_number}}</span>
-                    {{#if member.isAdmin}}
-                        <span>Admin</span>
-                    {{else}}
-                        <span>Member</span>
-                    {{/if}}
-                        {{#if (eq model.curruser.user_id  member.user_id)}}
-                        <span>(YOU)</span>
-                    {{/if}}
-
-
-                        {{#if isAdmin}}
-                            {{#if (neq model.curruser.user_id member.user_id)}}
-                                <i class="bi bi-person-x-fill fs-1 text-danger" title="Remove" style="cursor: pointer;" {{action "ExitGroup" member.user_id on="click"}}></i>
-                                {{#if  member.isAdmin}}
-                                    <i class="bi bi-person-fill-down fs-1 text-danger" title="Dismiss as Admin" style="cursor: pointer;" {{action "makeAdmin" member.user_id false on="click"}}></i>
-                                {{else}}
-                                    <i class="bi bi-person-fill-up fs-1 text-success" title="Make as Admin" style="cursor: pointer;" {{action "makeAdmin" member.user_id true on="click"}}></i>
-
-                                {{/if}}
-                            {{/if}}
-                        {{/if}}
-
-                </div>
-                <hr>
-            {{/each}}
-        </form>
-
-    </section>
 
     <section class="addMembers">
         <form {{action "addNewMember"  on="submit" }}>
@@ -315,5 +320,135 @@
             </div>
         </form>
     </section>
+    <!-- Button trigger modal -->
+
+
+    <!-- Modal -->
+
+
 
 </main>
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Send to..</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+
+                {{#each model.users as |message|}}
+                    <li class="card flex-row align-items-center justify-content-around   group ">
+                        <div class="avatar" style="width: 50px; height: 50px;"><img src="assets/profile.png" alt=""></div>
+                        <p class="align-items-center">{{message.name}}</p>
+                        <span class="">{{message.mobile_number}}</span>
+                        <input type="checkbox">
+                    </li>
+
+                {{/each}}
+                {{#each model.groups as |group|}}
+                    <li class="card flex-row text-align-center group" >
+                        <div class="avatar"style="width: 50px; height: 50px;"><img src="assets/profile.png" alt=""></div>
+                        <p class="GroupName">{{group.name}}</p>
+                        <input type="checkbox" >
+
+
+                    </li>
+
+                {{/each}}
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- model for view members-->
+<div class="modal fade" id="viewmodal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">View Group members</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+
+                <form {{action "RemoveMember" model.curruser.user_id on="submit" }}>
+                    {{#each ViewGrpMembers as |member|}}
+                        <div class="card d-flex align-items-center gap-4 flex-row p-2" >
+                            <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
+                            <p class="GroupName">{{member.name}}</p>
+                            <span class="">{{member.mobile_number}}</span>
+                            {{#if member.isAdmin}}
+                                <span>Admin</span>
+                            {{else}}
+                                <span>Member</span>
+                            {{/if}}
+                            {{#if (eq model.curruser.user_id  member.user_id)}}
+                                <span>(YOU)</span>
+                            {{/if}}
+
+
+                            {{#if isAdmin}}
+                                {{#if (neq model.curruser.user_id member.user_id)}}
+                                    <i class="bi bi-person-x-fill fs-1 text-danger" title="Remove" style="cursor: pointer;" {{action "ExitGroup" member.user_id on="click"}}></i>
+                                    {{#if  member.isAdmin}}
+                                        <i class="bi bi-person-fill-down fs-1 text-danger" title="Dismiss as Admin" style="cursor: pointer;" {{action "makeAdmin" member.user_id false on="click"}}></i>
+                                    {{else}}
+                                        <i class="bi bi-person-fill-up fs-1 text-success" title="Make as Admin" style="cursor: pointer;" {{action "makeAdmin" member.user_id true on="click"}}></i>
+
+                                    {{/if}}
+                                {{/if}}
+                            {{/if}}
+
+                        </div>
+                        <hr>
+                    {{/each}}
+                </form>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add New Member to Group-->
+<div class="modal fade" id="addmember" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h1 class="modal-title fs-5" id="exampleModalLabel">Add new members</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <form {{action "addNewMember"  on="submit" }}>
+                <div class="d-flex- flex-column">
+                    {{#each ViewGrpMembers as |member|}}
+                        <div class="card d-flex justify-content-around align-items-center flex-row p-3" >
+                            <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
+                            <p class="">{{member.name}}</p>
+                            <span class="">{{member.mobile_number}}</span>
+                            <input type="checkbox"    {{action "addUsertoGroup" member.user_id on="change"}}  >
+
+                        </div>
+                        <hr>
+                    {{/each}}
+                </div>
+
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button"  {{action "addNewMember"  on="click" }} class="submit-button">Add Members</button>
+
+        </div>
+    </div>
+</div>
+</div>

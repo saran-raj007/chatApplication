@@ -41,7 +41,7 @@ public class UserSessionGenerate {
         }
 
         Connection con = DBconnection.getConnection();
-        PreparedStatement ps = null;
+        PreparedStatement ps;
         if(con !=null){
             String qry ="select * from users where user_id=?";
 

@@ -35,6 +35,9 @@ export default Ember.Controller.extend({
     forkKeys :Ember.A(),
     newMembersForFork :Ember.A(),
     currentStatus : null,
+    messageForwardMode : null,
+    forwardMessagearray : Ember.A(),
+    countOfforwardMessage : 0,
     stickers: [
         { url: "/Stickers/dumbbell.png" },
         { url: "/Stickers/laptop.png" },
@@ -62,7 +65,10 @@ export default Ember.Controller.extend({
             socket.onmessage = (event) => {
                 let receivedMessage = JSON.parse(event.data);
                 let msg_pack;
-                if(receivedMessage.dataFormat==="status_update"){
+                if(receivedMessage.dataFormat==="delete_message"){
+                    self.set('AllMessage', self.get('AllMessage').filter(msg => msg.mess_id !== receivedMessage.msg_id));
+                }
+                else if(receivedMessage.dataFormat==="status_update"){
                     let user = self.get('model.users').findBy('user_id', receivedMessage.user_id);
                     if (user) {
                         Ember.set(user, 'status', receivedMessage.status);
@@ -141,6 +147,9 @@ export default Ember.Controller.extend({
             self.set('selectedUsername',receiver.name);
             self.get('AllMessage').clear();
             self.get('ViewGrpMembers').clear();
+            self.get('forwardMessagearray').clear();
+            self.set('countOfforwardMessage',0);
+            self.set('messageForwardMode',false);
             Ember.$.ajax({
                 url : ENV.apiHost+'FetchchatServlet',
                 type: 'POST',
@@ -165,6 +174,7 @@ export default Ember.Controller.extend({
                                         CryptoUtils.decryptMessage(msg.message, key, privateKey, msg.iv).then(function (message) {
                                             let msg_pack = {
                                                 sender_id: msg.sender_id,
+                                                receiver_id : msg.receiver_id,
                                                 mess_id :msg.mess_id,
                                                 message: message,
                                                 dataFormat: "Text",
@@ -184,6 +194,7 @@ export default Ember.Controller.extend({
                                         mess_id :msg.mess_id,
                                         sender_id: msg.sender_id,
                                         file_name: imageUrl,
+                                        receiver_id : msg.receiver_id,
                                         dataFormat: "Sticker",
                                         timestamp: msg.timestamp
                                     });
@@ -221,6 +232,7 @@ export default Ember.Controller.extend({
                                                 mess_id :msg.mess_id,
                                                 sender_id: msg.sender_id,
                                                 message :message,
+                                                receiver_id : msg.grp_id,
                                                 sender_name : msg.sender_name,
                                                 timestamp :msg.timestamp,
                                                 dataFormat : "Text",
@@ -239,6 +251,7 @@ export default Ember.Controller.extend({
                                     let stickerPromise = Ember.RSVP.resolve({
                                         mess_id :msg.mess_id,
                                         sender_id: msg.sender_id,
+                                        receiver_id : msg.receiver_id,
                                         file_name: imageUrl,
                                         dataFormat: "Sticker",
                                         sender_name : msg.sender_name,
@@ -509,11 +522,6 @@ export default Ember.Controller.extend({
         },
         OpenViweMember(){
             const self =this;
-            Ember.$(".empty-page").css("display", "none");
-            Ember.$(".Chat").css("display", "none");
-            Ember.$(".createGroup").css("display", "none");
-            Ember.$(".addMembers").css("display","none");
-            Ember.$(".ViewGrpMember").css("display","block");
             self.send("ViewMembers",self.get('receiver_id'));
 
         },
@@ -542,14 +550,6 @@ export default Ember.Controller.extend({
 
 
         },
-        closeViewMember : function (){
-            Ember.$(".empty-page").css("display", "none");
-            Ember.$(".createGroup").css("display", "none");
-            Ember.$(".ViewGrpMember").css("display","none");
-            Ember.$(".addMembers").css("display","none");
-            Ember.$(".Chat").css("display", "block");
-
-        },
 
         makeAdmin : function (member_id,state){
             const self =this;
@@ -567,11 +567,7 @@ export default Ember.Controller.extend({
                 xhrFields: { withCredentials: true },
                 data: JSON.stringify(member_details),
                 success : function (response){
-                    Ember.$(".empty-page").css("display", "none");
-                    Ember.$(".createGroup").css("display", "none");
-                    Ember.$(".ViewGrpMember").css("display","none");
-                    Ember.$(".addMembers").css("display","none");
-                    Ember.$(".Chat").css("display", "block");
+                    Ember.$('#viewmodal').modal('hide');
 
                 },
                 error : function (error){
@@ -584,11 +580,6 @@ export default Ember.Controller.extend({
         addMembers : function (){
             const self=this;
             self.get('ViewGrpMembers').clear();
-            Ember.$(".empty-page").css("display", "none");
-            Ember.$(".createGroup").css("display", "none");
-            Ember.$(".ViewGrpMember").css("display","none");
-            Ember.$(".Chat").css("display", "none");
-            Ember.$(".addMembers").css("display","block");
             Ember.$.ajax({
                 url: ENV.apiHost+'FetchUsers',
                 type: 'POST',
@@ -623,10 +614,7 @@ export default Ember.Controller.extend({
                 data : JSON.stringify(newMembers),
                 xhrFields : {withCredentials : true},
                 success : function (response){
-                    Ember.$(".createGroup").css("display", "none");
-                    Ember.$(".ViewGrpMember").css("display","none");
-                    Ember.$(".addMembers").css("display","none");
-                    Ember.$(".Chat").css("display", "block");
+                    Ember.$('#addmember').modal('hide');
 
                 },
                 error : function (error){
@@ -795,7 +783,6 @@ export default Ember.Controller.extend({
                     grpMembers: tempfork
                 };
 
-                // 1️⃣ Create new group chat
                 return Ember.$.ajax({
                     url: ENV.apiHost+'CreateNewGroup',
                     type: 'POST',
@@ -913,11 +900,16 @@ export default Ember.Controller.extend({
 
 
         },
-        DeleteMessage : function (message){
+        DeleteMessage : function (message,option){
             const self =this;
+
             let msg_pack ={
                 msg_id : message.mess_id,
+                request_id : self.get('sender_id'),
                 isGroup : self.get('isGroup'),
+                receiver_id: message.receiver_id,
+                option : option,
+                isequal :(message.sender_id === self.get('sender_id')),
                 dataFormat : message.dataFormat,
             };
 
@@ -929,7 +921,7 @@ export default Ember.Controller.extend({
                 xhrFields: { withCredentials: true },
                 success : function (response){
                     self.set('AllMessage', self.get('AllMessage').filter(msg => msg.mess_id !== message.mess_id));
-                    console.log("Message Deleted")
+                    console.log("Message Deleted");
 
                 },
                 error : function (error){
@@ -939,7 +931,37 @@ export default Ember.Controller.extend({
 
             });
 
+        },
+        ForwardMessage : function (action){
+            const self =this;
+            self.get('forwardMessagearray').clear();
+            self.set('countOfforwardMessage',0);
+            self.set('messageForwardMode',action);
+        },
+        updateForwardMessage : function (message){
+            const self =this;
+            if(event.target.checked){
+                self.get('forwardMessagearray').pushObject(message);
+                self.incrementProperty('countOfforwardMessage');
+            }
+            else{
+                self.get('forwardMessagearray').removeObject(message);
+                self.decrementProperty('countOfforwardMessage');
+
+            }
+            console.log(self.get('forwardMessagearray'));
+        },
+        doForward : function (){
+            const self=this;
+            let allMessages = self.get('AllMessage');
+            let selectedMessageIds = self.get('forwardMessagearray');
+            alert(allMessages);
+            alert(selectedMessageIds);
+            let orderedSelectedMessages = allMessages.filter(msg => selectedMessageIds.includes(msg));
+            console.log(orderedSelectedMessages);
         }
+
+
 
 
 

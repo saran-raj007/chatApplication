@@ -153,7 +153,6 @@ section {
     padding: 10px;
     list-style-type: none;
     border-radius: 15px;
-    user-select: none;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Soft shadow */
     cursor: pointer;
     transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
@@ -334,12 +333,7 @@ section {
 .MessageContainer span{
     margin-bottom: auto;
 }
-.btn {
-    width: 30px !important;
-    height: 30px !important;
-    padding: 0 !important;
-    border: none !important;
-}
+
 .dropdown-menu {
     min-width: 100px !important;
 }
@@ -355,7 +349,6 @@ section {
     flex-direction: column;
     border-radius: 5px;
     margin:5px;
-    cursor: pointer;
     position: relative;
 
 }
@@ -531,8 +524,7 @@ section {
 }
 
 
-input[type="checkbox"] {
-}
+
 
 
 hr {

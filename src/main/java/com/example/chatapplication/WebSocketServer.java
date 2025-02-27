@@ -65,7 +65,7 @@ public class WebSocketServer  {
 
                 String file_name = msg.getString("file_name");
                 String sender_name = msg.getString("sender_name");
-                storeFiles(file_name, sender_id, receiver_id);
+                storeFiles(file_name, sender_id, receiver_id,false);
                 jsonResponse.put("dataFormat", "Sticker");
                 jsonResponse.put("sender_id", sender_id);
                 jsonResponse.put("file_name", file_name);
@@ -98,7 +98,7 @@ public class WebSocketServer  {
             }
             else {
                 String file_name = msg.getString("file_name");
-                storeFiles(file_name, sender_id, grp_id);
+                storeFiles(file_name, sender_id, grp_id,true);
                 JSONObject jsonResponse = new JSONObject();
                 jsonResponse.put("dataFormat", "Sticker");
                 jsonResponse.put("sender_id", sender_id);
@@ -106,26 +106,20 @@ public class WebSocketServer  {
                 jsonResponse.put("sender_name", sender_name);
                 Connection con =DBconnection.getConnection();
                 PreparedStatement ps=null;
-                ResultSet rs=null;
-                if(con!=null){
-                    String qryforgrpMember="select * from group_members where grp_id=? and user_id!=?";
-                    try{
-                        ps=con.prepareStatement(qryforgrpMember);
-                        ps.setString(1, grp_id);
-                        ps.setString(2, sender_id);
-                        rs=ps.executeQuery();
-                        while(rs.next()){
-                            Session receiverSession = userSessions.get(rs.getString("user_id"));
-                            if(receiverSession != null && receiverSession.isOpen()) {
-                                receiverSession.getBasicRemote().sendText(jsonResponse.toString());
-                            }
-
+                try{
+                    ResultSet rs=fetchGrpMembers(grp_id,sender_id);
+                    while(rs.next()){
+                        Session receiverSession = userSessions.get(rs.getString("user_id"));
+                        if(receiverSession != null && receiverSession.isOpen()) {
+                            receiverSession.getBasicRemote().sendText(jsonResponse.toString());
                         }
 
-                    }catch (SQLException e){
-                        e.printStackTrace();
                     }
+
+                }catch (SQLException e){
+                    e.printStackTrace();
                 }
+
 
             }
 
@@ -137,6 +131,19 @@ public class WebSocketServer  {
 
 
     }
+    public static ResultSet fetchGrpMembers(String grp_id, String sender_id) throws SQLException {
+        Connection con =DBconnection.getConnection();
+        PreparedStatement ps;
+        if(con!=null){
+            String qryforgrpMember="select * from group_members where grp_id=? and user_id!=?";
+            ps=con.prepareStatement(qryforgrpMember);
+            ps.setString(1, grp_id);
+            ps.setString(2, sender_id);
+            return ps.executeQuery();
+
+        }
+        return null;
+    }
     public void updateStatus(String user_id,String status) throws IOException {
         JSONObject statusUpdate = new JSONObject();
         statusUpdate.put("dataFormat", "status_update");
@@ -147,10 +154,32 @@ public class WebSocketServer  {
         }
     }
 
-    public static void deleteMessage(String msg_id) throws IOException {
-        JSONObject messageUpdate = new JSONObject();
-        messageUpdate.put("dataFormat", "message_update");
-        messageUpdate.put("msg_id", msg_id);
+    public static void deleteMessage(String msg_id,boolean isGroup,String request_id,String receiver_id) throws IOException {
+        JSONObject deleteMessage = new JSONObject();
+        deleteMessage.put("dataFormat", "delete_message");
+        deleteMessage.put("msg_id", msg_id);
+
+        if(isGroup){
+            try{
+                ResultSet rs=fetchGrpMembers(receiver_id,request_id);
+                while(rs.next()){
+                    Session receiverSession = userSessions.get(rs.getString("user_id"));
+                    if(receiverSession != null && receiverSession.isOpen()) {
+                        receiverSession.getBasicRemote().sendText(deleteMessage.toString());
+                    }
+
+                }
+            }catch (SQLException e){
+                e.printStackTrace();
+            }
+
+        }
+        else{
+            Session receiverSession = userSessions.get(receiver_id);
+            if(receiverSession != null && receiverSession.isOpen()) {
+                receiverSession.getBasicRemote().sendText(deleteMessage.toString());
+            }
+        }
     }
 
 
@@ -278,14 +307,15 @@ public class WebSocketServer  {
         }
 
     }
-    private void storeFiles(String file_name,String sender_id,String receiver_id){
+    private void storeFiles(String file_name,String sender_id,String receiver_id,boolean isGroup){
         Connection con = DBconnection.getConnection();
         PreparedStatement ps = null;
         if(con != null) {
             String qryFroFile ="insert into files (file_id,sender_id,receiver_id,file_name) values (?,?,?,?)";
             try{
+                String file_id =IdGeneration.generateRandomID();
                 ps = con.prepareStatement(qryFroFile);
-                ps.setString(1,IdGeneration.generateRandomID());
+                ps.setString(1,file_id);
                 ps.setString(2,sender_id);
                 ps.setString(3,receiver_id);
                 ps.setString(4,file_name);
@@ -295,6 +325,37 @@ public class WebSocketServer  {
                 }
                 else{
                     System.out.println("File insert failed");
+                }
+                if(isGroup){
+                    String qry ="select * from group_members where grp_id=?";
+                    String qry1= "insert into file_visibility (file_id,user_id) values (?,?)";
+                    ps = con.prepareStatement(qry);
+                    ps.setString(1,receiver_id);
+                    ResultSet rs = ps.executeQuery();
+                    ps = con.prepareStatement(qry1);
+                    while(rs.next()){
+                        ps.setString(1,file_id);
+                        ps.setString(2,rs.getString("user_id"));
+                        int row =ps.executeUpdate();
+                        if(row > 0) {
+                            System.out.println("File inserted successfully");
+                        }
+                        else{
+                            System.out.println("File insert failed");
+                        }
+
+                    }
+                }
+                else{
+                    String qry1= "insert into file_visibility (file_id,user_id) values (?,?)";
+                    ps = con.prepareStatement(qry1);
+                    ps.setString(1,file_id);
+                    ps.setString(2,sender_id);
+                    ps.executeUpdate();
+                    ps.setString(1,file_id);
+                    ps.setString(2,receiver_id);
+                    ps.executeUpdate();
+
                 }
 
             }catch (SQLException e){
