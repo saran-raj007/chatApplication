@@ -2023,7 +2023,7 @@ catch(err) {
 });
 
 if (!runningTests) {
-  require("demoapp/app")["default"].create({"name":"demoapp","version":"0.0.0+1a506f1d"});
+  require("demoapp/app")["default"].create({"name":"demoapp","version":"0.0.0+d255c539"});
 }
 
 /* jshint ignore:end */
