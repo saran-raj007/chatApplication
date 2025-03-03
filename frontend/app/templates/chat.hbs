@@ -81,6 +81,9 @@
                                     <input type="checkbox" {{action "updateForwardMessage" message on="change" }}  id="mf" name="mf">
                                 {{/if}}
                                 <span class="senderName">{{message.sender_name}}</span>
+                                {{#if message.isforward}}
+                                    <span>Forward</span>
+                                {{/if}}
                                 <div class="dropdown">
                                     <button class="btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         <svg width="12" height="14" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
@@ -110,6 +113,9 @@
                                 <input type="checkbox" {{action "updateForwardMessage" message on="change" }} id="mf" name="mf">
                                 {{/if}}
                                 <span class="senderName">you</span>
+                                {{#if message.isforward}}
+                                    <span>Forward</span>
+                                {{/if}}
                                 <div class="dropdown">
                                     <button class="btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         <svg width="12" height="14" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
@@ -342,7 +348,7 @@
                         <div class="avatar" style="width: 50px; height: 50px;"><img src="assets/profile.png" alt=""></div>
                         <p class="align-items-center">{{message.name}}</p>
                         <span class="">{{message.mobile_number}}</span>
-                        <input type="checkbox">
+                        <input type="checkbox" {{action "updateSelectedUsers" message  on="change" }}>
                     </li>
 
                 {{/each}}
@@ -350,7 +356,7 @@
                     <li class="card flex-row text-align-center group" >
                         <div class="avatar"style="width: 50px; height: 50px;"><img src="assets/profile.png" alt=""></div>
                         <p class="GroupName">{{group.name}}</p>
-                        <input type="checkbox" >
+                        <input type="checkbox" {{action "updateSelectedUsers" group  on="change" }} >
 
 
                     </li>
@@ -360,7 +366,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary">Send</button>
+                <button type="button" {{action "doForward" on="click"}} class="btn btn-primary">Send</button>
             </div>
         </div>
     </div>

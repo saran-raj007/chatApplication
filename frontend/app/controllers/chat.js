@@ -5,9 +5,6 @@ import StorageService from "../services/storage-service";
 import ENV from 'demoapp/config/environment';
 
 
-
-
-
 export default Ember.Controller.extend({
     AllMessage : Ember.A(),
     sender_id : '',
@@ -38,6 +35,7 @@ export default Ember.Controller.extend({
     messageForwardMode : null,
     forwardMessagearray : Ember.A(),
     countOfforwardMessage : 0,
+    selectedUsersForForward : Ember.A(),
     stickers: [
         { url: "/Stickers/dumbbell.png" },
         { url: "/Stickers/laptop.png" },
@@ -76,14 +74,34 @@ export default Ember.Controller.extend({
                 }
                 else if(receivedMessage.dataFormat==="Text") {
                     StorageService.getPrivateKey(self.get('sender_id')).then(function (privateKey) {
-                        CryptoUtils.decryptMessage(receivedMessage.message, receivedMessage.aes_key_receiver, privateKey, receivedMessage.iv).then(function (message) {
+                        let key;
+                        if(receivedMessage.isforward){
+                            key =(receivedMessage.old_senderid===self.get('sender_id'))? receivedMessage.aes_key_sender : receivedMessage.aes_key_receiver;
+                            alert(key);
+                        }
+                        else{
+                            if(receivedMessage.sender_id===self.get('sender_id')){
+                                key=receivedMessage.aes_key_sender;
+                            }
+                            else{
+                                key=receivedMessage.aes_key_receiver;
+                            }
+                        }
+
+                        CryptoUtils.decryptMessage(receivedMessage.message, key, privateKey, receivedMessage.iv).then(function (message) {
                             msg_pack = {
                                 sender_id: receivedMessage.sender_id,
                                 message: message,
                                 sender_name: receivedMessage.sender_name,
                                 dataFormat : 'Text',
+                                isforward : receivedMessage.isforward,
                             };
-                            self.get('AllMessage').pushObject(msg_pack);
+                            if(receivedMessage.receiver_id===self.get('receiver_id') || self.get('receiver_id')===receivedMessage.sender_id){
+                                self.get('AllMessage').pushObject(msg_pack);
+
+                            }
+
+
 
                         }).catch(function (error) {
                             console.log("error on decryption process", error);
@@ -95,15 +113,22 @@ export default Ember.Controller.extend({
                     });
                 }
                 else{
+                    alert("ok");
                     let imageUrl = `https://localhost:8443/chatApplication_war_exploded/RetriveFile?file_name=${encodeURIComponent(receivedMessage.file_name)}`;
                     msg_pack = {
+                        mess_id : receivedMessage.mess_id,
                         sender_id: receivedMessage.sender_id,
                         file_name: imageUrl,
                         sender_name: receivedMessage.sender_name,
                         dataFormat : 'Sticker',
-                    };
+                        isforward : receivedMessage.isforward,
 
-                    self.get('AllMessage').pushObject(msg_pack);
+                    };
+                   if(receivedMessage.receiver_id===self.get('receiver_id') || self.get('receiver_id')===receivedMessage.sender_id){
+                        self.get('AllMessage').pushObject(msg_pack);
+
+                   }
+
                 }
             };
             socket.onclose = () => console.log('WebSocket Disconnected');
@@ -163,6 +188,7 @@ export default Ember.Controller.extend({
                     Ember.$(".createGroup").css("display", "none");
                     Ember.$(".ViewGrpMember").css("display","none");
                     Ember.$(".Chat").css("display", "block");
+                    console.log(response.messages);
                     StorageService.getPrivateKey(self.get('sender_id')).then( function (privateKey){
                         if(chat==="Private"){
                             var promises = [];
@@ -175,6 +201,11 @@ export default Ember.Controller.extend({
                                             let msg_pack = {
                                                 sender_id: msg.sender_id,
                                                 receiver_id : msg.receiver_id,
+                                                aes_key_sender: msg.aes_key_sender,
+                                                aes_key_receiver : msg.aes_key_receiver,
+                                                enc_message : msg.message,
+                                                iv : msg.iv,
+                                                isforward : msg.isforward,
                                                 mess_id :msg.mess_id,
                                                 message: message,
                                                 dataFormat: "Text",
@@ -194,8 +225,11 @@ export default Ember.Controller.extend({
                                         mess_id :msg.mess_id,
                                         sender_id: msg.sender_id,
                                         file_name: imageUrl,
+                                        name: msg.file_name,
+                                        //sender_name : msg.sender_name,
                                         receiver_id : msg.receiver_id,
                                         dataFormat: "Sticker",
+                                        isforward : msg.isforward,
                                         timestamp: msg.timestamp
                                     });
 
@@ -232,7 +266,11 @@ export default Ember.Controller.extend({
                                                 mess_id :msg.mess_id,
                                                 sender_id: msg.sender_id,
                                                 message :message,
+                                                enc_message : msg.message,
+                                                iv : msg.iv,
+                                                isforward : msg.isforward,
                                                 receiver_id : msg.grp_id,
+                                                enc_aes_key : msg.enc_aes_key,
                                                 sender_name : msg.sender_name,
                                                 timestamp :msg.timestamp,
                                                 dataFormat : "Text",
@@ -253,11 +291,14 @@ export default Ember.Controller.extend({
                                         sender_id: msg.sender_id,
                                         receiver_id : msg.receiver_id,
                                         file_name: imageUrl,
+                                        name: msg.file_name,
                                         dataFormat: "Sticker",
+                                        isforward : msg.isforward,
                                         sender_name : msg.sender_name,
                                         timestamp: msg.timestamp,
 
                                     });
+                                    console.log(stickerPromise);
                                     promises.push(stickerPromise);
                                 }
                             }
@@ -315,28 +356,47 @@ export default Ember.Controller.extend({
                 CryptoUtils.encryptMessage(message,aesKey).then(function (encryptedMessage){
                     let receiver = self.get('receiver_id');
                     const mesg ={
-                        sender_id : self.get('sender_id'),
-                        message :  message,
+                        type : "Private",
+                        receiver_id: receiver,
+                        ciphertext: encryptedMessage.ciphertext,
+                        iv: encryptedMessage.iv,
+                        aeskeyReceiver : self.get('Ekey'),
+                        aeskeySender : self.get('own'),
                         dataFormat : "Text",
 
                     };
-                    if (message && receiver && self.get('socket')) {
-                        self.get('AllMessage').pushObject(mesg);
-                        self.get('socket').send(JSON.stringify({
-                            type : "Private",
-                            receiver_id: receiver,
-                            ciphertext: encryptedMessage.ciphertext,
-                            iv: encryptedMessage.iv,
-                            aeskeyReceiver : self.get('Ekey'),
-                            aeskeySender : self.get('own'),
-                            dataFormat : "Text",
+                    Ember.$.ajax({
+                        url : ENV.apiHost+'MessageHandle',
+                        type : 'POST',
+                        contentType : 'application/json',
+                        data : JSON.stringify(mesg),
+                        xhrFields : {withCredentials : true},
+                        success : function (response){
+                            console.log(response);
+                        },
+                        error: function(error){
+                            console.log(error);
+                        }
 
-                        }));
 
-                        self.set('newMessage', '');
-                        var chatContainer = document.getElementsByClassName("MessageContainer");
-                        chatContainer.scrollTop = chatContainer.scrollHeight;
-                    }
+                    });
+                    // if (message && receiver && self.get('socket')) {
+                    //     self.get('AllMessage').pushObject(mesg);
+                    //     self.get('socket').send(JSON.stringify({
+                    //         type : "Private",
+                    //         receiver_id: receiver,
+                    //         ciphertext: encryptedMessage.ciphertext,
+                    //         iv: encryptedMessage.iv,
+                    //         aeskeyReceiver : self.get('Ekey'),
+                    //         aeskeySender : self.get('own'),
+                    //         dataFormat : "Text",
+                    //
+                    //     }));
+                    //
+                    //     self.set('newMessage', '');
+                    //     var chatContainer = document.getElementsByClassName("MessageContainer");
+                    //     chatContainer.scrollTop = chatContainer.scrollHeight;
+                    // }
 
                 }).catch(function (error){
                     console.error("Error on message encryption:", error);
@@ -436,7 +496,6 @@ export default Ember.Controller.extend({
             document.getElementById("MessageInput").value = "";
             let receiver = self.get('receiver_id');
             let sender_id = self.get('sender_id');
-            let socket = self.get('socket');
             let AESkey = self.get("AESkey");
             Ember.$.ajax({
                 url: ENV.apiHost+'FetchGroupMembersKey',
@@ -470,20 +529,31 @@ export default Ember.Controller.extend({
                             return CryptoUtils.encryptMessage(message, aesKeyObj);
                         })
                         .then(function (encryptedMessage) {
-                            if (socket) {
-                                socket.send(JSON.stringify({
-                                    type: "Group",
-                                    grp_id: receiver,
-                                    sender_id: sender_id,
-                                    ciphertext: encryptedMessage.ciphertext,
-                                    iv: encryptedMessage.iv,
-                                    members_aesKey: validKeys,
-                                    sender_name : self.get('model.curruser.name'),
-                                    time :time,
-                                    dataFormat : "Text",
+                            let msg_pack={
+                                type: "Group",
+                                grp_id: receiver,
+                                sender_id: sender_id,
+                                ciphertext: encryptedMessage.ciphertext,
+                                iv: encryptedMessage.iv,
+                                members_aesKey: validKeys,
+                                sender_name : self.get('model.curruser.name'),
+                                time :time,
+                                dataFormat : "Text",
 
-                                }));
-                            }
+                            };
+                            Ember.$.ajax({
+                                url : ENV.apiHost+'MessageHandle',
+                                type : 'POST',
+                                contentType : 'application/json',
+                                data : JSON.stringify(msg_pack),
+                                xhrFields : {withCredentials : true},
+                                success : function (response){
+                                    console.log(response);
+                                },
+                                error: function(error){
+                                    console.log(error);
+                                }
+                            });
 
                         })
                         .catch(function (error) {
@@ -528,7 +598,6 @@ export default Ember.Controller.extend({
         ViewMembers :function(grp_id){
             const self =this;
             self.get('ViewGrpMembers').clear();
-
             Ember.$.ajax({
                 url: ENV.apiHost+'FetchGroupMembers',
                 type: 'POST',
@@ -650,9 +719,11 @@ export default Ember.Controller.extend({
         },
         sendSticker : function (sticker){
             const self =this;
-            let socket = self.get('socket');
             let formData = new FormData();
             formData.append('sticker',sticker);
+            formData.append('receiver_id', self.get('receiver_id'));
+            formData.append('isGroup',self.get('isGroup'));
+            formData.append('sender_name',self.get('model.curruser.name'));
 
             Ember.$.ajax({
                 url : ENV.apiHost+'FilesHandling',
@@ -662,28 +733,7 @@ export default Ember.Controller.extend({
                 contentType : false,
                 xhrFields : {withCredentials : true},
                 success : function (response) {
-                    let imageUrl = `https://localhost:8443/chatApplication_war_exploded/RetriveFile?file_name=${encodeURIComponent(response.file_name)}`;
-
-                    let sticker_details = {
-                        sender_id: self.get('sender_id'),
-                        file_name: response.file_name,
-                        dataFormat: "Sticker",
-                        type: self.get('isGroup') ? 'Group' : 'Private',
-                        sender_name: self.get('model.curruser.name')
-                    };
-                    let sticker_details1 = {
-                        sender_id: self.get('sender_id'),
-                        file_name: imageUrl,
-                        dataFormat: "Sticker",
-                        type: self.get('isGroup') ? 'Group' : 'Private',
-                        sender_name: self.get('model.curruser.name')
-                    };
-
-                    sticker_details[self.get('isGroup') ? 'grp_id' : 'receiver_id'] = self.get('receiver_id');
-                    if(socket){
-                        socket.send(JSON.stringify(sticker_details));
-                    }
-                    self.get('AllMessage').pushObject(sticker_details1);
+                    console.log(response);
                 },
                 error : function (error){
                     console.log(error);
@@ -951,15 +1001,173 @@ export default Ember.Controller.extend({
             }
             console.log(self.get('forwardMessagearray'));
         },
-        doForward : function (){
+        updateSelectedUsers : function (user,type){
             const self=this;
+            //selectedUsersForForward
+            let forwarduser =self.get('selectedUsersForForward');
+            if(forwarduser.length>=5){
+                alert("you can  forward this message to 5 members only ");
+                return;
+            }
+            if(event.target.checked){
+                forwarduser.pushObject(user);
+            }
+            else{
+                forwarduser.removeObject(user);
+
+            }
+            console.log(forwarduser);
+        },
+        doForward: function () {
+            const self = this;
             let allMessages = self.get('AllMessage');
             let selectedMessageIds = self.get('forwardMessagearray');
-            alert(allMessages);
-            alert(selectedMessageIds);
+            let selectedusers = self.get('selectedUsersForForward');
             let orderedSelectedMessages = allMessages.filter(msg => selectedMessageIds.includes(msg));
+            let isGroup = self.get('isGroup');
+            let sender_id = self.get('sender_id');
             console.log(orderedSelectedMessages);
-        }
+            let forwardMsgPack = [];
+            let groupPromisesCache = {};
+
+            StorageService.getPrivateKey(sender_id).then(function (privateKey) {
+                let forwardPromises = [];
+
+                orderedSelectedMessages.forEach(function (msg) {
+                    let forward = [];
+                    let forwardUserPromises = [];
+                    let isGroup =self.get('isGroup');
+                    selectedusers.forEach(function (user) {
+                        if (msg.dataFormat === 'Sticker') {
+                            alert(msg.name);
+                            forwardMsgPack.push({
+                                old_msgid: msg.mess_id,
+                                old_sender_id: msg.sender_id,
+                                file_name: msg.name,
+                                isGroup : (user.type === 'group'),
+                                dataFormat: msg.dataFormat,
+                                receiver_id: (user.type==='group')? user.group_id : user.receiver_id,
+                                sender_name : msg.sender_name,
+                            });
+                        } else {
+                            let key = (isGroup)
+                                ? msg.enc_aes_key
+                                : (msg.sender_id === sender_id)
+                                    ? msg.aes_key_sender
+                                    : msg.aes_key_receiver;
+
+                            if (user.type === 'private') {
+                                let privatePromise = CryptoUtils.decryptAESKey(key, privateKey)
+                                    .then(dec_key => window.crypto.subtle.exportKey("raw", dec_key))
+                                    .then(arrayBuffer => CryptoUtils.encryptAESKey(new Uint8Array(arrayBuffer), user.rsa_public_key))
+                                    .then(enc_aes => {
+                                        let aes_sender = (msg.sender_id === sender_id) ? msg.aes_key_sender : msg.aes_key_receiver;
+                                        forward.push({
+                                            receiver_id: user.user_id,
+                                            type: 'private',
+                                            enc_keys: [aes_sender, enc_aes]
+                                        });
+                                    })
+                                    .catch(error => console.error("Error in private message encryption:", error));
+
+                                forwardUserPromises.push(privatePromise);
+                            } else {
+                                if (!groupPromisesCache[user.group_id]) {
+                                    groupPromisesCache[user.group_id] = new Promise((resolve, reject) => {
+                                        Ember.$.ajax({
+                                            url: ENV.apiHost + 'FetchGroupMembers',
+                                            type: 'POST',
+                                            contentType: 'application/json',
+                                            dataType: 'json',
+                                            xhrFields: { withCredentials: true },
+                                            data: JSON.stringify({ grp_id: user.group_id }),
+                                            success: function (response) {
+                                                if (response.grp_members && response.grp_members.length > 0) {
+                                                    console.log("Fetched Group Members:", response.grp_members);
+                                                    resolve(response.grp_members);
+                                                } else {
+                                                    reject(new Error("No members found in group"));
+                                                }
+                                            },
+                                            error: function (error) {
+                                                console.error("Error fetching group members:", error);
+                                                reject(error);
+                                            }
+                                        });
+                                    });
+                                }
+
+                                let groupPromise = groupPromisesCache[user.group_id].then(grp_members => {
+                                    let memberPromises = grp_members.map(member =>
+                                        CryptoUtils.decryptAESKey(key, privateKey)
+                                            .then(dec_key => window.crypto.subtle.exportKey("raw", dec_key))
+                                            .then(arrayBuffer => CryptoUtils.encryptAESKey(new Uint8Array(arrayBuffer), member.rsa_public_key))
+                                            .then(enc_aes => ({ [member.user_id]: enc_aes }))
+                                    );
+
+                                    return Promise.all(memberPromises).then(keys => {
+                                        forward.push({
+                                            receiver_id: user.group_id,
+                                            type: 'group',
+                                            enc_keys: keys
+                                        });
+                                    });
+                                });
+
+                                forwardUserPromises.push(groupPromise);
+                            }
+                        }
+                    });
+
+                    let messagePromise = Promise.all(forwardUserPromises).then(function () {
+                        if(msg.dataFormat==="Text"){
+                            forwardMsgPack.push({
+                                old_msgid: msg.mess_id,
+                                old_sender_id: msg.sender_id,
+                                message: msg.enc_message,
+                                iv: msg.iv,
+                                dataFormat: msg.dataFormat,
+                                forwardto: forward,
+                                //sender_name : msg.sender_name
+                            });
+                        }
+
+                    });
+
+                    forwardPromises.push(messagePromise);
+                });
+
+                Promise.all(forwardPromises).then(function () {
+                    console.log("Final Forward Message Pack:", forwardMsgPack);
+                    Ember.$.ajax({
+                        url: ENV.apiHost + '/ForwardMessage',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(forwardMsgPack),
+                        xhrFields: { withCredentials: true },
+                        success: function (response) {
+                            console.log("Messages forwarded successfully:", response);
+                        },
+                        error: function (error) {
+                            console.error("Error forwarding messages:", error);
+                        }
+                    });
+                }).catch(error => {
+                    console.error("Error processing forward messages:", error);
+                });
+            });
+
+
+
+
+
+
+
+
+
+
+
+    }
 
 
 

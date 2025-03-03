@@ -43,7 +43,7 @@ public class FetchchatServlet extends HttpServlet {
                     String qry = "select * from messages where ((send_id = ? and receiver_id =? and aes_key_sender  IS NOT NULL) or (send_id = ? and receiver_id =? and aes_key_receiver  IS NOT NULL)) order by created_at asc; ";
                     String qrys="SELECT * FROM files LEFT JOIN file_visibility fv ON files.file_id = fv.file_id WHERE fv.user_id = ? AND ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)) ORDER BY files.created_at ASC;";
                     String qryFrokey = "select * from users where user_id=?";
-                    String qryForgrpMsg ="SELECT gm.grpmssg_id, gm.grp_id, gm.sender_id, gm.message, gm.created_at, gm.msg_iv, u.name, ge.enc_aes_key FROM group_messages gm JOIN users u ON gm.sender_id = u.user_id JOIN aes_keys ge ON gm.grpmssg_id = ge.grpmssg_id WHERE gm.grp_id = ? AND gm.created_at >= (SELECT gg.added_at FROM group_members gg WHERE gg.user_id = ? AND gg.grp_id =?) AND ge.receiver_id = ? order by gm.created_at asc ";
+                    String qryForgrpMsg ="SELECT gm.grpmssg_id, gm.grp_id, gm.sender_id,gm.isforward, gm.old_msgid,gm.old_senderid, gm.message, gm.created_at, gm.msg_iv, u.name, ge.enc_aes_key FROM group_messages gm JOIN users u ON gm.sender_id = u.user_id JOIN aes_keys ge ON gm.grpmssg_id = ge.grpmssg_id WHERE gm.grp_id = ? AND gm.created_at >= (SELECT gg.added_at FROM group_members gg WHERE gg.user_id = ? AND gg.grp_id =?) AND ge.receiver_id = ? order by gm.created_at asc ";
                     String qryGrps="SELECT f.*, u.name FROM files f JOIN users u ON f.sender_id = u.user_id OR f.receiver_id = u.user_id JOIN file_visibility fv ON f.file_id = fv.file_id WHERE fv.user_id = ? AND f.receiver_id = ? AND f.created_at >= (SELECT added_at FROM group_members WHERE grp_id = ? AND user_id = ?);";
                     String adminqry ="select * from group_members where user_id=? and grp_id=?";
                     try {
@@ -132,6 +132,9 @@ public class FetchchatServlet extends HttpServlet {
             msg.put("iv", rs.getString("iv"));
             msg.put("aes_key_receiver", rs.getString("aes_key_receiver"));
             msg.put("aes_key_sender", rs.getString("aes_key_sender"));
+            msg.put("isforward", rs.getBoolean("isforward"));
+            msg.put("old_msgid", rs.getString("old_msgid"));
+            msg.put("old_senderid", rs.getString("old_senderid"));
             msg.put("timestamp", rs.getString("created_at"));
             msgList.add(msg);
             textMsg=rs.next();
@@ -143,6 +146,9 @@ public class FetchchatServlet extends HttpServlet {
             msg.put("sender_id", rss.getString("sender_id"));
             msg.put("receiver_id", rss.getString("receiver_id"));
             msg.put("file_name", rss.getString("file_name"));
+            msg.put("isforward", rss.getBoolean("isforward"));
+            msg.put("old_msgid", rss.getString("old_msgid"));
+            msg.put("old_senderid", rss.getString("old_senderid"));
             msg.put("timestamp", rss.getString("created_at"));
             msgList.add(msg);
             stickerMsg=rss.next();
@@ -165,6 +171,9 @@ public class FetchchatServlet extends HttpServlet {
             msg.put("iv", rs.getString("msg_iv"));
             msg.put("enc_aes_key", rs.getString("enc_aes_key"));
             msg.put("sender_name", rs.getString("name"));
+            msg.put("isforward", rs.getBoolean("isforward"));
+            msg.put("old_msgid", rs.getString("old_msgid"));
+            msg.put("old_senderid", rs.getString("old_senderid"));
             msg.put("timestamp", rs.getString("created_at"));
             msgList.add(msg);
             textMsg=rs.next();
@@ -178,6 +187,9 @@ public class FetchchatServlet extends HttpServlet {
             msg.put("sender_id", rss.getString("sender_id"));
             msg.put("receiver_id", rss.getString("receiver_id"));
             msg.put("file_name", rss.getString("file_name"));
+            msg.put("isforward", rss.getBoolean("isforward"));
+            msg.put("old_msgid", rss.getString("old_msgid"));
+            msg.put("old_senderid", rss.getString("old_senderid"));
             msg.put("timestamp", rss.getString("created_at"));
             msg.put("sender_name", rss.getString("name"));
             msgList.add(msg);

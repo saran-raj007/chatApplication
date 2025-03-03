@@ -197,19 +197,14 @@ public class CreateForkMessageServlet extends HttpServlet {
 
         for (JsonElement keyElement : keysArray) {
             JsonObject keyObject = keyElement.getAsJsonObject();
-            String id =null;
-            String key =null;
-            for (Map.Entry<String, JsonElement> entry : keyObject.entrySet()) {
+            Iterator<Map.Entry<String, JsonElement>> iterator = keyObject.entrySet().iterator();
 
-                if(id==null){
-                    id = entry.getValue().getAsString();
+            if (iterator.hasNext()) {
+                String id = iterator.next().getValue().getAsString();
+                if (iterator.hasNext()) {
+                    String key = iterator.next().getValue().getAsString();
+                    keysMap.put(id, key);
                 }
-                else{
-                    key = entry.getValue().getAsString();
-                }
-            }
-            if(id!=null && key!=null){
-                keysMap.put(id,key);
             }
         }
         insetKeys(forkId,senderId,message,iv,keysMap,incrementSeconds);

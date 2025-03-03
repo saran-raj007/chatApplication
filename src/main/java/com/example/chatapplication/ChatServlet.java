@@ -49,6 +49,7 @@ public class ChatServlet extends HttpServlet {
                          else{
                              user.put("status", "offline");
                          }
+                         user.put("type","private");
                          user.put("user_id", userId);
                          user.put("name", rs.getString("name"));
                          user.put("mobile_number", rs.getString("mobile_number"));
@@ -67,6 +68,7 @@ public class ChatServlet extends HttpServlet {
                      rs = ps.executeQuery();
                      while(rs.next()){
                          JSONObject grp = new JSONObject();
+                         grp.put("type","group");
                          grp.put("group_id", rs.getString("group_id"));
                          grp.put("name", rs.getString("name"));
                          grp.put("created_by", rs.getString("created_by"));

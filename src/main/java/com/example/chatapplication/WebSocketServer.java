@@ -52,7 +52,6 @@ public class WebSocketServer  {
                 String iv = msg.getString("iv");
                 String aeskey_receiver = msg.getString("aeskeyReceiver");
                 String aeskey_sender = msg.getString("aeskeySender");
-                storeMessage(sender_id, receiver_id, message_text, iv, aeskey_receiver, aeskey_sender);
                 jsonResponse.put("dataFormat", "Text");
                 jsonResponse.put("sender_id", sender_id);
                 jsonResponse.put("message", message_text);
@@ -65,7 +64,6 @@ public class WebSocketServer  {
 
                 String file_name = msg.getString("file_name");
                 String sender_name = msg.getString("sender_name");
-                storeFiles(file_name, sender_id, receiver_id,false);
                 jsonResponse.put("dataFormat", "Sticker");
                 jsonResponse.put("sender_id", sender_id);
                 jsonResponse.put("file_name", file_name);
@@ -93,32 +91,17 @@ public class WebSocketServer  {
                     String key = obj.getString("encryptedAESKey");
                     memberaesKeyMap.put(userId, key);
                 }
-                sendMessageToGroup(grp_id, message_text, msg_iv, memberaesKeyMap, sender_id, sender_name);
-                storeGroupMessage(grp_id, sender_id, message_text, msg_iv, memberaesKeyMap);
+               // sendMessageToGroup(grp_id, message_text, msg_iv, memberaesKeyMap, sender_id, sender_name);
             }
             else {
                 String file_name = msg.getString("file_name");
-                storeFiles(file_name, sender_id, grp_id,true);
                 JSONObject jsonResponse = new JSONObject();
                 jsonResponse.put("dataFormat", "Sticker");
                 jsonResponse.put("sender_id", sender_id);
                 jsonResponse.put("file_name", file_name);
                 jsonResponse.put("sender_name", sender_name);
-                Connection con =DBconnection.getConnection();
-                PreparedStatement ps=null;
-                try{
-                    ResultSet rs=fetchGrpMembers(grp_id,sender_id);
-                    while(rs.next()){
-                        Session receiverSession = userSessions.get(rs.getString("user_id"));
-                        if(receiverSession != null && receiverSession.isOpen()) {
-                            receiverSession.getBasicRemote().sendText(jsonResponse.toString());
-                        }
 
-                    }
 
-                }catch (SQLException e){
-                    e.printStackTrace();
-                }
 
 
             }
@@ -131,14 +114,14 @@ public class WebSocketServer  {
 
 
     }
-    public static ResultSet fetchGrpMembers(String grp_id, String sender_id) throws SQLException {
+    public static ResultSet fetchGrpMembers(String grp_id) throws SQLException {
         Connection con =DBconnection.getConnection();
         PreparedStatement ps;
         if(con!=null){
-            String qryforgrpMember="select * from group_members where grp_id=? and user_id!=?";
+            String qryforgrpMember="select * from group_members where grp_id=?";
             ps=con.prepareStatement(qryforgrpMember);
             ps.setString(1, grp_id);
-            ps.setString(2, sender_id);
+          //  ps.setString(2, sender_id);
             return ps.executeQuery();
 
         }
@@ -161,7 +144,7 @@ public class WebSocketServer  {
 
         if(isGroup){
             try{
-                ResultSet rs=fetchGrpMembers(receiver_id,request_id);
+                ResultSet rs=fetchGrpMembers(receiver_id);
                 while(rs.next()){
                     Session receiverSession = userSessions.get(rs.getString("user_id"));
                     if(receiverSession != null && receiverSession.isOpen()) {
@@ -195,42 +178,35 @@ public class WebSocketServer  {
     public void onError(Session session, Throwable throwable) {
         System.err.println("Error: " + throwable.getMessage());
     }
+    public static void sendMessageToPvt(String receiver_id, String sender_id, JSONObject jsonResponse) throws IOException {
+        Session receiverSession = userSessions.get(receiver_id);
+        Session senderSession = userSessions.get(sender_id);
+        if (receiverSession != null && receiverSession.isOpen()) {
 
-    private void storeMessage(String sender_id, String receiver_id, String message,String iv, String aeskey_receiver, String aeskey_sender) {
-        Connection con = DBconnection.getConnection();
-        PreparedStatement ps = null;
-        if(con != null) {
-            String qry= "insert into messages (mess_id, send_id, receiver_id, message, iv, aes_key_receiver,aes_key_sender) values (?,?,?,?,?,?,?)";
-            try{
-                ps = con.prepareStatement(qry);
-                ps.setString(1,IdGeneration.generateRandomID());
-                ps.setString(2,sender_id);
-                ps.setString(3,receiver_id);
-                ps.setString(4,message);
-                ps.setString(5,iv);
-                ps.setString(6,aeskey_receiver);
-                ps.setString(7,aeskey_sender);
-
-                int rowinsert =ps.executeUpdate();
-                if(rowinsert > 0) {
-                    System.out.println("Message inserted successfully");
+            receiverSession.getBasicRemote().sendText(jsonResponse.toString());
+        }
+        if(senderSession !=null && senderSession.isOpen()){
+            senderSession.getBasicRemote().sendText(jsonResponse.toString());
+        }
+    }
+    public static void sendFilesTogrp(String grp_id, JSONObject jsonResponse) throws IOException {
+        try{
+            ResultSet rs=fetchGrpMembers(grp_id);
+            while(rs.next()){
+                Session receiverSession = userSessions.get(rs.getString("user_id"));
+                if(receiverSession != null && receiverSession.isOpen()) {
+                    receiverSession.getBasicRemote().sendText(jsonResponse.toString());
                 }
-                else{
-                    System.out.println("Message insert failed");
-                }
-
-            }catch ( SQLException e){
-                e.printStackTrace();
 
             }
-        }
-        else{
-            System.out.println("Connection failed");
-        }
 
+        }catch (SQLException e){
+            e.printStackTrace();
+        }
 
     }
-    private void  sendMessageToGroup(String grp_id,String message,String msg_iv,Map<String,String> memberaesKeyMap, String sender_id,String sender_name) throws IOException {
+
+    public static void  sendMessageToGroup(String grp_id,String msg_id,String message,String msg_iv,Map<String,String> memberaesKeyMap, String sender_id,String sender_name,String old_senderid,String old_msgid,boolean isforward) throws IOException {
 
         System.out.println(memberaesKeyMap.size());
 
@@ -242,12 +218,17 @@ public class WebSocketServer  {
                 JSONObject jsonResponse = new JSONObject();
                 jsonResponse.put("dataFormat", "Text");
                 jsonResponse.put("grp_id", grp_id);
+                jsonResponse.put("mess_id", msg_id);
                 jsonResponse.put("member_id", member_id);
                 jsonResponse.put("sender_id",sender_id);
                 jsonResponse.put("message",message);
                 jsonResponse.put("iv",msg_iv);
                 jsonResponse.put("aes_key_receiver",key);
                 jsonResponse.put("sender_name",sender_name);
+                jsonResponse.put("old_senderid",old_senderid);
+                jsonResponse.put("old_msgid",old_msgid);
+                jsonResponse.put("isforward",isforward);
+
                 receiverSession.getBasicRemote().sendText(jsonResponse.toString());
 
             }
@@ -256,116 +237,8 @@ public class WebSocketServer  {
 
     }
 
-    private void storeGroupMessage(String grp_id,String sender_id,String message_text,String msg_iv,Map<String,String> memberaesKeyMap){
-        Connection con = DBconnection.getConnection();
-        PreparedStatement ps = null;
-        if(con != null) {
-            String qryForInsert= "insert into group_messages (grpmssg_id,grp_id,sender_id,message,msg_iv) values (?,?,?,?,?)";
-            String qryAesKey ="insert into  aes_keys (key_id,grpmssg_id,grp_id,receiver_id,enc_aes_key) values (?,?,?,?,?)";
-            try{
-                String grp_msg_id=IdGeneration.generateRandomID();
-                ps = con.prepareStatement(qryForInsert);
-                ps.setString(1,grp_msg_id);
-                ps.setString(2,grp_id);
-                ps.setString(3,sender_id);
-                ps.setString(4,message_text);
-                ps.setString(5,msg_iv);
 
 
-                int rowinsert =ps.executeUpdate();
-                if(rowinsert > 0) {
-                    System.out.println("Message inserted successfully");
-                }
-                else{
-                    System.out.println("Message insert failed");
-                }
-                ps = con.prepareStatement(qryAesKey);
-                for(Map.Entry<String, String> entry : memberaesKeyMap.entrySet()) {
-                    ps.setString(1,IdGeneration.generateRandomID());
-                    ps.setString(2,grp_msg_id);
-                    ps.setString(3,grp_id);
-                    ps.setString(4,entry.getKey());
-                    ps.setString(5,entry.getValue());
-                     rowinsert =ps.executeUpdate();
-                    if(rowinsert > 0) {
-                        System.out.println("Message inserted successfully");
-                    }
-                    else{
-                        System.out.println("Message insert failed");
-                    }
-
-                }
-
-
-            }catch ( SQLException e){
-                e.printStackTrace();
-
-            }
-        }
-        else{
-            System.out.println("Connection failed");
-        }
-
-    }
-    private void storeFiles(String file_name,String sender_id,String receiver_id,boolean isGroup){
-        Connection con = DBconnection.getConnection();
-        PreparedStatement ps = null;
-        if(con != null) {
-            String qryFroFile ="insert into files (file_id,sender_id,receiver_id,file_name) values (?,?,?,?)";
-            try{
-                String file_id =IdGeneration.generateRandomID();
-                ps = con.prepareStatement(qryFroFile);
-                ps.setString(1,file_id);
-                ps.setString(2,sender_id);
-                ps.setString(3,receiver_id);
-                ps.setString(4,file_name);
-                int rowinsert =ps.executeUpdate();
-                if(rowinsert > 0) {
-                    System.out.println("File inserted successfully");
-                }
-                else{
-                    System.out.println("File insert failed");
-                }
-                if(isGroup){
-                    String qry ="select * from group_members where grp_id=?";
-                    String qry1= "insert into file_visibility (file_id,user_id) values (?,?)";
-                    ps = con.prepareStatement(qry);
-                    ps.setString(1,receiver_id);
-                    ResultSet rs = ps.executeQuery();
-                    ps = con.prepareStatement(qry1);
-                    while(rs.next()){
-                        ps.setString(1,file_id);
-                        ps.setString(2,rs.getString("user_id"));
-                        int row =ps.executeUpdate();
-                        if(row > 0) {
-                            System.out.println("File inserted successfully");
-                        }
-                        else{
-                            System.out.println("File insert failed");
-                        }
-
-                    }
-                }
-                else{
-                    String qry1= "insert into file_visibility (file_id,user_id) values (?,?)";
-                    ps = con.prepareStatement(qry1);
-                    ps.setString(1,file_id);
-                    ps.setString(2,sender_id);
-                    ps.executeUpdate();
-                    ps.setString(1,file_id);
-                    ps.setString(2,receiver_id);
-                    ps.executeUpdate();
-
-                }
-
-            }catch (SQLException e){
-                e.printStackTrace();
-
-            }
-        }
-
-
-    }
 
 
 }
