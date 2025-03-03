@@ -15,7 +15,7 @@ import java.sql.*;
 
 public class UserSessionGenerate {
     private static final String SECRET_KEY = "691a03c2f0a7a449a00a394ca9deca08a3c4602f0995d8376bc60884c184c991";
-    private static final long EXPIRATION_TIME = 600000;
+    private static final long EXPIRATION_TIME = 60000000;
 
 
     public static String generateToken(String user_id,  HttpServletRequest request) {

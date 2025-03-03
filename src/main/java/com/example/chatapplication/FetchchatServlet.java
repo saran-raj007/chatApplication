@@ -40,8 +40,8 @@ public class FetchchatServlet extends HttpServlet {
 
             if(con != null){
 
-                    String qry = "select * from messages where ((send_id = ? and receiver_id =? and aes_key_sender  IS NOT NULL) or (send_id = ? and receiver_id =? and aes_key_receiver  IS NOT NULL)) order by created_at asc; ";
-                    String qrys="SELECT * FROM files LEFT JOIN file_visibility fv ON files.file_id = fv.file_id WHERE fv.user_id = ? AND ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)) ORDER BY files.created_at ASC;";
+                    String qry = "select m.*, u.name from messages m join  users u on m.send_id =u.user_id where ((send_id = ? and receiver_id =? and aes_key_sender  IS NOT NULL) or (send_id = ? and receiver_id =? and aes_key_receiver  IS NOT NULL)) order by m.created_at asc; ";
+                    String qrys="SELECT f.*, u.name FROM files f LEFT JOIN file_visibility fv ON f.file_id = fv.file_id join  users u on f.sender_id =u.user_id WHERE fv.user_id = ? AND ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)) ORDER BY f.created_at ASC;";
                     String qryFrokey = "select * from users where user_id=?";
                     String qryForgrpMsg ="SELECT gm.grpmssg_id, gm.grp_id, gm.sender_id,gm.isforward, gm.old_msgid,gm.old_senderid, gm.message, gm.created_at, gm.msg_iv, u.name, ge.enc_aes_key FROM group_messages gm JOIN users u ON gm.sender_id = u.user_id JOIN aes_keys ge ON gm.grpmssg_id = ge.grpmssg_id WHERE gm.grp_id = ? AND gm.created_at >= (SELECT gg.added_at FROM group_members gg WHERE gg.user_id = ? AND gg.grp_id =?) AND ge.receiver_id = ? order by gm.created_at asc ";
                     String qryGrps="SELECT f.*, u.name FROM files f JOIN users u ON f.sender_id = u.user_id OR f.receiver_id = u.user_id JOIN file_visibility fv ON f.file_id = fv.file_id WHERE fv.user_id = ? AND f.receiver_id = ? AND f.created_at >= (SELECT added_at FROM group_members WHERE grp_id = ? AND user_id = ?);";
@@ -89,6 +89,17 @@ public class FetchchatServlet extends HttpServlet {
                             if(rs.next()) {
                                 jsonResponse.put("isAdmin", rs.getBoolean("isAdmin"));
                             }
+                            List<String> permissions = new ArrayList<>();
+                            String qryp ="SELECT p.permission_name FROM permissions p JOIN role_permissions rp ON p.permission_id = rp.permission_id JOIN member_roles mr ON rp.role_id = mr.role_id WHERE mr.member_id = ? AND mr.group_id = ?";
+                            ResultSet prs;
+                            ps = con.prepareStatement(qryp);
+                            ps.setString(1,sender_id);
+                            ps.setString(2,receiver_id);
+                            prs = ps.executeQuery();
+                            while(prs.next()){
+                                permissions.add(prs.getString("permission_name"));
+                            }
+                            jsonResponse.put("permissions", permissions);
 
 
                         }
@@ -133,6 +144,7 @@ public class FetchchatServlet extends HttpServlet {
             msg.put("aes_key_receiver", rs.getString("aes_key_receiver"));
             msg.put("aes_key_sender", rs.getString("aes_key_sender"));
             msg.put("isforward", rs.getBoolean("isforward"));
+            msg.put("sender_name", rs.getString("name"));
             msg.put("old_msgid", rs.getString("old_msgid"));
             msg.put("old_senderid", rs.getString("old_senderid"));
             msg.put("timestamp", rs.getString("created_at"));
@@ -150,6 +162,7 @@ public class FetchchatServlet extends HttpServlet {
             msg.put("old_msgid", rss.getString("old_msgid"));
             msg.put("old_senderid", rss.getString("old_senderid"));
             msg.put("timestamp", rss.getString("created_at"));
+            msg.put("sender_name", rss.getString("name"));
             msgList.add(msg);
             stickerMsg=rss.next();
 

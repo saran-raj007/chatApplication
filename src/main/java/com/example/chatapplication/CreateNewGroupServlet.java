@@ -51,7 +51,7 @@ public class CreateNewGroupServlet extends HttpServlet {
                     ps.setString(3, admin_id);
                     int rowinserted = ps.executeUpdate();
                     if(rowinserted>0){
-
+                        addDefaultRole(grp_id,groupMembers);
                         jsonResponse.put("grp_id", grp_id);
                         jsonResponse.put("success", "Group created");
                     }
@@ -82,6 +82,7 @@ public class CreateNewGroupServlet extends HttpServlet {
                     ps.setBoolean(4,true);
                     ps.setString(5, admin_id);
                     rowinserted = ps.executeUpdate();
+                    addPermissionToAdmin(admin_id,grp_id);
                     if(rowinserted>0){
                         jsonResponse.put("success", "Group created");
                     }
@@ -99,9 +100,7 @@ public class CreateNewGroupServlet extends HttpServlet {
             }
             else{
                 jsonResponse.put("error", "Error on DB connection");
-
             }
-
 
         }
         else{
@@ -112,6 +111,98 @@ public class CreateNewGroupServlet extends HttpServlet {
         response.getWriter().write(jsonResponse.toString());
 
     }
+    private void addDefaultRole(String grp_id, List<String> groupMembers){
+        Connection con = DBconnection.getConnection();
+        PreparedStatement ps = null;
+        if(con!=null){
+            String qry ="insert into roles (role_id,group_id,role_name) values (?,?,?)";
 
+            try{
+                String role_id = IdGeneration.generateRandomID();
+                ps =con.prepareStatement(qry);
+                ps.setString(1, role_id);
+                ps.setString(2, grp_id);
+                ps.setString(3,"Member");
+                int rowinserted = ps.executeUpdate();
+
+                String qryrp ="insert into role_permissions (id,role_id,permission_id) values (?,?, (SELECT permission_id FROM permissions WHERE permission_name = 'Send Message'))";
+                String role_permission_id = IdGeneration.generateRandomID();
+                ps =con.prepareStatement(qryrp);
+                ps.setString(1, role_permission_id);
+                ps.setString(2, role_id);
+                ps.executeUpdate();
+
+                String qrymr ="insert into member_roles (id,member_id,group_id,role_id) values (?,?,?,?)";
+                ps =con.prepareStatement(qrymr);
+                for(String member:groupMembers) {
+                    String member_role_id = IdGeneration.generateRandomID();
+                    ps.setString(1, member_role_id);
+                    ps.setString(2, member);
+                    ps.setString(3, grp_id);
+                    ps.setString(4, role_id);
+                    ps.executeUpdate();
+                }
+
+
+
+
+
+            }catch (SQLException e){
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+    private void addPermissionToAdmin(String admin_id, String grp_id){
+        Connection con = DBconnection.getConnection();
+        PreparedStatement ps = null;
+
+        if(con!=null){
+            String qry ="insert into roles (role_id,group_id,role_name) values (?,?,?)";
+
+            try{
+                String role_id = IdGeneration.generateRandomID();
+                ps =con.prepareStatement(qry);
+                ps.setString(1, role_id);
+                ps.setString(2, grp_id);
+                ps.setString(3,"Admin");
+                int rowinserted = ps.executeUpdate();
+                String qryforPer="select permission_id from permissions";
+                ps =con.prepareStatement(qryforPer);
+                ResultSet rs = ps.executeQuery();
+                String qryrp ="INSERT INTO role_permissions (id,role_id, permission_id) values (?,?,?)";
+
+                ps =con.prepareStatement(qryrp);
+                while(rs.next()){
+                    String role_permission_id = IdGeneration.generateRandomID();
+                    ps.setString(1, role_permission_id);
+                    ps.setString(2, role_id);
+                    ps.setString(3, rs.getString("permission_id"));
+                    ps.executeUpdate();
+                }
+
+
+                String qrymr ="insert into member_roles (id,member_id,group_id,role_id) values (?,?,?,?)";
+                ps =con.prepareStatement(qrymr);
+                    String member_role_id = IdGeneration.generateRandomID();
+                    ps.setString(1, member_role_id);
+                    ps.setString(2, admin_id);
+                    ps.setString(3, grp_id);
+                    ps.setString(4, role_id);
+                    ps.executeUpdate();
+
+
+
+
+
+
+            }catch (SQLException e){
+                e.printStackTrace();
+            }
+
+        }
+
+    }
 
 }

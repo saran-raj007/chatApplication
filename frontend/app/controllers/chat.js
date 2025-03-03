@@ -36,6 +36,7 @@ export default Ember.Controller.extend({
     forwardMessagearray : Ember.A(),
     countOfforwardMessage : 0,
     selectedUsersForForward : Ember.A(),
+    grpPremissions : Ember.A(),
     stickers: [
         { url: "/Stickers/dumbbell.png" },
         { url: "/Stickers/laptop.png" },
@@ -139,13 +140,16 @@ export default Ember.Controller.extend({
 
 
     },
-
+    checkPermission: function(permissionName) {
+        return this.get('grpPremissions').includes(permissionName);
+    },
 
 
     actions : {
 
         fetchchat(receiver,chat){
             const self =this;
+            self.get('grpPremissions').clear();
             let datas;
             if(chat==="Private"){
 
@@ -205,6 +209,7 @@ export default Ember.Controller.extend({
                                                 aes_key_receiver : msg.aes_key_receiver,
                                                 enc_message : msg.message,
                                                 iv : msg.iv,
+                                                sender_name : msg.sender_name,
                                                 isforward : msg.isforward,
                                                 mess_id :msg.mess_id,
                                                 message: message,
@@ -226,7 +231,7 @@ export default Ember.Controller.extend({
                                         sender_id: msg.sender_id,
                                         file_name: imageUrl,
                                         name: msg.file_name,
-                                        //sender_name : msg.sender_name,
+                                        sender_name : msg.sender_name,
                                         receiver_id : msg.receiver_id,
                                         dataFormat: "Sticker",
                                         isforward : msg.isforward,
@@ -257,6 +262,10 @@ export default Ember.Controller.extend({
                             var promises = [];
                             self.set('isAdmin',response.isAdmin);
                             console.log(response.messages);
+                            for(let permission of response.permissions){
+                                alert(permission);
+                                self.get('grpPremissions').pushObject(permission)
+                            }
                             for(let msg of response.messages){
                                 let msg_pack;
                                 if(msg.dataFormat==="Text"){
@@ -1036,7 +1045,6 @@ export default Ember.Controller.extend({
                 orderedSelectedMessages.forEach(function (msg) {
                     let forward = [];
                     let forwardUserPromises = [];
-                    let isGroup =self.get('isGroup');
                     selectedusers.forEach(function (user) {
                         if (msg.dataFormat === 'Sticker') {
                             alert(msg.name);
@@ -1046,7 +1054,7 @@ export default Ember.Controller.extend({
                                 file_name: msg.name,
                                 isGroup : (user.type === 'group'),
                                 dataFormat: msg.dataFormat,
-                                receiver_id: (user.type==='group')? user.group_id : user.receiver_id,
+                                receiver_id: (user.type==='group')? user.group_id : user.user_id,
                                 sender_name : msg.sender_name,
                             });
                         } else {
@@ -1126,6 +1134,7 @@ export default Ember.Controller.extend({
                                 old_sender_id: msg.sender_id,
                                 message: msg.enc_message,
                                 iv: msg.iv,
+                                sender_name : msg.sender_name,
                                 dataFormat: msg.dataFormat,
                                 forwardto: forward,
                                 //sender_name : msg.sender_name
@@ -1158,16 +1167,15 @@ export default Ember.Controller.extend({
             });
 
 
+        },
+        detectMention : function (){
+            let msg =document.getElementById('MessageInput').value;
+            if((msg[msg.length-1]==='@'  && (msg.length>=2 && msg[msg.length-2]==' ')) || (msg.length==1 && msg[msg.length-1]=='@') ){
+                Ember.$("#mentionmodal").modal("show");
+            }
 
 
-
-
-
-
-
-
-
-    }
+        },
 
 
 
