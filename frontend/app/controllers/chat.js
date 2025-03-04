@@ -36,7 +36,15 @@ export default Ember.Controller.extend({
     forwardMessagearray : Ember.A(),
     countOfforwardMessage : 0,
     selectedUsersForForward : Ember.A(),
-    grpPremissions : Ember.A(),
+    grpPermissions : Ember.A(),
+    canAddMember: false,
+    canRemoveMember : false,
+    canSendMessage : false,
+    canDeleteMessage : false,
+    permissions : Ember.A(),
+    selectedPermission : Ember.A(),
+    assignMember : Ember.A(),
+    viewrole : Ember.A(),
     stickers: [
         { url: "/Stickers/dumbbell.png" },
         { url: "/Stickers/laptop.png" },
@@ -46,12 +54,11 @@ export default Ember.Controller.extend({
 
 
 
-
-
     init(){
         this._super(...arguments);
 
         const self =this;
+
 
         Ember.run.scheduleOnce('afterRender', this, function() {
             let curruser = self.get('model.curruser');
@@ -97,10 +104,10 @@ export default Ember.Controller.extend({
                                 dataFormat : 'Text',
                                 isforward : receivedMessage.isforward,
                             };
-                            if(receivedMessage.receiver_id===self.get('receiver_id') || self.get('receiver_id')===receivedMessage.sender_id){
+                           // if(receivedMessage.receiver_id===self.get('receiver_id') || self.get('receiver_id')===receivedMessage.sender_id){
                                 self.get('AllMessage').pushObject(msg_pack);
 
-                            }
+                           // }
 
 
 
@@ -114,7 +121,7 @@ export default Ember.Controller.extend({
                     });
                 }
                 else{
-                    alert("ok");
+                   //// alert("ok");
                     let imageUrl = `https://localhost:8443/chatApplication_war_exploded/RetriveFile?file_name=${encodeURIComponent(receivedMessage.file_name)}`;
                     msg_pack = {
                         mess_id : receivedMessage.mess_id,
@@ -125,10 +132,10 @@ export default Ember.Controller.extend({
                         isforward : receivedMessage.isforward,
 
                     };
-                   if(receivedMessage.receiver_id===self.get('receiver_id') || self.get('receiver_id')===receivedMessage.sender_id){
+                   //if(receivedMessage.receiver_id===self.get('receiver_id') || self.get('receiver_id')===receivedMessage.sender_id){
                         self.get('AllMessage').pushObject(msg_pack);
 
-                   }
+                  //     }
 
                 }
             };
@@ -149,7 +156,7 @@ export default Ember.Controller.extend({
 
         fetchchat(receiver,chat){
             const self =this;
-            self.get('grpPremissions').clear();
+            self.get('grpPermissions').clear();
             let datas;
             if(chat==="Private"){
 
@@ -263,8 +270,10 @@ export default Ember.Controller.extend({
                             self.set('isAdmin',response.isAdmin);
                             console.log(response.messages);
                             for(let permission of response.permissions){
-                                alert(permission);
-                                self.get('grpPremissions').pushObject(permission)
+                                if(permission==='Add Member') self.set('canAddMember',true)
+                                else if(permission==='Remove Member') self.set('canRemoveMember',true)
+                                else if(permission==='Send Message') self.set('canSendMessage',true)
+                                else if(permission==='Delete Message') self.set('canDeleteMessage',true);
                             }
                             for(let msg of response.messages){
                                 let msg_pack;
@@ -1176,7 +1185,207 @@ export default Ember.Controller.extend({
 
 
         },
+        openRoleCreat : function (){
+            const self= this;
+            let grp_id=self.get('receiver_id')
+            self.get('ViewGrpMembers').clear();
+            self.get('selectedPermission').clear();
+            self.get('assignMember').clear();
+            self.send('ViewMembers',grp_id);
+            Ember.$.ajax({
+               url : ENV.apiHost+'/getPermissions',
+               type :'POST',
+               contentType : 'application/json',
+                xhrFields: { withCredentials: true },
+                success : function (response){
+                   //console.log(response);
+                    let permissionsArray = [];
+                    for (let key of Object.keys(response)) {
+                        permissionsArray.pushObject({ key: key, value: response[key] });
+                    }
+                    self.set('permissions', Ember.A(permissionsArray));
 
+
+                    Ember.$("#createrole").modal("show");
+
+
+                },
+                error : function (error){
+
+                }
+
+
+            });
+
+        },
+
+        handlePermission : function (id){
+            const self=this;
+            if(event.target.checked){
+                self.get('selectedPermission').pushObject(id);
+            }
+            else{
+                self.get('selectedPermission').removeObject(id);
+            }
+            console.log(self.get('selectedPermission'));
+
+        },
+        handleAssignMember : function (member_id){
+            const self =this;
+            if(event.target.checked){
+                self.get('assignMember').pushObject(member_id);
+            }
+            else{
+                self.get('assignMember').removeObject(member_id);
+
+            }
+            console.log(self.get('assignMember'));
+
+
+        },
+        createRole: function (){
+            const self = this;
+            let permissions = self.get('selectedPermission');
+            let members =self.get('assignMember');
+            let role_name =document.getElementById('role_name').value;
+            if(!role_name){
+                alert("Fill all the details");
+            }
+            let role_details={
+                role_name : role_name,
+                permissions :permissions,
+                members : members,
+                grp_id : self.get('receiver_id')
+            }
+            Ember.$.ajax({
+                url : ENV.apiHost+ '/CreateRole',
+                type :'POST',
+                data :JSON.stringify(role_details),
+                contentType : 'application/json',
+                xhrFields: { withCredentials: true },
+                success : function (response){
+
+                },
+                error : function (error){
+                    console.error(error);
+                }
+
+
+            });
+
+
+        },
+        viewRoles : function (){
+            const self= this;
+            let grp_id = self.get('receiver_id');
+            self.get('viewrole').clear();
+            Ember.$.ajax({
+               url : ENV.apiHost+'/FetchRoles',
+                type :'POST',
+                data :JSON.stringify({grp_id:grp_id}),
+                contentType : 'application/json',
+                xhrFields: { withCredentials: true },
+                success : function (response){
+                   console.log(response);
+                   for(let role of response.roles){
+                       self.get('viewrole').pushObject(role);
+                   }
+                   Ember.$("#rolemodel").modal('show');
+
+                },
+                error : function (error){
+                   console.error(error);
+                }
+            });
+
+
+        },
+        showAddmemberToRole : function (role_id,role_name){
+            const self =this;
+            let grp_id = self.get('receiver_id');
+            self.get('ViewGrpMembers').clear();
+            self.get('assignMember').clear();
+            let role_details={
+                role_id :role_id,
+                grp_id :grp_id
+            }
+            Ember.$.ajax({
+                url : ENV.apiHost+'/FetchMembers',
+                type : 'POST',
+                contentType : 'application/json',
+                data : JSON.stringify(role_details),
+                xhrFields: { withCredentials: true },
+                success : function (response){
+                    for(let mem of response.grp_members){
+                        self.get('ViewGrpMembers').pushObject(mem);
+                    }
+
+                },
+                error : function (error){
+                    console.error(error);
+                }
+
+            });
+            document.getElementById('rolename').innerText ="Add Member's to " + role_name;
+            document.getElementById('roleID').value=role_id;
+            Ember.$("#addMemberToRole").modal('show');
+
+
+        },
+        addMemberToRole : function (){
+            const self=this;
+            let grp_id= self.get('receiver_id');
+            let role_id =document.getElementById('roleID').value;
+            let members =self.get('assignMember');
+
+            let member_details ={
+                role_id :role_id,
+                grp_id :grp_id,
+                members : members
+            }
+            Ember.$.ajax({
+               url : ENV.apiHost+ '/AddMemberToRole',
+                type : 'POST',
+                contentType : 'application/json',
+                data : JSON.stringify(member_details),
+                xhrFields: { withCredentials: true },
+                success : function (response){
+                    Ember.$("#addMemberToRole").modal('hide');
+
+                },
+                error : function (error){
+
+                }
+
+            });
+
+        },
+        removeMemberFromRole : function (member_id,role_id){
+            const self =this;
+            let grp_id = self.get('receiver_id');
+            let details ={
+                grp_id :grp_id,
+                member_id :member_id,
+                role_id :role_id
+            }
+            Ember.$.ajax({
+                url : ENV.apiHost+ '/RemoveMemberFromRole',
+                type : 'POST',
+                contentType : 'application/json',
+                data : JSON.stringify(details),
+                xhrFields: { withCredentials: true },
+                success : function (response){
+                    Ember.$("#rolemodel").modal('hide');
+
+                },
+                error : function (error){
+                    console.error(error);
+
+                }
+
+            });
+
+        }
 
 
 

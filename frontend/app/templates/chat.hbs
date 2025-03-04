@@ -63,11 +63,13 @@
             <div class="grpOperations">
                 {{#if isGroup}}
                     <i class="bi bi-box-arrow-right text-danger  fs-1" title="Exit"  style="cursor: pointer;" {{action "ExitGroup" model.curruser.user_id on="click"}}></i>
-                    {{#if (checkPermission 'Add Member')}}
+                    {{#if canAddMember }}
                         <i class="bi bi-person-add add fs-1" title="Add members" {{action "addMembers" on="click"}} data-bs-toggle="modal" data-bs-target="#addmember" style="cursor: pointer;"></i>
                     {{/if}}
                     <i class="bi bi-eye-fill text-warning fs-1" title="View members" {{action "OpenViweMember" on="click"}} data-bs-toggle="modal" data-bs-target="#viewmodal" style="cursor: pointer;"></i>
-                    <i class="bi bi-box-arrow-right text-danger  fs-1" title="Role"  style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#rolemodel"></i>
+                    <i class="bi bi-box-arrow-right text-danger  fs-1" title="Role"  style="cursor: pointer;" {{action "viewRoles" on="click" }}></i>
+                    <i class="bi bi-folder-plus text-danger  fs-1" title="Role"  style="cursor: pointer;"  {{action "openRoleCreat" on="click" }}></i>
+
 
                 {{/if}}
             </div>
@@ -95,7 +97,7 @@
                                     <ul class="dropdown-menu dropdown-menu-dark bg-dark">
                                         <li><a class="dropdown-item" {{action "ForkMessage" message on="click"}}>fork from here</a></li>
                                         <li><a class="dropdown-item" {{action "DeleteMessage" message "DFM" on="click"}}>Delete for me message</a></li>
-                                        {{#if (checkPermission 'Delete Message')}}
+                                        {{#if canDeleteMessage}}
                                             <li><a class="dropdown-item" {{action "DeleteMessage" message "DFE" on="click"}}>Delete for everyone message</a></li>
                                         {{/if}}
                                         <li><a class="dropdown-item" {{action "ForwardMessage" true   on="click"}}>Forward message</a></li>
@@ -166,7 +168,7 @@
                                     <ul class="dropdown-menu dropdown-menu-dark bg-dark">
                                         <li><a class="dropdown-item" {{action "ForkMessage" message on="click"}}>fork from here</a></li>
                                         <li><a class="dropdown-item" {{action "DeleteMessage" message "DFM" on="click"}}>Delete for me message</a></li>
-                                        {{#if (checkPermission 'Delete Message')}}
+                                        {{#if canDeleteMessage }}
                                             <li><a class="dropdown-item" {{action "DeleteMessage" message "DFE" on="click"}}>Delete for everyone message</a></li>
                                         {{/if}}
 
@@ -503,37 +505,32 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="row  row-cols-3   g-4">
-                    <div class="col">
-                        <div class="card" style="width: 18rem;">
+                <div class="row  row-cols-2  g-4">
+                    {{# each viewrole as |role index|}}
+                    <div class="col-6">
+                        <div class="card" >
                             <div class="card-body">
-                                <h5 class="card-title">Card title</h5>
-                                <h6 class="card-subtitle mb-2 text-muted">Card subtitle</h6>
+                                <div class="d-flex flex-row justify-content-between">
+                                    <h5 class="card-title">{{role.role_name}}</h5>
+                                    <i class="bi bi-person-fill-add text-success fs-2" title="Add member" {{action "showAddmemberToRole" role.role_id role.role_name}} style="cursor: pointer;"></i>
+                                </div>
+
+<!--                                <h6 class="card-subtitle mb-2 text-muted">Card subtitle</h6>-->
                                 <div class="accordion accordion-flush" id="accordionFlushExample">
                                     <div class="accordion-item">
                                         <h2 class="accordion-header" id="flush-headingOne">
-                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseOne" aria-expanded="false" aria-controls="flush-collapseOne">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapse{{index}}" aria-expanded="false" aria-controls="flush-collapseOne">
                                                 Permissions
                                             </button>
                                         </h2>
-                                        <div id="flush-collapseOne" class="accordion-collapse collapse" aria-labelledby="flush-headingOne" data-bs-parent="#accordionFlushExample">
+                                        <div id="flush-collapse{{index}}" class="accordion-collapse collapse" aria-labelledby="flush-headingOne" data-bs-parent="#accordionFlushExample">
                                             <div class="accordion-body">
                                                 <div>
+                                                    {{#each role.permissions as |permission|}}
                                                     <div class="d-flex flex-column">
-                                                        <label>send Message <input type="checkbox"></label>
+                                                        <label>{{permission.permission_name}} <input type="checkbox"></label>
                                                     </div>
-                                                    <div class="d-flex flex-column">
-                                                        <label>send Message <input type="checkbox"></label>
-                                                    </div>
-                                                    <div class="d-flex flex-column">
-                                                        <label>send Message <input type="checkbox"></label>
-                                                    </div>
-                                                    <div class="d-flex flex-column">
-                                                        <label>send Message <input type="checkbox"></label>
-                                                    </div>
-                                                    <div class="d-flex flex-column">
-                                                        <label>send Message <input type="checkbox"></label>
-                                                    </div>
+                                                    {{/each}}
 
                                                 </div>
                                             </div>
@@ -541,14 +538,26 @@
                                     </div>
                                     <div class="accordion-item">
                                         <h2 class="accordion-header" id="flush-headingTwo">
-                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseTwo" aria-expanded="false" aria-controls="flush-collapseTwo">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseTwo{{index}}" aria-expanded="false" aria-controls="flush-collapseTwo">
                                                 Members
                                             </button>
                                         </h2>
-                                        <div id="flush-collapseTwo" class="accordion-collapse collapse" aria-labelledby="flush-headingTwo" data-bs-parent="#accordionFlushExample">
+                                        <div id="flush-collapseTwo{{index}}" class="accordion-collapse collapse" aria-labelledby="flush-headingTwo" data-bs-parent="#accordionFlushExample">
                                             <div class="accordion-body">
-                                                <div class="d-flex">
+                                                <div class="row row-cols-1">
+                                                    {{#each role.members as |member| }}
+                                                    <div class="col">
+                                                        <div class="card d-flex justify-content-between align-items-center flex-row p-3" {{action "saran" on="click" }} style="cursor: pointer;" >
+                                                            <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
+                                                            <span class="align-items-center">{{member.name}}</span>
+                                                            <span class="">{{member.mobile_number}}</span>
+                                                            <i class="bi bi-person-dash-fill text-danger  fs-2" {{action "removeMemberFromRole" member.user_id role.role_id }} title="Remove member"></i>
 
+                                                        </div>
+                                                        <hr>
+
+                                                    </div>
+                                                    {{/each}}
                                                 </div>
                                             </div>
                                         </div>
@@ -559,61 +568,106 @@
                         </div>
 
                     </div>
-                    <div class="col">
-                        <div class="card" style="width: 18rem;">
-                            <div class="card-body">
-                                <h5 class="card-title">Card title</h5>
-                                <h6 class="card-subtitle mb-2 text-muted">Card subtitle</h6>
-                                <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-                                <a href="#" class="card-link">Card link</a>
-                                <a href="#" class="card-link">Another link</a>
-                            </div>
-                        </div>
-
-                    </div>
-                    <div class="col">
-                        <div class="card" style="width: 18rem;">
-                            <div class="card-body">
-                                <h5 class="card-title">Card title</h5>
-                                <h6 class="card-subtitle mb-2 text-muted">Card subtitle</h6>
-                                <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-                                <a href="#" class="card-link">Card link</a>
-                                <a href="#" class="card-link">Another link</a>
-                            </div>
-                        </div>
-
-                    </div>
-                    <div class="col">
-                        <div class="card" style="width: 18rem;">
-                            <div class="card-body">
-                                <h5 class="card-title">Card title</h5>
-                                <h6 class="card-subtitle mb-2 text-muted">Card subtitle</h6>
-                                <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-                                <a href="#" class="card-link">Card link</a>
-                                <a href="#" class="card-link">Another link</a>
-                            </div>
-                        </div>
-
-                    </div>
-                    <div class="col">
-                        <div class="card" style="width: 18rem;">
-                            <div class="card-body">
-                                <h5 class="card-title">Card title</h5>
-                                <h6 class="card-subtitle mb-2 text-muted">Card subtitle</h6>
-
-                            </div>
-                        </div>
-
-                    </div>
-
-
+                    {{/each}}
                 </div>
 
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button"   class="submit-button">Create Role</button>
 
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--Create role modal-->
+<div class="modal fade" id="createrole" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Create New Role</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="role_name" class="form-label">Role Name</label>
+                        <input type="email" class="form-control" id="role_name" name="role_name" placeholder="Role Name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="exampleFormControlInput1" class="form-label">Permissions</label>
+                        <div class="row row-cols-3">
+                            {{#each permissions as |per|}}
+                            <div class="col p-2">
+                                <label class="">{{per.value}}</label>
+                                <input type="checkbox"  {{ action "handlePermission" per.key on="change"}}>
+                            </div>
+                            {{/each}}
+
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="exampleFormControlInput1" class="form-label">Assign Role To</label>
+                        <div class="row row-cols-2">
+                            {{#each ViewGrpMembers as |member|}}
+                            <div class="col">
+                                <div class="d-flex- flex-column">
+                                        <div class="card d-flex justify-content-around align-items-center flex-row p-3" >
+                                            <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
+                                            <p class="">{{member.name}}</p>
+                                            <span class="">{{member.mobile_number}}</span>
+                                            <input type="checkbox"    {{action "handleAssignMember" member.user_id on="change"}} >
+
+                                        </div>
+                                        <hr>
+                                </div>
+
+                            </div>
+                            {{/each}}
+
+                        </div>
+                    </div>
+
+                </form>
+
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button"   class="submit-button" {{action "createRole" on="click"}}>Create</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--Add member to role-->
+<div class="modal fade" id="addMemberToRole" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog  modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="rolename"></h1>
+                <input type="hidden" id="roleID" name="roleID">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+
+                <form {{action "RemoveMember" model.curruser.user_id on="submit" }}>
+                    {{#each ViewGrpMembers as |member|}}
+                        <div class="card d-flex align-items-center gap-4 flex-row p-2" >
+                            <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
+                            <p class="GroupName">{{member.name}}</p>
+                            <span class="">{{member.mobile_number}}</span>
+                            <input type="checkbox" {{action "handleAssignMember" member.user_id on="change"}}>
+                        </div>
+                        <hr>
+                    {{/each}}
+                </form>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type ="button" class="btn btn-secondary" {{action "addMemberToRole" on="click"}}>Add</button>
             </div>
         </div>
     </div>
