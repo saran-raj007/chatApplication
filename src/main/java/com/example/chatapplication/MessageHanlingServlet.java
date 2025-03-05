@@ -4,23 +4,18 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
 import java.sql.*;
 import java.util.*;
 
-import jakarta.websocket.Session;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 @WebServlet("/MessageHandle")
@@ -59,6 +54,23 @@ public class MessageHanlingServlet extends HttpServlet {
                     JsonArray members_aesKey = msg.getAsJsonArray("members_aesKey");
                     String message_text = msg.get("ciphertext").getAsString();
                     String msg_iv = msg.get("iv").getAsString();
+                    JsonArray mentionMembers = msg.getAsJsonArray("mentionsMember");
+                    JsonArray mentionRoles = msg.getAsJsonArray("mentionsRoles");
+
+                        HashSet<String> mention_member_set = new HashSet<>();
+                    HashSet<String> mention_role_set = new HashSet<>();
+                    if(mentionMembers != null) {
+                        for (JsonElement element : mentionMembers) {
+                            mention_member_set.add(element.getAsString());
+                        }
+                    }
+                    if(mentionRoles != null) {
+                        for (JsonElement element : mentionRoles) {
+                            mention_role_set.add(element.getAsString());
+                        }
+                    }
+
+
                     Map<String, String> memberaesKeyMap = new HashMap<>();
                     for (JsonElement keyElement : members_aesKey) {
                         JsonObject keyObject = keyElement.getAsJsonObject();
@@ -72,7 +84,7 @@ public class MessageHanlingServlet extends HttpServlet {
                             }
                         }
                     }
-                    String msg_id=storeGroupMessage(grp_id, sender_id, message_text, msg_iv, memberaesKeyMap);
+                    String msg_id=storeGroupMessage(grp_id, sender_id, message_text, msg_iv, memberaesKeyMap,mention_member_set,mention_role_set);
                     WebSocketServer.sendMessageToGroup(grp_id,msg_id, message_text, msg_iv, memberaesKeyMap, sender_id, sender_name,null,null,false);
 
 
@@ -126,12 +138,14 @@ public class MessageHanlingServlet extends HttpServlet {
         }
 
 
-        private String storeGroupMessage(String grp_id,String sender_id,String message_text,String msg_iv,Map<String,String> memberaesKeyMap){
+        private String storeGroupMessage(String grp_id,String sender_id,String message_text,String msg_iv,Map<String,String> memberaesKeyMap,HashSet<String> mention_member_set,HashSet<String> mention_role_set) {
             Connection con = DBconnection.getConnection();
             PreparedStatement ps = null;
             if(con != null) {
                 String qryForInsert= "insert into group_messages (grpmssg_id,grp_id,sender_id,message,msg_iv,isforward) values (?,?,?,?,?,?)";
                 String qryAesKey ="insert into  aes_keys (key_id,grpmssg_id,grp_id,receiver_id,enc_aes_key) values (?,?,?,?,?)";
+                String qryformention ="select member_id from member_roles where  group_id=? and role_id=?";
+                String qryforaddmention ="insert into mentions (id,group_id,message_id,user_id,seen) values (?,?,?,?,?)";
                 try{
                     String grp_msg_id=IdGeneration.generateRandomID();
                     ps = con.prepareStatement(qryForInsert);
@@ -165,6 +179,32 @@ public class MessageHanlingServlet extends HttpServlet {
                             System.out.println("Message insert failed");
                         }
 
+                    }
+                    ps=con.prepareStatement(qryforaddmention);
+                    for(String mention_member:mention_member_set) {
+                        ps.setString(1,IdGeneration.generateRandomID());
+                        ps.setString(2,grp_id);
+                        ps.setString(3,grp_msg_id);
+                        ps.setString(4,mention_member);
+                        ps.setBoolean(5,false);
+                        ps.executeUpdate();
+
+                    }
+                    for(String mention_role:mention_role_set) {
+                        ps = con.prepareStatement(qryformention);
+                        ps.setString(1,grp_id);
+                        ps.setString(2,mention_role);
+                        ResultSet rs = ps.executeQuery();
+                        ps=con.prepareStatement(qryforaddmention);
+                        while(rs.next()) {
+                            ps.setString(1,IdGeneration.generateRandomID());
+                            ps.setString(2,grp_id);
+                            ps.setString(3,grp_msg_id);
+                            ps.setString(4, rs.getString("member_id"));
+                            ps.setBoolean(5,false);
+                            ps.executeUpdate();
+
+                        }
                     }
                     return grp_msg_id;
 

@@ -34,22 +34,36 @@ public class PermissionsServlet extends HttpServlet {
             PreparedStatement ps;
             ResultSet rs;
             if(con != null) {
-                String qry="select * from permissions";
-                try{
-                    ps= con.prepareStatement(qry);
-                    rs=ps.executeQuery();
+                try {
+                    rs=getPermissions(con);
                     while(rs.next()) {
                         jsonResponse.put(rs.getString("permission_id"),rs.getString("permission_name"));
                     }
-
-                }catch (SQLException e){
-                    e.printStackTrace();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
                 }
+
             }
         }
         else{
             jsonResponse.put("status","unauthorized");
         }
         response.getWriter().write(jsonResponse.toString());
+    }
+
+    public static  ResultSet getPermissions(Connection con) throws SQLException {
+        PreparedStatement ps;
+        try{
+            String qry="select * from permissions";
+            ps= con.prepareStatement(qry);
+            ps= con.prepareStatement(qry);
+            return ps.executeQuery();
+
+
+        }catch (SQLException e){
+            e.printStackTrace();
+        }
+        return null;
+
     }
 }

@@ -44,10 +44,20 @@ public class AddNewMemberServlet extends HttpServlet {
 
             if(con!=null){
                 String qryForNewMember = "insert into group_members (id,grp_id,user_id,isAdmin,added_by) values(?,?,?,?,?)";
+                String qryforRoel ="select role_id from roles where group_id =? and role_name='Member'";
+                String qryforinsertRole ="insert into member_roles (id,member_id,group_id,role_id) values(?,?,?,?)";
 
                 try{
-                    ps=con.prepareStatement(qryForNewMember);
+                    ps = con.prepareStatement(qryforRoel);
+                    ps.setString(1,grp_id);
+                    ResultSet rs = ps.executeQuery();
+                    String role_id=null;
+                    if(rs.next()){
+                        role_id = rs.getString("role_id");
+                    }
+
                     for(String member:groupMembers){
+                        ps=con.prepareStatement(qryForNewMember);
                         ps.setString(1, IdGeneration.generateRandomID());
                         ps.setString(2, grp_id);
                         ps.setString(3, member);
@@ -61,6 +71,12 @@ public class AddNewMemberServlet extends HttpServlet {
                         else{
                             jsonResponse.put("error", "Error on add Members");
                         }
+                        ps=con.prepareStatement(qryforinsertRole);
+                        ps.setString(1,IdGeneration.generateRandomID());
+                        ps.setString(2, member);
+                        ps.setString(3, grp_id);
+                        ps.setString(4, role_id);
+                        ps.executeUpdate();
 
                     }
                 }catch (SQLException e){

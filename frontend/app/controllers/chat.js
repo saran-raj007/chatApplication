@@ -45,6 +45,9 @@ export default Ember.Controller.extend({
     selectedPermission : Ember.A(),
     assignMember : Ember.A(),
     viewrole : Ember.A(),
+    mentionMembers : Ember.A(),
+    mentionRoles : Ember.A(),
+    getRoles :Ember.A(),
     stickers: [
         { url: "/Stickers/dumbbell.png" },
         { url: "/Stickers/laptop.png" },
@@ -153,7 +156,23 @@ export default Ember.Controller.extend({
 
 
     actions : {
+        updateSeen : function (grp_id,user_id){
+            const self =this;
+            let details ={
+                grp_id:grp_id,
+                user_id :user_id,
+            }
+            Ember.$.ajax({
+               url : ENV.apiHost+'/UpdateSeen',
+                type: 'POST',
+                contentType: 'application/json',
+                dataType : 'json',
+                xhrFields: { withCredentials: true },
+                data : JSON.stringify(details),
 
+            });
+
+        },
         fetchchat(receiver,chat){
             const self =this;
             self.get('grpPermissions').clear();
@@ -170,6 +189,9 @@ export default Ember.Controller.extend({
                 self.set('receiver_id',receiver.user_id);
             }
             else{
+                if(receiver.unseen){
+                    self.send('updateSeen',receiver.group_id,self.get('sender_id'));
+                }
                 datas ={
                     userid : receiver.group_id,
                     type : chat,
@@ -186,6 +208,14 @@ export default Ember.Controller.extend({
             self.get('forwardMessagearray').clear();
             self.set('countOfforwardMessage',0);
             self.set('messageForwardMode',false);
+            self.set('canAddMember',false);
+            self.set('canRemoveMember',false);
+            self.set('canSendMessage',false);
+            self.set('canDeleteMessage',false);
+            self.get('mentionMembers').clear();
+            self.get('mentionRoles').clear();
+
+
             Ember.$.ajax({
                 url : ENV.apiHost+'FetchchatServlet',
                 type: 'POST',
@@ -202,6 +232,7 @@ export default Ember.Controller.extend({
                     console.log(response.messages);
                     StorageService.getPrivateKey(self.get('sender_id')).then( function (privateKey){
                         if(chat==="Private"){
+                            self.set('canSendMessage',true);
                             var promises = [];
                             for (let msg of response.messages) {
                                 if (msg.dataFormat === "Text") {
@@ -267,6 +298,10 @@ export default Ember.Controller.extend({
                         else{
                             // write code for group chat decrypt
                             var promises = [];
+                            self.get('ViewGrpMembers').clear();
+                            self.get('getRoles').clear();
+                            self.send('getRole');
+                            self.send('ViewMembers',self.get('receiver_id'));
                             self.set('isAdmin',response.isAdmin);
                             console.log(response.messages);
                             for(let permission of response.permissions){
@@ -391,6 +426,7 @@ export default Ember.Controller.extend({
                         xhrFields : {withCredentials : true},
                         success : function (response){
                             console.log(response);
+
                         },
                         error: function(error){
                             console.log(error);
@@ -498,6 +534,7 @@ export default Ember.Controller.extend({
         },
 
         SendMessageOnGroup: function () {
+            const self = this;
             let msgtime = new Date();
             let year =msgtime.getFullYear();
             let month =msgtime.getMonth();
@@ -505,9 +542,10 @@ export default Ember.Controller.extend({
             let hour =msgtime.getHours();
             let min =msgtime.getMinutes();
             let sec= msgtime.getSeconds();
+            let mentionsMember =self.get('mentionMembers');
+            let mentionsRole =self.get('mentionRoles')
             let time = `${year}-${month}-${date} ${hour}:${min}:${sec}`;
             console.log(msgtime);
-            const self = this;
             let message = document.getElementById('MessageInput').value.trim();
             if (!message) return;
 
@@ -557,6 +595,10 @@ export default Ember.Controller.extend({
                                 sender_name : self.get('model.curruser.name'),
                                 time :time,
                                 dataFormat : "Text",
+                                mentionsMember : mentionsMember,
+                                mentionsRole : mentionsRole
+
+
 
                             };
                             Ember.$.ajax({
@@ -567,6 +609,9 @@ export default Ember.Controller.extend({
                                 xhrFields : {withCredentials : true},
                                 success : function (response){
                                     console.log(response);
+                                    self.get('mentionMembers').clear();
+                                    self.get('mentionRoles').clear();
+
                                 },
                                 error: function(error){
                                     console.log(error);
@@ -1078,7 +1123,7 @@ export default Ember.Controller.extend({
                                     .then(dec_key => window.crypto.subtle.exportKey("raw", dec_key))
                                     .then(arrayBuffer => CryptoUtils.encryptAESKey(new Uint8Array(arrayBuffer), user.rsa_public_key))
                                     .then(enc_aes => {
-                                        let aes_sender = (msg.sender_id === sender_id) ? msg.aes_key_sender : msg.aes_key_receiver;
+                                        let aes_sender =(isGroup)? msg.enc_aes_key : (msg.sender_id === sender_id) ? msg.aes_key_sender : msg.aes_key_receiver;
                                         forward.push({
                                             receiver_id: user.user_id,
                                             type: 'private',
@@ -1174,14 +1219,6 @@ export default Ember.Controller.extend({
                     console.error("Error processing forward messages:", error);
                 });
             });
-
-
-        },
-        detectMention : function (){
-            let msg =document.getElementById('MessageInput').value;
-            if((msg[msg.length-1]==='@'  && (msg.length>=2 && msg[msg.length-2]==' ')) || (msg.length==1 && msg[msg.length-1]=='@') ){
-                Ember.$("#mentionmodal").modal("show");
-            }
 
 
         },
@@ -1381,6 +1418,76 @@ export default Ember.Controller.extend({
                 error : function (error){
                     console.error(error);
 
+                }
+
+            });
+
+        },
+        deleteRoleFromGrp : function (role_id){
+            const self= this;
+            let grp_id = self.get('receiver_id');
+            let role_details ={
+                grp_id : grp_id,
+                role_id : role_id
+            }
+            Ember.$.ajax({
+                url : ENV.apiHost + '/DeleteRoleFromGrp',
+                type : 'POST',
+                contentType : 'application/json',
+                data : JSON.stringify(role_details),
+                xhrFields: { withCredentials: true },
+                success : function (response){
+                    Ember.$("#rolemodel").modal('hide');
+
+                },
+                error : function (error){
+                    console.error(error);
+
+                }
+
+            });
+        },
+        detectMention : function (){
+            const self =this;
+            let grp_id= self.get('receiver_id');
+            let msg =document.getElementById('MessageInput').value;
+            if((msg[msg.length-1]==='@'  && (msg.length>=2 && msg[msg.length-2]==' ')) || (msg.length==1 && msg[msg.length-1]=='@') ){
+                Ember.$("#mentionmodal").modal("show");
+            }
+
+
+        },
+        addMentionMember : function (member_id,name,type){
+            const self=this;
+            if(type==='role'){
+                self.get('mentionRoles').pushObject(member_id);
+            }
+            else{
+                self.get('mentionMembers').pushObject(member_id);
+
+            }
+
+            let msg =document.getElementById('MessageInput').value;
+            document.getElementById('MessageInput').value=msg+name;
+            Ember.$("#mentionmodal").modal("hide");
+
+        },
+        getRole : function (){
+            const self =this;
+            let grp_id =self.get('receiver_id');
+            Ember.$.ajax({
+                url : ENV.apiHost + '/GetRole',
+                type : 'POST',
+                contentType : 'application/json',
+                data : JSON.stringify({grp_id :grp_id}),
+                xhrFields: { withCredentials: true },
+                success : function (response){
+                    for(let role of response.roles){
+                        self.get('getRoles').pushObject(role);
+                    }
+                },
+                error : function (error){
+                    console.log(error);
                 }
 
             });

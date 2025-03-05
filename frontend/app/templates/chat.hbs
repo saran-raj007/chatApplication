@@ -36,9 +36,18 @@
 
             {{/each}}
             {{#each model.groups as |group|}}
-                <li class="card flex-row text-align-center group" {{action "fetchchat" group "Group" }}>
-                    <div class="avatar"style="width: 50px; height: 50px;"><img src="assets/profile.png" alt=""></div>
-                    <p class="GroupName">{{group.name}}</p>
+                <li class="card flex-row justify-content-between text-align-center group" {{action "fetchchat" group "Group" }}>
+                    <div class="d-flex flex-row">
+                        <div class="avatar"style="width: 50px; height: 50px;"><img src="assets/profile.png" alt=""></div>
+                        <p class="GroupName">{{group.name}}</p>
+                    </div>
+                    <div>
+                        {{#if group.unseen}}
+                            <i class="bi bi-at text-success fs-3" ></i>
+                        {{/if}}
+                    </div>
+
+
 
                 </li>
 
@@ -67,8 +76,10 @@
                         <i class="bi bi-person-add add fs-1" title="Add members" {{action "addMembers" on="click"}} data-bs-toggle="modal" data-bs-target="#addmember" style="cursor: pointer;"></i>
                     {{/if}}
                     <i class="bi bi-eye-fill text-warning fs-1" title="View members" {{action "OpenViweMember" on="click"}} data-bs-toggle="modal" data-bs-target="#viewmodal" style="cursor: pointer;"></i>
+                    {{#if isAdmin}}
                     <i class="bi bi-box-arrow-right text-danger  fs-1" title="Role"  style="cursor: pointer;" {{action "viewRoles" on="click" }}></i>
                     <i class="bi bi-folder-plus text-danger  fs-1" title="Role"  style="cursor: pointer;"  {{action "openRoleCreat" on="click" }}></i>
+                    {{/if}}
 
 
                 {{/if}}
@@ -211,7 +222,7 @@
                 {{/if}}
             {{/each}}
         </div>
-
+        {{# if canSendMessage }}
         <div class="messageCenter">
 
         <form id="MessageForm" >
@@ -243,6 +254,7 @@
             </div>
         {{/if}}
         </div>
+            {{/if}}
     </section>
     <section class="createGroup">
         <form {{action "CreateNewGroup" model.curruser.user_id on="submit" }}>
@@ -406,16 +418,16 @@
                             {{/if}}
 
 
-                            {{#if (checkPermission 'Remove Member')}}
+                            {{#if canRemoveMember }}
 
                                 {{#if (neq model.curruser.user_id member.user_id)}}
                                     <i class="bi bi-person-x-fill fs-1 text-danger" title="Remove" style="cursor: pointer;" {{action "ExitGroup" member.user_id on="click"}}></i>
-                                    {{#if  member.isAdmin}}
-                                        <i class="bi bi-person-fill-down fs-1 text-danger" title="Dismiss as Admin" style="cursor: pointer;" {{action "makeAdmin" member.user_id false on="click"}}></i>
-                                    {{else}}
-                                        <i class="bi bi-person-fill-up fs-1 text-success" title="Make as Admin" style="cursor: pointer;" {{action "makeAdmin" member.user_id true on="click"}}></i>
+<!--                                    {{#if  member.isAdmin}}-->
+<!--                                        <i class="bi bi-person-fill-down fs-1 text-danger" title="Dismiss as Admin" style="cursor: pointer;" {{action "makeAdmin" member.user_id false on="click"}}></i>-->
+<!--                                    {{else}}-->
+<!--                                        <i class="bi bi-person-fill-up fs-1 text-success" title="Make as Admin" style="cursor: pointer;" {{action "makeAdmin" member.user_id true on="click"}}></i>-->
 
-                                    {{/if}}
+<!--                                    {{/if}}-->
                                 {{/if}}
                             {{/if}}
 
@@ -477,12 +489,20 @@
             </div>
             <div class="modal-body">
                 <div class="d-flex flex-column gap-2">
-                    <div calss=" d-flex flex-row p-2">
+                    <div class="">
                         {{#each ViewGrpMembers as |member|}}
-                            <div class="card d-flex justify-content-around align-items-center flex-row p-3" {{action "saran" on="click" }} style="cursor: pointer;" >
+                            <div class="card d-flex justify-content-around align-items-center flex-row p-3" {{action "addMentionMember" member.user_id member.name "member" on="click" }} style="cursor: pointer;" >
                                 <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
                                 <p class="">{{member.name}}</p>
                                 <span class="">{{member.mobile_number}}</span>
+
+                            </div>
+                            <hr>
+                        {{/each}}
+                        {{#each getRoles as |role|}}
+                            <div class="card d-flex flex-row p-3 gap-3" {{action "addMentionMember" role.role_id role.role_name "role" on="click" }} style="cursor: pointer;" >
+                                <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
+                                <p class="">{{role.role_name}}</p>
 
                             </div>
                             <hr>
@@ -512,7 +532,11 @@
                             <div class="card-body">
                                 <div class="d-flex flex-row justify-content-between">
                                     <h5 class="card-title">{{role.role_name}}</h5>
-                                    <i class="bi bi-person-fill-add text-success fs-2" title="Add member" {{action "showAddmemberToRole" role.role_id role.role_name}} style="cursor: pointer;"></i>
+                                    <div class="d-flex flex-row gap-3">
+                                        <i class="bi bi-person-fill-add text-success fs-2" title="Add member" {{action "showAddmemberToRole" role.role_id role.role_name}} style="cursor: pointer;"></i>
+                                        <i class="bi bi-trash3-fill text-danger fs-2" {{action "deleteRoleFromGrp" role.role_id}} style="cursor: pointer;"></i>
+                                    </div>
+
                                 </div>
 
 <!--                                <h6 class="card-subtitle mb-2 text-muted">Card subtitle</h6>-->
@@ -528,7 +552,7 @@
                                                 <div>
                                                     {{#each role.permissions as |permission|}}
                                                     <div class="d-flex flex-column">
-                                                        <label>{{permission.permission_name}} <input type="checkbox"></label>
+                                                        <label>{{permission.permission_name}} <input type="checkbox"  checked={{permission.access}}></label>
                                                     </div>
                                                     {{/each}}
 

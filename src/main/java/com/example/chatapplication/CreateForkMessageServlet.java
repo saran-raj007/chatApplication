@@ -344,7 +344,7 @@ public class CreateForkMessageServlet extends HttpServlet {
                 ps.setTimestamp(5, newTimestamp);
                 int rows = ps.executeUpdate();
                 if(rows>0){
-                    System.out.println("success");
+                    System.out.println("success sticker");
                 }
                 else{
                     System.out.println("error");

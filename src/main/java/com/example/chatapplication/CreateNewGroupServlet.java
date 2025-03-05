@@ -142,11 +142,6 @@ public class CreateNewGroupServlet extends HttpServlet {
                     ps.setString(4, role_id);
                     ps.executeUpdate();
                 }
-
-
-
-
-
             }catch (SQLException e){
                 e.printStackTrace();
             }
