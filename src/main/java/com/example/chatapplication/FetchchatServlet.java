@@ -179,7 +179,7 @@ public class FetchchatServlet extends HttpServlet {
             msg.put("dataFormat","Text");
             msg.put("mess_id", rs.getString("grpmssg_id"));
             msg.put("grp_id", rs.getString("grp_id"));
-            msg.put("sender_id", rs.getString("sender_id")); // consider this line
+            msg.put("sender_id", rs.getString("sender_id"));
             msg.put("message", rs.getString("message"));
             msg.put("iv", rs.getString("msg_iv"));
             msg.put("enc_aes_key", rs.getString("enc_aes_key"));

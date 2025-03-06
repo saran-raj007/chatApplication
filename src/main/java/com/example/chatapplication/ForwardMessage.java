@@ -85,7 +85,7 @@ public class ForwardMessage extends HttpServlet {
                                     }
                                 }
                                 String msg_id=storeForwardgrp(sender_id,receiverId,oldSenderId,oldMsgId,message,iv,dataFormat,aes);
-                                WebSocketServer.sendMessageToGroup(receiverId,msg_id,message,iv,aes,sender_id,sender_name,oldSenderId,oldMsgId,true);
+                                WebSocketServer.sendMessageToGroup(receiverId,msg_id,message,iv,aes,sender_id,sender_name,oldSenderId,oldMsgId,true,false);
                             }
                         }
                     }

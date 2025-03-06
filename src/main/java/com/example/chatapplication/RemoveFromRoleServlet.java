@@ -13,7 +13,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.sql.*;
@@ -41,9 +40,7 @@ public class RemoveFromRoleServlet extends HttpServlet {
             }
             else{
                 jsonResponse.put("error","Error on DB connection");
-
             }
-
 
         }
         else{

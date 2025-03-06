@@ -29,7 +29,7 @@ public class AddNewMemberServlet extends HttpServlet {
             JsonObject jsonObject = JsonParser.parseReader(new InputStreamReader(request.getInputStream())).getAsJsonObject();
             String grp_id = jsonObject.get("grp_id").getAsString();
             String added_by = jsonObject.get("added_by").getAsString();
-            if(!AdminVerification.adminVerfiy(sender_id,grp_id)){
+            if(!AdminVerification.adminVerfiy(sender_id,grp_id) || !AdminVerification.OperationVerify(sender_id,grp_id,"Add Member")){
                 jsonResponse.put("message","unauthorized access");
                 response.getWriter().write(jsonResponse.toString());
                 return;

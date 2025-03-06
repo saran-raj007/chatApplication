@@ -23,6 +23,7 @@ public class MessageHanlingServlet extends HttpServlet {
         public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
             response.setContentType("application/json");
             String sender_id =UserSessionGenerate.validateToken(request);
+            JSONObject jsonResponsee = new JSONObject();
             if (sender_id != null) {
                 JsonObject msg = JsonParser.parseReader(new InputStreamReader(request.getInputStream())).getAsJsonObject();
                 //JSONObject msg = new JSONObject(message);
@@ -43,12 +44,15 @@ public class MessageHanlingServlet extends HttpServlet {
                         jsonResponse.put("iv", iv);
                         jsonResponse.put("aes_key_receiver", aeskey_receiver);
                         jsonResponse.put("aes_key_sender", aeskey_sender);
+                        jsonResponse.put("unseen", false);
                         msg_id=storeMessage(sender_id, receiver_id, message_text, iv, aeskey_receiver, aeskey_sender);
                         jsonResponse.put("mess_id", msg_id);
                         WebSocketServer.sendMessageToPvt(receiver_id,sender_id,jsonResponse);
+                    jsonResponsee.put("message","message sent");
 
                 }
                 else {
+                    boolean unseen = false;
                     String grp_id = msg.get("grp_id").getAsString();
                     String sender_name = msg.get("sender_name").getAsString();
                     JsonArray members_aesKey = msg.getAsJsonArray("members_aesKey");
@@ -57,19 +61,22 @@ public class MessageHanlingServlet extends HttpServlet {
                     JsonArray mentionMembers = msg.getAsJsonArray("mentionsMember");
                     JsonArray mentionRoles = msg.getAsJsonArray("mentionsRoles");
 
-                        HashSet<String> mention_member_set = new HashSet<>();
+                    HashSet<String> mention_member_set = new HashSet<>();
                     HashSet<String> mention_role_set = new HashSet<>();
-                    if(mentionMembers != null) {
+
+                    if(mentionMembers!=null) {
+                        System.out.println(mentionMembers.toString());
                         for (JsonElement element : mentionMembers) {
+                            unseen = true;
                             mention_member_set.add(element.getAsString());
                         }
                     }
-                    if(mentionRoles != null) {
+                    if(mentionRoles!=null){
                         for (JsonElement element : mentionRoles) {
+                            unseen = true;
                             mention_role_set.add(element.getAsString());
                         }
                     }
-
 
                     Map<String, String> memberaesKeyMap = new HashMap<>();
                     for (JsonElement keyElement : members_aesKey) {
@@ -85,14 +92,16 @@ public class MessageHanlingServlet extends HttpServlet {
                         }
                     }
                     String msg_id=storeGroupMessage(grp_id, sender_id, message_text, msg_iv, memberaesKeyMap,mention_member_set,mention_role_set);
-                    WebSocketServer.sendMessageToGroup(grp_id,msg_id, message_text, msg_iv, memberaesKeyMap, sender_id, sender_name,null,null,false);
+                    WebSocketServer.sendMessageToGroup(grp_id,msg_id, message_text, msg_iv, memberaesKeyMap, sender_id, sender_name,null,null,false,unseen);
 
+                    jsonResponsee.put("message","message sent");
 
 
 
                 }
 
             }
+            response.getWriter().write(jsonResponsee.toString());
         }
 
 

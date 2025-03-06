@@ -84,11 +84,18 @@ export default Ember.Controller.extend({
                     }
                 }
                 else if(receivedMessage.dataFormat==="Text") {
+                    if(receivedMessage.unseen){
+                        alert(receivedMessage.unseen);
+                        let groups = this.get('model.groups');
+                        let group = groups.findBy('group_id', receivedMessage.grp_id);
+                        if (group){
+                            Ember.set(group, 'unseen', true);
+                        }
+                    }
                     StorageService.getPrivateKey(self.get('sender_id')).then(function (privateKey) {
                         let key;
                         if(receivedMessage.isforward){
                             key =(receivedMessage.old_senderid===self.get('sender_id'))? receivedMessage.aes_key_sender : receivedMessage.aes_key_receiver;
-                            alert(key);
                         }
                         else{
                             if(receivedMessage.sender_id===self.get('sender_id')){
@@ -169,6 +176,12 @@ export default Ember.Controller.extend({
                 dataType : 'json',
                 xhrFields: { withCredentials: true },
                 data : JSON.stringify(details),
+                success : function (response){
+                   console.log(response)
+                },
+                error : function(error){
+                   console.log(error);
+                }
 
             });
 
@@ -189,8 +202,14 @@ export default Ember.Controller.extend({
                 self.set('receiver_id',receiver.user_id);
             }
             else{
+
                 if(receiver.unseen){
                     self.send('updateSeen',receiver.group_id,self.get('sender_id'));
+                    let groups = this.get('model.groups');
+                    let group = groups.findBy('group_id', receiver.group_id);
+                    if (group) {
+                        Ember.set(group, 'unseen', false);
+                    }
                 }
                 datas ={
                     userid : receiver.group_id,
@@ -543,11 +562,22 @@ export default Ember.Controller.extend({
             let min =msgtime.getMinutes();
             let sec= msgtime.getSeconds();
             let mentionsMember =self.get('mentionMembers');
-            let mentionsRole =self.get('mentionRoles')
+            let mentionsRole =self.get('mentionRoles');
+
             let time = `${year}-${month}-${date} ${hour}:${min}:${sec}`;
             console.log(msgtime);
             let message = document.getElementById('MessageInput').value.trim();
             if (!message) return;
+            // let mentionIndex=0;
+            // let placeholderMap={};
+            // let placeholderMessage = message.replace(/(^|\s)@(\w+)(?=\s|$)/g, (match, space, username) => {
+            //     let placeholder = `@@${mentionIndex}@@`;
+            //     placeholderMap[placeholder] = username;
+            //     mentionIndex++;
+            //     return `${space}${placeholder}`; // Preserve leading space
+            // });
+            // console.log(placeholderMap);
+            // console.log(placeholderMessage);
 
             document.getElementById("MessageInput").value = "";
             let receiver = self.get('receiver_id');
@@ -561,6 +591,7 @@ export default Ember.Controller.extend({
                 xhrFields: { withCredentials: true },
                 data: JSON.stringify({ group_id: receiver })
             }).done(function (response) {
+
                 let encryptionPromises = response.Keys.map(function (key) {
                     return CryptoUtils.encryptAESKey(AESkey, key.rsa_public_key)
                         .then(function (encryptedAESKey) {
@@ -627,6 +658,7 @@ export default Ember.Controller.extend({
                 console.error("Error fetching group keys:", error);
             });
             self.get('AllMessage').pushObject({ sender_id: sender_id, message: message,dataFormat : "Text",timestamp: time});
+
 
         },
 
@@ -1101,7 +1133,6 @@ export default Ember.Controller.extend({
                     let forwardUserPromises = [];
                     selectedusers.forEach(function (user) {
                         if (msg.dataFormat === 'Sticker') {
-                            alert(msg.name);
                             forwardMsgPack.push({
                                 old_msgid: msg.mess_id,
                                 old_sender_id: msg.sender_id,
@@ -1210,6 +1241,9 @@ export default Ember.Controller.extend({
                         xhrFields: { withCredentials: true },
                         success: function (response) {
                             console.log("Messages forwarded successfully:", response);
+                            Ember.$("#exampleModal").modal("hide");
+
+
                         },
                         error: function (error) {
                             console.error("Error forwarding messages:", error);
@@ -1274,7 +1308,6 @@ export default Ember.Controller.extend({
             }
             else{
                 self.get('assignMember').removeObject(member_id);
-
             }
             console.log(self.get('assignMember'));
 
@@ -1301,6 +1334,7 @@ export default Ember.Controller.extend({
                 contentType : 'application/json',
                 xhrFields: { withCredentials: true },
                 success : function (response){
+                    Ember.$("#createrole").modal("hide");
 
                 },
                 error : function (error){
@@ -1309,7 +1343,6 @@ export default Ember.Controller.extend({
 
 
             });
-
 
         },
         viewRoles : function (){
@@ -1491,6 +1524,34 @@ export default Ember.Controller.extend({
                 }
 
             });
+
+        },
+        editPermission : function (role_id,permission_id){
+            const self =this;
+            let permission_details={
+                role_id :role_id,
+                permission_id :permission_id,
+                grp_id :self.get('receiver_id'),
+                ischeck : event.target.checked
+            }
+            console.log(permission_details);
+            Ember.$.ajax({
+                url : ENV.apiHost+ '/EditPermission',
+                type : 'POST',
+                contentType : 'application/json',
+                data : JSON.stringify(permission_details),
+                xhrFields: { withCredentials: true },
+                success : function (response){
+                    console.log(response);
+                },
+                error : function (error){
+                    console.error(error);
+                }
+
+
+            });
+
+
 
         }
 

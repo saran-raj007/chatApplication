@@ -353,6 +353,7 @@
 
 
 </main>
+<!--Forward modal-->
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
@@ -394,7 +395,7 @@
 
 <!-- model for view members-->
 <div class="modal fade" id="viewmodal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-dialog  modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h1 class="modal-title fs-5" id="exampleModalLabel">View Group members</h1>
@@ -408,14 +409,25 @@
                             <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
                             <p class="GroupName">{{member.name}}</p>
                             <span class="">{{member.mobile_number}}</span>
-                            {{#if member.isAdmin}}
-                                <span>Admin</span>
-                            {{else}}
-                                <span>Member</span>
-                            {{/if}}
-                            {{#if (eq model.curruser.user_id  member.user_id)}}
-                                <span>(YOU)</span>
-                            {{/if}}
+                            <div class="btn-group dropend">
+                                <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Roles
+                                </button>
+                                <ul class="dropdown-menu">
+                                    {{#each member.role_names as |role| }}
+                                    <li><a class="dropdown-item" >{{role}}</a></li>
+                                    {{/each}}
+
+                                </ul>
+                            </div>
+<!--                            {{#if member.isAdmin}}-->
+<!--                                <span>Admin</span>-->
+<!--                            {{else}}-->
+<!--                                <span>Member</span>-->
+<!--                            {{/if}}-->
+<!--                            {{#if (eq model.curruser.user_id  member.user_id)}}-->
+<!--                                <span>(YOU)</span>-->
+<!--                            {{/if}}-->
 
 
                             {{#if canRemoveMember }}
@@ -491,6 +503,7 @@
                 <div class="d-flex flex-column gap-2">
                     <div class="">
                         {{#each ViewGrpMembers as |member|}}
+                            {{#if (neq member.user_id sender_id)}}
                             <div class="card d-flex justify-content-around align-items-center flex-row p-3" {{action "addMentionMember" member.user_id member.name "member" on="click" }} style="cursor: pointer;" >
                                 <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
                                 <p class="">{{member.name}}</p>
@@ -498,6 +511,7 @@
 
                             </div>
                             <hr>
+                            {{/if}}
                         {{/each}}
                         {{#each getRoles as |role|}}
                             <div class="card d-flex flex-row p-3 gap-3" {{action "addMentionMember" role.role_id role.role_name "role" on="click" }} style="cursor: pointer;" >
@@ -552,7 +566,7 @@
                                                 <div>
                                                     {{#each role.permissions as |permission|}}
                                                     <div class="d-flex flex-column">
-                                                        <label>{{permission.permission_name}} <input type="checkbox"  checked={{permission.access}}></label>
+                                                        <label>{{permission.permission_name}} <input type="checkbox" {{action "editPermission" role.role_id permission.permission_id  on="change" }}  checked={{permission.access}}></label>
                                                     </div>
                                                     {{/each}}
 

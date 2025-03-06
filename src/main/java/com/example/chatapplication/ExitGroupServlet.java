@@ -35,11 +35,16 @@ public class ExitGroupServlet extends HttpServlet {
             PreparedStatement ps =null;
             if(con != null){
                 String  qry ="delete from group_members where grp_id =? and user_id =?";
+                String qryfordelRole ="delete from member_roles where member_id =?";
+
                 try{
                     ps = con.prepareStatement(qry);
                     ps.setString(1,grp_id);
                     ps.setString(2,member_id);
                     int rowUpdate =ps.executeUpdate();
+                    ps=con.prepareStatement(qryfordelRole);
+                    ps.setString(1,member_id);
+                    ps.executeUpdate();
                     if(rowUpdate == 1){
                        // System.out.println("Member Successfully Exited form the group");
                         jsonResponse.put("Message", "Member Successfully Exited form the group");

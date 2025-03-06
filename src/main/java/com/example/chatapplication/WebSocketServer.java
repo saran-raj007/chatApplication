@@ -206,7 +206,7 @@ public class WebSocketServer  {
 
     }
 
-    public static void  sendMessageToGroup(String grp_id,String msg_id,String message,String msg_iv,Map<String,String> memberaesKeyMap, String sender_id,String sender_name,String old_senderid,String old_msgid,boolean isforward) throws IOException {
+    public static void  sendMessageToGroup(String grp_id,String msg_id,String message,String msg_iv,Map<String,String> memberaesKeyMap, String sender_id,String sender_name,String old_senderid,String old_msgid,boolean isforward,boolean unseen) throws IOException {
 
         System.out.println(memberaesKeyMap.size());
 
@@ -228,6 +228,7 @@ public class WebSocketServer  {
                 jsonResponse.put("old_senderid",old_senderid);
                 jsonResponse.put("old_msgid",old_msgid);
                 jsonResponse.put("isforward",isforward);
+                jsonResponse.put("unseen",unseen);
 
                 receiverSession.getBasicRemote().sendText(jsonResponse.toString());
 

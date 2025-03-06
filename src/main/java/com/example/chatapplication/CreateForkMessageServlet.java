@@ -335,14 +335,35 @@ public class CreateForkMessageServlet extends HttpServlet {
             String qry ="insert into files (file_id,sender_id,receiver_id,file_name,created_at) values (?,?,?,?,?)";
             Timestamp currentTimestamp = new Timestamp(System.currentTimeMillis());
             Timestamp newTimestamp = incrementTimestamp(currentTimestamp, incrementSeconds);
+            String qryg ="select * from group_members where grp_id=?";
+            String qry1= "insert into file_visibility (file_id,user_id) values (?,?)";
             try{
                 ps = con.prepareStatement(qry);
-                ps.setString(1, IdGeneration.generateRandomID());
+                String file_id =IdGeneration.generateRandomID();
+                ps.setString(1, file_id);
                 ps.setString(2, sender_id);
                 ps.setString(3, fork_id);
                 ps.setString(4, file_name);
                 ps.setTimestamp(5, newTimestamp);
                 int rows = ps.executeUpdate();
+
+                ps = con.prepareStatement(qryg);
+                ps.setString(1,fork_id);
+                ResultSet rs = ps.executeQuery();
+                ps = con.prepareStatement(qry1);
+                while(rs.next()){
+                    ps.setString(1,file_id);
+                    ps.setString(2,rs.getString("user_id"));
+                    int row =ps.executeUpdate();
+                    if(row > 0) {
+                        System.out.println("File inserted successfully");
+                    }
+                    else{
+                        System.out.println("File insert failed");
+                    }
+
+                }
+
                 if(rows>0){
                     System.out.println("success sticker");
                 }
