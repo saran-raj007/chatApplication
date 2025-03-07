@@ -206,10 +206,14 @@ public class WebSocketServer  {
 
     }
 
-    public static void  sendMessageToGroup(String grp_id,String msg_id,String message,String msg_iv,Map<String,String> memberaesKeyMap, String sender_id,String sender_name,String old_senderid,String old_msgid,boolean isforward,boolean unseen) throws IOException {
+    public static void  sendMessageToGroup(String grp_id,String msg_id,String message,String msg_iv,Map<String,String> memberaesKeyMap, String sender_id,String sender_name,String old_senderid,String old_msgid,boolean isforward,JsonArray mentions) throws IOException {
 
         System.out.println(memberaesKeyMap.size());
+        ArrayList<JSONObject> mentionsList;
+        mentionsList=getMentionDetails(mentions,grp_id);
+        boolean unseen=(!mentionsList.isEmpty());
 
+        System.out.println(unseen);
         for (Map.Entry<String, String> entry : memberaesKeyMap.entrySet()) {
             String member_id = entry.getKey();
             String key = entry.getValue();
@@ -229,6 +233,7 @@ public class WebSocketServer  {
                 jsonResponse.put("old_msgid",old_msgid);
                 jsonResponse.put("isforward",isforward);
                 jsonResponse.put("unseen",unseen);
+                jsonResponse.put("mentions",mentionsList);
 
                 receiverSession.getBasicRemote().sendText(jsonResponse.toString());
 
@@ -237,7 +242,53 @@ public class WebSocketServer  {
 
 
     }
+    private static ArrayList<JSONObject> getMentionDetails(JsonArray mentions,String grp_id) {
+        Connection con =DBconnection.getConnection();
+        PreparedStatement ps;
+        ResultSet rs;
+        ArrayList<JSONObject> mentionsList = new ArrayList<>();
+        if(con!=null){
+            String qryformention ="select role_description from roles where role_id=?";
 
+            try{
+                for(JsonElement element : mentions) {
+                    JsonObject mentionObj = element.getAsJsonObject();
+                    String memberId = mentionObj.get("member_id").getAsString();
+                    String type = mentionObj.get("type").getAsString();
+                    String name = mentionObj.get("name").getAsString();
+                    JSONObject user_details = new JSONObject();
+                    if(type.equals("role")) {
+                        user_details.put("user_id",memberId);
+                        user_details.put("name",name);
+                        user_details.put("type",type);
+                        ps = con.prepareStatement(qryformention);
+                        ps.setString(1,memberId);
+                        rs = ps.executeQuery();
+                        if(rs.next()){
+                            user_details.put("role_description",rs.getString("role_description"));
+                        }
+                        mentionsList.add(user_details);
+
+                    }
+                    else{
+                        user_details.put("user_id",memberId);
+                        user_details.put("type",type);
+                        mentionsList.add(user_details);
+                    }
+                }
+
+
+
+                }catch (SQLException e){
+                e.printStackTrace();
+            }
+        }
+        else{
+            System.out.println("DB error");
+        }
+        return mentionsList;
+
+    }
 
 
 

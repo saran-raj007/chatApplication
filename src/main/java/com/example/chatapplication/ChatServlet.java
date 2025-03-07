@@ -34,7 +34,7 @@ public class ChatServlet extends HttpServlet {
             JSONObject curruser = new JSONObject();
             if(con!=null){
                  String qry ="select * from users";
-                 String qry_grp ="select cg.*, count(m.user_id) as unseen from chat_groups cg left join mentions m on cg.group_id=m.group_id and m.user_id=? and m.seen=false  where cg.group_id in (select grp_id from group_members where user_id =?)  group by cg.group_id";
+                 String qry_grp ="select cg.*, count(m.user_id) as unseen from chat_groups cg left join mentions m on cg.group_id=m.group_id and m.user_id=? and m.seen=false    where cg.group_id in (select grp_id from group_members where user_id =?)  group by cg.group_id";
                  try{
                      ps = con.prepareStatement(qry);
 //                     ps.setString(1,usrid);

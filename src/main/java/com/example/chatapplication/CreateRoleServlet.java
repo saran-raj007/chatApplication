@@ -32,12 +32,13 @@ public class CreateRoleServlet extends HttpServlet {
         if (sender_id != null) {
             JsonObject role = JsonParser.parseReader(new InputStreamReader(request.getInputStream())).getAsJsonObject();
             String role_name = role.get("role_name").getAsString();
+            String role_description = role.get("role_des").getAsString();
             String grp_id = role.get("grp_id").getAsString();
             JsonArray permissions = role.getAsJsonArray("permissions");
             JsonArray memebers = role.getAsJsonArray("members");
             Connection con =DBconnection.getConnection();
             if(con != null) {
-                String role_id=createRole(role_name,grp_id,con);
+                String role_id=createRole(role_name,grp_id,role_description,con);
                 mapPermission(role_id,permissions,con);
                 mapMembers(role_id,grp_id,memebers,con);
                 jsonResponse.put("message","role created successfully");
@@ -55,15 +56,16 @@ public class CreateRoleServlet extends HttpServlet {
         }
         response.getWriter().write(jsonResponse.toString());
     }
-    private String createRole(String role_name, String grp_id,Connection con) {
+    private String createRole(String role_name, String grp_id,String role_description,Connection con) {
         PreparedStatement ps;
-        String qry="insert into roles (role_id,group_id,role_name) values (?,?,?)";
+        String qry="insert into roles (role_id,group_id,role_name,role_description) values (?,?,?,?)";
         String role_id=IdGeneration.generateRandomID();
         try{
             ps=con.prepareStatement(qry);
             ps.setString(1,role_id);
             ps.setString(2,grp_id);
             ps.setString(3,role_name);
+            ps.setString(4,role_description);
             ps.executeUpdate();
             return role_id;
         }catch (SQLException e){

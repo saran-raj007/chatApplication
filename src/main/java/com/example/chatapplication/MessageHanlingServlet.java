@@ -58,25 +58,24 @@ public class MessageHanlingServlet extends HttpServlet {
                     JsonArray members_aesKey = msg.getAsJsonArray("members_aesKey");
                     String message_text = msg.get("ciphertext").getAsString();
                     String msg_iv = msg.get("iv").getAsString();
-                    JsonArray mentionMembers = msg.getAsJsonArray("mentionsMember");
-                    JsonArray mentionRoles = msg.getAsJsonArray("mentionsRoles");
-
-                    HashSet<String> mention_member_set = new HashSet<>();
-                    HashSet<String> mention_role_set = new HashSet<>();
-
-                    if(mentionMembers!=null) {
-                        System.out.println(mentionMembers.toString());
-                        for (JsonElement element : mentionMembers) {
-                            unseen = true;
-                            mention_member_set.add(element.getAsString());
-                        }
-                    }
-                    if(mentionRoles!=null){
-                        for (JsonElement element : mentionRoles) {
-                            unseen = true;
-                            mention_role_set.add(element.getAsString());
-                        }
-                    }
+                    JsonArray mentions = msg.getAsJsonArray("mentions");
+//
+//                    HashSet<String> mention_member_set = new HashSet<>();
+//                    HashSet<String> mention_role_set = new HashSet<>();
+//
+//                    if(mentionMembers!=null) {
+//                        System.out.println(mentionMembers.toString());
+//                        for (JsonElement element : mentionMembers) {
+//                            unseen = true;
+//                            mention_member_set.add(element.getAsString());
+//                        }
+//                    }
+//                    if(mentionRoles!=null){
+//                        for (JsonElement element : mentionRoles) {
+//                            unseen = true;
+//                            mention_role_set.add(element.getAsString());
+//                        }
+//                    }
 
                     Map<String, String> memberaesKeyMap = new HashMap<>();
                     for (JsonElement keyElement : members_aesKey) {
@@ -91,8 +90,8 @@ public class MessageHanlingServlet extends HttpServlet {
                             }
                         }
                     }
-                    String msg_id=storeGroupMessage(grp_id, sender_id, message_text, msg_iv, memberaesKeyMap,mention_member_set,mention_role_set);
-                    WebSocketServer.sendMessageToGroup(grp_id,msg_id, message_text, msg_iv, memberaesKeyMap, sender_id, sender_name,null,null,false,unseen);
+                    String msg_id=storeGroupMessage(grp_id, sender_id, message_text, msg_iv, memberaesKeyMap,mentions);
+                    WebSocketServer.sendMessageToGroup(grp_id,msg_id, message_text, msg_iv, memberaesKeyMap, sender_id, sender_name,null,null,false,mentions);
 
                     jsonResponsee.put("message","message sent");
 
@@ -147,14 +146,14 @@ public class MessageHanlingServlet extends HttpServlet {
         }
 
 
-        private String storeGroupMessage(String grp_id,String sender_id,String message_text,String msg_iv,Map<String,String> memberaesKeyMap,HashSet<String> mention_member_set,HashSet<String> mention_role_set) {
+        private String storeGroupMessage(String grp_id,String sender_id,String message_text,String msg_iv,Map<String,String> memberaesKeyMap,JsonArray mentions ) {
             Connection con = DBconnection.getConnection();
             PreparedStatement ps = null;
             if(con != null) {
                 String qryForInsert= "insert into group_messages (grpmssg_id,grp_id,sender_id,message,msg_iv,isforward) values (?,?,?,?,?,?)";
                 String qryAesKey ="insert into  aes_keys (key_id,grpmssg_id,grp_id,receiver_id,enc_aes_key) values (?,?,?,?,?)";
                 String qryformention ="select member_id from member_roles where  group_id=? and role_id=?";
-                String qryforaddmention ="insert into mentions (id,group_id,message_id,user_id,seen) values (?,?,?,?,?)";
+                String qryforaddmention ="insert into mentions (id,group_id,message_id,user_id,seen,type) values (?,?,?,?,?,?)";
                 try{
                     String grp_msg_id=IdGeneration.generateRandomID();
                     ps = con.prepareStatement(qryForInsert);
@@ -187,34 +186,27 @@ public class MessageHanlingServlet extends HttpServlet {
                         else{
                             System.out.println("Message insert failed");
                         }
-
                     }
-                    ps=con.prepareStatement(qryforaddmention);
-                    for(String mention_member:mention_member_set) {
+
+                    for(JsonElement element : mentions) {
+                        ps=con.prepareStatement(qryforaddmention);
+                        JsonObject mentionObj = element.getAsJsonObject();
+                        String memberId = mentionObj.get("member_id").getAsString();
+                        String type = mentionObj.get("type").getAsString();
                         ps.setString(1,IdGeneration.generateRandomID());
                         ps.setString(2,grp_id);
                         ps.setString(3,grp_msg_id);
-                        ps.setString(4,mention_member);
+                        ps.setString(4,memberId);
                         ps.setBoolean(5,false);
+                        ps.setString(6,type);
                         ps.executeUpdate();
 
-                    }
-                    for(String mention_role:mention_role_set) {
-                        ps = con.prepareStatement(qryformention);
-                        ps.setString(1,grp_id);
-                        ps.setString(2,mention_role);
-                        ResultSet rs = ps.executeQuery();
-                        ps=con.prepareStatement(qryforaddmention);
-                        while(rs.next()) {
-                            ps.setString(1,IdGeneration.generateRandomID());
-                            ps.setString(2,grp_id);
-                            ps.setString(3,grp_msg_id);
-                            ps.setString(4, rs.getString("member_id"));
-                            ps.setBoolean(5,false);
-                            ps.executeUpdate();
 
-                        }
+
                     }
+//                    for(String mention_role:mention_role_set) {
+//
+//                    }
                     return grp_msg_id;
 
 

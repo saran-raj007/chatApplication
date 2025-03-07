@@ -29,6 +29,7 @@ public class ForwardMessage extends HttpServlet {
         response.setContentType("application/json");
         String sender_id = UserSessionGenerate.validateToken(request);
         JSONObject jsonResponse = new JSONObject();
+        JSONObject responseObject = new JSONObject();
         if(sender_id != null){
             JsonArray jsonArray = JsonParser.parseReader(new InputStreamReader(request.getInputStream())).getAsJsonArray();
             for (JsonElement element : jsonArray) {
@@ -72,6 +73,7 @@ public class ForwardMessage extends HttpServlet {
                             jsonResponse.put("iv", iv);
 
                             WebSocketServer.sendMessageToPvt(receiverId,sender_id,jsonResponse);
+                            responseObject.put("message","forward success");
                         }
                         else if (type.equals("group")) {
                             String sender_name =messageObject.get("sender_name").getAsString();
@@ -84,9 +86,11 @@ public class ForwardMessage extends HttpServlet {
                                         aes.put(key,encKeyObject.get(key).getAsString());
                                     }
                                 }
+                                JsonArray mentions = new JsonArray();
                                 String msg_id=storeForwardgrp(sender_id,receiverId,oldSenderId,oldMsgId,message,iv,dataFormat,aes);
-                                WebSocketServer.sendMessageToGroup(receiverId,msg_id,message,iv,aes,sender_id,sender_name,oldSenderId,oldMsgId,true,false);
+                                WebSocketServer.sendMessageToGroup(receiverId,msg_id,message,iv,aes,sender_id,sender_name,oldSenderId,oldMsgId,true,mentions);
                             }
+                            responseObject.put("message","forward success");
                         }
                     }
 
@@ -110,6 +114,7 @@ public class ForwardMessage extends HttpServlet {
                         WebSocketServer.sendMessageToPvt(receiver_id,sender_id,jsonResponse);
 
                     }
+                    responseObject.put("message","forward success");
                 }
 
 
@@ -117,9 +122,10 @@ public class ForwardMessage extends HttpServlet {
 
         }
         else{
-            return;
+            responseObject.put("message","unauthorized");
 
         }
+        response.getWriter().write(responseObject.toString());
 
     }
     private String storeForwardpvt(String sender_id,String receiverId,String oldSenderId,String oldMsgId,String message,String iv,String dataFormat,String encKeySender,String encKeyReceiver){

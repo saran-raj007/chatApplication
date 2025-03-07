@@ -188,6 +188,7 @@ public class FetchchatServlet extends HttpServlet {
             msg.put("old_msgid", rs.getString("old_msgid"));
             msg.put("old_senderid", rs.getString("old_senderid"));
             msg.put("timestamp", rs.getString("created_at"));
+            msg.put("mentions",retriveMentions(rs.getString("grpmssg_id")));
             msgList.add(msg);
             textMsg=rs.next();
 
@@ -211,6 +212,53 @@ public class FetchchatServlet extends HttpServlet {
 
         return msgList;
 
+    }
+    private static ArrayList<JSONObject>  retriveMentions(String mess_id) throws SQLException{
+        Connection con = DBconnection.getConnection();
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        ArrayList<JSONObject> mentionsList = new ArrayList<>();
+        if(con != null){
+            String qry="select * from mentions where message_id=?";
+            String qry2="select * from roles where role_id=?";
+            try{
+                ps = con.prepareStatement(qry);
+                ps.setString(1, mess_id);
+                rs = ps.executeQuery();
+                while(rs.next()){
+                    JSONObject mention_details = new JSONObject();
+                    String user_id=rs.getString("user_id");
+                    mention_details.put("user_id",user_id);
+                    String type = rs.getString("type");
+                    mention_details.put("type", type);
+                    if(type.equals("role")){
+                        ps = con.prepareStatement(qry2);
+                        System.out.println(user_id+" "+type);
+                        ps.setString(1, user_id);
+                        ResultSet rss = ps.executeQuery();
+                        if(rss.next()){
+                            mention_details.put("name", rss.getString("role_name"));
+                            mention_details.put("role_description",rss.getString("role_description"));
+                        }
+                        mentionsList.add(mention_details);
+                    }
+                    else{
+                        mentionsList.add(mention_details);
+                    }
+
+                }
+
+            }catch (SQLException e){
+                e.printStackTrace();
+            }
+
+
+        }
+        else{
+            System.out.println("!! DB ERROR !!");
+
+        }
+        return mentionsList;
     }
 
 }

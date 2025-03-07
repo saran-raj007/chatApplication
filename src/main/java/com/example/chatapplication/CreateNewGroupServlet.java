@@ -115,7 +115,7 @@ public class CreateNewGroupServlet extends HttpServlet {
         Connection con = DBconnection.getConnection();
         PreparedStatement ps = null;
         if(con!=null){
-            String qry ="insert into roles (role_id,group_id,role_name) values (?,?,?)";
+            String qry ="insert into roles (role_id,group_id,role_name,role_description) values (?,?,?,?)";
 
             try{
                 String role_id = IdGeneration.generateRandomID();
@@ -123,6 +123,7 @@ public class CreateNewGroupServlet extends HttpServlet {
                 ps.setString(1, role_id);
                 ps.setString(2, grp_id);
                 ps.setString(3,"Member");
+                ps.setString(4, "This is a default role for group members");
                 int rowinserted = ps.executeUpdate();
 
                 String qryrp ="insert into role_permissions (id,role_id,permission_id) values (?,?, (SELECT permission_id FROM permissions WHERE permission_name = 'Send Message'))";
@@ -154,7 +155,7 @@ public class CreateNewGroupServlet extends HttpServlet {
         PreparedStatement ps = null;
 
         if(con!=null){
-            String qry ="insert into roles (role_id,group_id,role_name) values (?,?,?)";
+            String qry ="insert into roles (role_id,group_id,role_name,role_description) values (?,?,?,?)";
 
             try{
                 String role_id = IdGeneration.generateRandomID();
@@ -162,6 +163,7 @@ public class CreateNewGroupServlet extends HttpServlet {
                 ps.setString(1, role_id);
                 ps.setString(2, grp_id);
                 ps.setString(3,"Admin");
+                ps.setString(4, "This is a Admin Role. Those who have this role can able to do all operations");
                 int rowinserted = ps.executeUpdate();
                 String qryforPer="select permission_id from permissions";
                 ps =con.prepareStatement(qryforPer);
