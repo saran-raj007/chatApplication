@@ -132,40 +132,69 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                             _demoappUtilsCrypto["default"].decryptMessage(receivedMessage.message, key, privateKey, receivedMessage.iv).then(function (message) {
                                 alert(message);
                                 var messages = message;
-                                if (receivedMessage.mentions) {
-                                    var reconstructedMessage = message.replace(/@@(.*?)@@/g, function (match, memberId) {
-                                        var mention = receivedMessage.mentions.find(function (m) {
-                                            return m.user_id === memberId;
+
+                                var users = self.get('model.users');
+                                var promises = [];
+                                var reconstructedMessage = message.replace(/@@(.*?)@@/g, function (match, memberId) {
+                                    var mention = users.findBy('user_id', memberId);
+
+                                    if (memberId === self.get('model.curruser.user_id')) {
+                                        mention = self.get('model.curruser');
+                                    }
+
+                                    if (mention !== undefined) {
+                                        return _ember["default"].String.htmlSafe("<a class=\"\" data-bs-toggle=\"collapse\" href=\"#i" + receivedMessage.mess_id + "\" role=\"button\" \n                                            aria-expanded=\"false\" aria-controls=\"collapseExample\"> @" + mention.name + " </a>\n                                            <div class=\"collapse\" id=\"i" + receivedMessage.mess_id + "\">\n                                                <div class=\"card card-body\">\n                                                    Name: " + mention.name + " <br>\n                                                    Mobile Number: " + mention.mobile_number + " <br>\n                                                </div>\n                                            </div>");
+                                    } else {
+                                        var promise = new _ember["default"].RSVP.Promise(function (resolve, reject) {
+                                            _ember["default"].$.ajax({
+                                                url: _demoappConfigEnvironment["default"].apiHost + '/GetRoleDesc',
+                                                type: 'POST',
+                                                contentType: 'application/json',
+                                                dataType: 'json',
+                                                xhrFields: { withCredentials: true },
+                                                data: JSON.stringify({ role_id: memberId }),
+                                                success: function success(response) {
+                                                    resolve({
+                                                        original: match,
+                                                        replacement: _ember["default"].String.htmlSafe("<a class=\"\" data-bs-toggle=\"collapse\" href=\"#i" + receivedMessage.mess_id + "\" \n                                                                role=\"button\" aria-expanded=\"false\" aria-controls=\"collapseExample\"> @" + response.role_name + " </a>\n                                                                <div class=\"collapse\" id=\"i" + receivedMessage.mess_id + "\">\n                                                                    <div class=\"card card-body\">\n                                                                        " + response.role_desc + " <br>\n                                                                    </div>\n                                                                </div>")
+                                                    });
+                                                },
+                                                error: function error(_error) {
+                                                    console.log("Error fetching role description:", _error);
+                                                    reject(_error);
+                                                }
+                                            });
                                         });
-                                        if (mention) {
-                                            if (mention.type === 'role') {
-                                                return _ember["default"].String.htmlSafe('<a class="" data-bs-toggle="collapse" ' + 'href="#i' + receivedMessage.mess_id + '" role="button" aria-expanded="false" ' + 'aria-controls="collapseExample"> ' + ("@" + mention.name) + '</a>' + ("<div class=\"collapse\" id=\"i" + receivedMessage.mess_id + "\">") + '<div class="card card-body">' + ("" + mention.role_description) + '<br>' + '</div>' + '</div>');
-                                            } else {
-                                                var users = self.get('model.users');
-                                                var _mention = users.findBy('user_id', memberId);
-                                                if (!_mention) _mention = self.get('model.curruser');
-                                                return _ember["default"].String.htmlSafe('<a class="" data-bs-toggle="collapse" ' + 'href="#i' + receivedMessage.mess_id + '" role="button" aria-expanded="false" ' + 'aria-controls="collapseExample"> ' + ("@" + _mention.name) + '</a>' + ("<div class=\"collapse\" id=\"i" + receivedMessage.mess_id + "\">") + '<div class="card card-body">' + 'name :' + ("" + _mention.name) + '<br>' + 'mobile Number :' + ("" + _mention.mobile_number) + '<br>' + '</div>' + '</div>');
-                                            }
-                                        }
+
+                                        promises.push(promise);
                                         return match;
+                                    }
+                                });
+
+                                _ember["default"].RSVP.all(promises).then(function (results) {
+                                    results.forEach(function (result) {
+                                        reconstructedMessage = reconstructedMessage.replace(result.original, result.replacement);
                                     });
+
                                     messages = reconstructedMessage;
+                                    msg_pack = {
+                                        sender_id: receivedMessage.sender_id,
+                                        message: messages,
+                                        sender_name: receivedMessage.sender_name,
+                                        dataFormat: 'Text',
+                                        isforward: receivedMessage.isforward
+                                    };
+                                    if (self.get('isGroup') && self.get('receiver_id') === receivedMessage.grp_id) {
+                                        self.get('AllMessage').pushObject(msg_pack);
+                                    }
+                                    if (!self.get('isGroup') && self.get('sender_id') === receivedMessage.sender_id) {
+                                        self.get('AllMessage').pushObject(msg_pack);
+                                    }
                                     console.log(reconstructedMessage);
                                     console.log("goo");
-                                }
-                                msg_pack = {
-                                    sender_id: receivedMessage.sender_id,
-                                    message: messages,
-                                    sender_name: receivedMessage.sender_name,
-                                    dataFormat: 'Text',
-                                    isforward: receivedMessage.isforward
-                                };
-                                if (self.get('isGroup') && self.get('receiver_id') === receivedMessage.grp_id) {
-                                    self.get('AllMessage').pushObject(msg_pack);
-                                }
-                                if (!self.get('isGroup') && self.get('receiver_id') === receivedMessage.sender_id) {
-                                    self.get('AllMessage').pushObject(msg_pack);
-                                }
+                                })["catch"](function (error) {
+                                    console.error("Error in processing mentions:", error);
+                                });
                             })["catch"](function (error) {
                                 console.log("error on decryption process", error);
                             });
@@ -220,8 +249,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         console.log(response);
                     },
-                    error: function error(_error) {
-                        console.log(_error);
+                    error: function error(_error2) {
+                        console.log(_error2);
                     }
 
                 });
@@ -425,47 +454,74 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                                             var promise = new _ember["default"].RSVP.Promise(function (resolve, reject) {
                                                 _demoappUtilsCrypto["default"].decryptMessage(msg.message, msg.enc_aes_key, privateKey, msg.iv).then(function (message) {
                                                     var messages = message;
-                                                    if (msg.mentions) {
-                                                        var reconstructedMessage = message.replace(/@@(.*?)@@/g, function (match, memberId) {
-                                                            var mention = msg.mentions.find(function (m) {
-                                                                return m.user_id === memberId;
-                                                            });
-                                                            if (mention) {
-                                                                if (mention.type === 'role') {
-                                                                    return _ember["default"].String.htmlSafe('<a class="" data-bs-toggle="collapse" ' + 'href="#i' + msg.mess_id + '" role="button" aria-expanded="false" ' + 'aria-controls="collapseExample"> ' + ("@" + mention.name) + '</a>' + ("<div class=\"collapse\" id=\"i" + msg.mess_id + "\">") + '<div class="card card-body">' + ("" + mention.role_description) + '<br>' + '</div>' + '</div>');
-                                                                } else {
-                                                                    var users = self.get('model.users');
-                                                                    var _mention2 = users.findBy('user_id', memberId);
-                                                                    if (!_mention2) _mention2 = self.get('model.curruser');
+                                                    var users = self.get('model.users');
+                                                    var promises = [];
 
-                                                                    return _ember["default"].String.htmlSafe('<a class="" data-bs-toggle="collapse" ' + 'href="#i' + msg.mess_id + '" role="button" aria-expanded="false" ' + 'aria-controls="collapseExample"> ' + ("@" + _mention2.name) + '</a>' + ("<div class=\"collapse\" id=\"i" + msg.mess_id + "\">") + '<div class="card card-body">' + 'name :' + ("" + _mention2.name) + '<br>' + 'mobile Number :' + ("" + _mention2.mobile_number) + '<br>' + '</div>' + '</div>');
-                                                                }
-                                                            }
+                                                    var reconstructedMessage = message.replace(/@@(.*?)@@/g, function (match, memberId) {
+                                                        var mention = users.findBy('user_id', memberId);
+                                                        if (memberId === self.get('model.curruser.user_id')) {
+                                                            mention = self.get('model.curruser');
+                                                        }
+
+                                                        if (mention !== undefined) {
+                                                            return _ember["default"].String.htmlSafe("<a class=\"\" data-bs-toggle=\"collapse\" href=\"#i" + msg.mess_id + "\" role=\"button\" \n                                                                aria-expanded=\"false\" aria-controls=\"collapseExample\"> @" + mention.name + " </a>\n                                                                <div class=\"collapse\" id=\"i" + msg.mess_id + "\">\n                                                                    <div class=\"card card-body\">\n                                                                        Name: " + mention.name + " <br>\n                                                                        Mobile Number: " + mention.mobile_number + " <br>\n                                                                    </div>\n                                                                </div>");
+                                                        } else {
+                                                            var rolePromise = new _ember["default"].RSVP.Promise(function (resolve, reject) {
+                                                                _ember["default"].$.ajax({
+                                                                    url: _demoappConfigEnvironment["default"].apiHost + '/GetRoleDesc',
+                                                                    type: 'POST',
+                                                                    contentType: 'application/json',
+                                                                    dataType: 'json',
+                                                                    xhrFields: { withCredentials: true },
+                                                                    data: JSON.stringify({ role_id: memberId }),
+                                                                    success: function success(response) {
+                                                                        resolve({
+                                                                            original: match,
+                                                                            replacement: _ember["default"].String.htmlSafe("<a class=\"\" data-bs-toggle=\"collapse\" href=\"#i" + msg.mess_id + "\" \n                                                                                role=\"button\" aria-expanded=\"false\" aria-controls=\"collapseExample\"> @" + response.role_name + " </a>\n                                                                                <div class=\"collapse\" id=\"i" + msg.mess_id + "\">\n                                                                                    <div class=\"card card-body\">\n                                                                                        " + response.role_desc + " <br>\n                                                                                    </div>\n                                                                                </div>")
+                                                                        });
+                                                                    },
+                                                                    error: function error(_error3) {
+                                                                        console.log("Error fetching role description:", _error3);
+                                                                        reject(_error3);
+                                                                    }
+                                                                });
+                                                            });
+
+                                                            promises.push(rolePromise);
                                                             return match;
+                                                        }
+                                                    });
+
+                                                    _ember["default"].RSVP.all(promises).then(function (results) {
+                                                        results.forEach(function (result) {
+                                                            reconstructedMessage = reconstructedMessage.replace(result.original, result.replacement);
                                                         });
-                                                        messages = reconstructedMessage;
-                                                        console.log(reconstructedMessage);
-                                                        console.log("goo");
-                                                    }
-                                                    msg_pack = {
-                                                        mess_id: msg.mess_id,
-                                                        sender_id: msg.sender_id,
-                                                        message: messages,
-                                                        enc_message: msg.message,
-                                                        iv: msg.iv,
-                                                        isforward: msg.isforward,
-                                                        receiver_id: msg.grp_id,
-                                                        enc_aes_key: msg.enc_aes_key,
-                                                        sender_name: msg.sender_name,
-                                                        timestamp: msg.timestamp,
-                                                        dataFormat: "Text"
-                                                    };
-                                                    resolve(msg_pack);
+
+                                                        var msg_pack = {
+                                                            mess_id: msg.mess_id,
+                                                            sender_id: msg.sender_id,
+                                                            message: reconstructedMessage,
+                                                            enc_message: msg.message,
+                                                            iv: msg.iv,
+                                                            isforward: msg.isforward,
+                                                            receiver_id: msg.grp_id,
+                                                            enc_aes_key: msg.enc_aes_key,
+                                                            sender_name: msg.sender_name,
+                                                            timestamp: msg.timestamp,
+                                                            dataFormat: "Text"
+                                                        };
+
+                                                        resolve(msg_pack);
+                                                    })["catch"](function (error) {
+                                                        console.error("Error in processing mentions:", error);
+                                                        reject(error);
+                                                    });
                                                 })["catch"](function (error) {
                                                     console.log("Error in decryption:", error);
                                                     reject(error);
                                                 });
                                             });
+
                                             promises.push(promise);
                                         } else {
                                             var imageUrl = "https://localhost:8443/chatApplication_war_exploded/RetriveFile?file_name=" + encodeURIComponent(msg.file_name);
@@ -576,8 +632,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                             success: function success(response) {
                                 console.log(response);
                             },
-                            error: function error(_error2) {
-                                console.log(_error2);
+                            error: function error(_error4) {
+                                console.log(_error4);
                             }
 
                         });
@@ -618,8 +674,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success() {
                         self.transitionToRoute('login');
                     },
-                    error: function error(xhr, status, _error3) {
-                        console.error("Logout failed:", _error3);
+                    error: function error(xhr, status, _error5) {
+                        console.error("Logout failed:", _error5);
                     }
                 });
             },
@@ -662,8 +718,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         window.location.href = "chat";
                     },
-                    error: function error(_error4) {
-                        alert("erro on group creation", _error4);
+                    error: function error(_error6) {
+                        alert("erro on group creation", _error6);
                     }
 
                 });
@@ -756,8 +812,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                                     console.log(response);
                                     self.get('mentions').clear();
                                 },
-                                error: function error(_error5) {
-                                    console.log(_error5);
+                                error: function error(_error7) {
+                                    console.log(_error7);
                                 }
                             });
                         })["catch"](function (error) {
@@ -786,8 +842,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         window.location.href = "chat";
                     },
-                    error: function error(_error6) {
-                        console.log(_error6);
+                    error: function error(_error8) {
+                        console.log(_error8);
                     }
 
                 });
@@ -832,8 +888,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                             }
                         }
                     },
-                    error: function error(_error7) {
-                        console.error(_error7);
+                    error: function error(_error9) {
+                        console.error(_error9);
                     }
 
                 });
@@ -857,8 +913,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         _ember["default"].$('#viewmodal').modal('hide');
                     },
-                    error: function error(_error8) {
-                        console.error(_error8);
+                    error: function error(_error10) {
+                        console.error(_error10);
                     }
                 });
             },
@@ -898,8 +954,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                             }
                         }
                     },
-                    error: function error(_error9) {
-                        console.error(_error9);
+                    error: function error(_error11) {
+                        console.error(_error11);
                     }
 
                 });
@@ -919,8 +975,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         _ember["default"].$('#addmember').modal('hide');
                     },
-                    error: function error(_error10) {
-                        alert("error on Adding new members ", _error10);
+                    error: function error(_error12) {
+                        alert("error on Adding new members ", _error12);
                     }
 
                 });
@@ -962,8 +1018,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         console.log(response);
                     },
-                    error: function error(_error11) {
-                        console.log(_error11);
+                    error: function error(_error13) {
+                        console.log(_error13);
                     }
 
                 });
@@ -1015,8 +1071,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                             }
                         }
                     },
-                    error: function error(_error12) {
-                        console.log(_error12);
+                    error: function error(_error14) {
+                        console.log(_error14);
                     }
 
                 });
@@ -1274,7 +1330,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                         }));
                         console.log("Message Deleted");
                     },
-                    error: function error(_error13) {
+                    error: function error(_error15) {
                         console.error("Error on Deleting Message");
                     }
 
@@ -1382,9 +1438,9 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                                                             reject(new Error("No members found in group"));
                                                         }
                                                     },
-                                                    error: function error(_error14) {
-                                                        console.error("Error fetching group members:", _error14);
-                                                        reject(_error14);
+                                                    error: function error(_error16) {
+                                                        console.error("Error fetching group members:", _error16);
+                                                        reject(_error16);
                                                     }
                                                 });
                                             });
@@ -1446,8 +1502,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                                 console.log("Messages forwarded successfully:", response);
                                 _ember["default"].$("#exampleModal").modal("hide");
                             },
-                            error: function error(_error15) {
-                                console.error("Error forwarding messages:", _error15);
+                            error: function error(_error17) {
+                                console.error("Error forwarding messages:", _error17);
                             }
                         });
                     })["catch"](function (error) {
@@ -1499,7 +1555,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
 
                         _ember["default"].$("#createrole").modal("show");
                     },
-                    error: function error(_error16) {}
+                    error: function error(_error18) {}
 
                 });
             },
@@ -1547,8 +1603,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         _ember["default"].$("#createrole").modal("hide");
                     },
-                    error: function error(_error17) {
-                        console.error(_error17);
+                    error: function error(_error19) {
+                        console.error(_error19);
                     }
 
                 });
@@ -1592,8 +1648,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
 
                         _ember["default"].$("#rolemodel").modal('show');
                     },
-                    error: function error(_error18) {
-                        console.error(_error18);
+                    error: function error(_error20) {
+                        console.error(_error20);
                     }
                 });
             },
@@ -1638,8 +1694,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                             }
                         }
                     },
-                    error: function error(_error19) {
-                        console.error(_error19);
+                    error: function error(_error21) {
+                        console.error(_error21);
                     }
 
                 });
@@ -1667,7 +1723,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         _ember["default"].$("#addMemberToRole").modal('hide');
                     },
-                    error: function error(_error20) {}
+                    error: function error(_error22) {}
 
                 });
             },
@@ -1688,8 +1744,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         _ember["default"].$("#rolemodel").modal('hide');
                     },
-                    error: function error(_error21) {
-                        console.error(_error21);
+                    error: function error(_error23) {
+                        console.error(_error23);
                     }
 
                 });
@@ -1710,8 +1766,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         _ember["default"].$("#rolemodel").modal('hide');
                     },
-                    error: function error(_error22) {
-                        console.error(_error22);
+                    error: function error(_error24) {
+                        console.error(_error24);
                     }
 
                 });
@@ -1768,8 +1824,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                             }
                         }
                     },
-                    error: function error(_error23) {
-                        console.log(_error23);
+                    error: function error(_error25) {
+                        console.log(_error25);
                     }
 
                 });
@@ -1792,8 +1848,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         console.log(response);
                     },
-                    error: function error(_error24) {
-                        console.error(_error24);
+                    error: function error(_error26) {
+                        console.error(_error26);
                     }
 
                 });
@@ -2530,7 +2586,7 @@ catch(err) {
 });
 
 if (!runningTests) {
-  require("demoapp/app")["default"].create({"name":"demoapp","version":"0.0.0+262ce0d2"});
+  require("demoapp/app")["default"].create({"name":"demoapp","version":"0.0.0+a7120515"});
 }
 
 /* jshint ignore:end */

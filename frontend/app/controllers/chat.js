@@ -108,74 +108,95 @@ export default Ember.Controller.extend({
                         CryptoUtils.decryptMessage(receivedMessage.message, key, privateKey, receivedMessage.iv).then(function (message) {
                             alert(message);
                             let messages=message;
-                            if(receivedMessage.mentions){
-                                let reconstructedMessage = message.replace(/@@(.*?)@@/g, (match, memberId) => {
-                                    let mention = receivedMessage.mentions.find(m => m.user_id === memberId);
-                                    if (mention) {
-                                        if(mention.type==='role'){
-                                            return Ember.String.htmlSafe(
-                                                '<a class="" data-bs-toggle="collapse" ' +
-                                                'href="#i' + receivedMessage.mess_id + '" role="button" aria-expanded="false" ' +
-                                                'aria-controls="collapseExample"> ' +
-                                                `@${mention.name}` +
-                                                '</a>' +
 
-                                                `<div class="collapse" id="i${receivedMessage.mess_id}">` +
-                                                '<div class="card card-body">' +
-                                                `${mention.role_description}` + '<br>'+
-                                                '</div>' +
-                                                '</div>'
-                                            );
+                                let users = self.get('model.users');
+                                let promises = [];
+                                let reconstructedMessage = message.replace(/@@(.*?)@@/g, function (match, memberId) {
+                                    let mention = users.findBy('user_id', memberId);
 
-
-
-                                        }
-                                        else{
-                                            let users = self.get('model.users');
-                                            let mention = users.findBy('user_id', memberId);
-                                            if(!mention) mention =self.get('model.curruser');
-                                            return Ember.String.htmlSafe(
-                                                '<a class="" data-bs-toggle="collapse" ' +
-                                                'href="#i' + receivedMessage.mess_id + '" role="button" aria-expanded="false" ' +
-                                                'aria-controls="collapseExample"> ' +
-                                                `@${mention.name}` +
-                                                '</a>' +
-
-                                                `<div class="collapse" id="i${receivedMessage.mess_id}">` +
-                                                '<div class="card card-body">' +
-                                                'name :' +`${mention.name}` + '<br>'+
-                                                'mobile Number :' + `${mention.mobile_number}` + '<br>'+
-                                                '</div>' +
-                                                '</div>'
-                                            );
-
-                                        }
-
+                                    if (memberId === self.get('model.curruser.user_id')) {
+                                        mention = self.get('model.curruser');
                                     }
-                                    return match;
+
+                                    if (mention !== undefined) {
+                                        return Ember.String.htmlSafe(
+                                            `<a class="" data-bs-toggle="collapse" href="#i${receivedMessage.mess_id}" role="button" 
+                                            aria-expanded="false" aria-controls="collapseExample"> @${mention.name} </a>
+                                            <div class="collapse" id="i${receivedMessage.mess_id}">
+                                                <div class="card card-body">
+                                                    Name: ${mention.name} <br>
+                                                    Mobile Number: ${mention.mobile_number} <br>
+                                                </div>
+                                            </div>`
+                                        );
+                                    }
+                                    else {
+                                        let promise = new Ember.RSVP.Promise(function (resolve, reject) {
+                                            Ember.$.ajax({
+                                                url: ENV.apiHost + '/GetRoleDesc',
+                                                type: 'POST',
+                                                contentType: 'application/json',
+                                                dataType: 'json',
+                                                xhrFields: { withCredentials: true },
+                                                data: JSON.stringify({ role_id: memberId }),
+                                                success: function (response) {
+                                                    resolve({
+                                                        original: match,
+                                                        replacement: Ember.String.htmlSafe(
+                                                            `<a class="" data-bs-toggle="collapse" href="#i${receivedMessage.mess_id}" 
+                                                                role="button" aria-expanded="false" aria-controls="collapseExample"> @${response.role_name} </a>
+                                                                <div class="collapse" id="i${receivedMessage.mess_id}">
+                                                                    <div class="card card-body">
+                                                                        ${response.role_desc} <br>
+                                                                    </div>
+                                                                </div>`
+                                                        )
+                                                    });
+                                                },
+                                                error: function (error) {
+                                                    console.log("Error fetching role description:", error);
+                                                    reject(error);
+                                                }
+                                            });
+                                        });
+
+                                        promises.push(promise);
+                                        return match;
+                                    }
                                 });
-                                messages=reconstructedMessage
-                                console.log(reconstructedMessage);
-                                console.log("goo");
+
+                                Ember.RSVP.all(promises)
+                                    .then(function (results) {
+                                        results.forEach(function (result) {
+                                            reconstructedMessage = reconstructedMessage.replace(result.original, result.replacement);
+                                        });
+
+                                        messages = reconstructedMessage;
+                                        msg_pack = {
+                                            sender_id: receivedMessage.sender_id,
+                                            message: messages,
+                                            sender_name: receivedMessage.sender_name,
+                                            dataFormat : 'Text',
+                                            isforward : receivedMessage.isforward,
+                                        };
+                                        if(self.get('isGroup') && self.get('receiver_id')===receivedMessage.grp_id){
+                                            self.get('AllMessage').pushObject(msg_pack);
+
+                                        }
+                                        if(!self.get('isGroup') && self.get('sender_id')===receivedMessage.sender_id){
+                                            self.get('AllMessage').pushObject(msg_pack);
+
+                                        }
+                                        console.log(reconstructedMessage);
+                                        console.log("goo");
+                                    })
+                                    .catch(function (error) {
+                                        console.error("Error in processing mentions:", error);
+                                    });
 
 
 
-                            }
-                            msg_pack = {
-                                sender_id: receivedMessage.sender_id,
-                                message: messages,
-                                sender_name: receivedMessage.sender_name,
-                                dataFormat : 'Text',
-                                isforward : receivedMessage.isforward,
-                            };
-                            if(self.get('isGroup') && self.get('receiver_id')===receivedMessage.grp_id){
-                                self.get('AllMessage').pushObject(msg_pack);
 
-                           }
-                            if(!self.get('isGroup') && self.get('receiver_id')===receivedMessage.sender_id){
-                                self.get('AllMessage').pushObject(msg_pack);
-
-                            }
 
 
 
@@ -388,80 +409,101 @@ export default Ember.Controller.extend({
                             }
                             for(let msg of response.messages){
                                 let msg_pack;
-                                if(msg.dataFormat==="Text"){
+                                if (msg.dataFormat === "Text") {
                                     let promise = new Ember.RSVP.Promise(function (resolve, reject) {
-                                        CryptoUtils.decryptMessage(msg.message, msg.enc_aes_key,privateKey, msg.iv).then(function (message) {
-                                            let messages=message;
-                                            if(msg.mentions){
-                                                let reconstructedMessage = message.replace(/@@(.*?)@@/g, (match, memberId) => {
-                                                    let mention = msg.mentions.find(m => m.user_id === memberId);
-                                                    if (mention) {
-                                                        if(mention.type==='role'){
-                                                            return Ember.String.htmlSafe(
-                                                                '<a class="" data-bs-toggle="collapse" ' +
-                                                                'href="#i' + msg.mess_id + '" role="button" aria-expanded="false" ' +
-                                                                'aria-controls="collapseExample"> ' +
-                                                                `@${mention.name}` +
-                                                                '</a>' +
-
-                                                                `<div class="collapse" id="i${msg.mess_id}">` +
-                                                                '<div class="card card-body">' +
-                                                                 `${mention.role_description}` + '<br>'+
-                                                                '</div>' +
-                                                                '</div>'
-                                                            );
+                                        CryptoUtils.decryptMessage(msg.message, msg.enc_aes_key, privateKey, msg.iv)
+                                            .then(function (message) {
+                                                let messages = message;
+                                                let users = self.get('model.users');
+                                                let promises = [];
 
 
-
-                                                        }
-                                                        else{
-                                                            let users = self.get('model.users');
-                                                            let mention = users.findBy('user_id', memberId);
-                                                            if(!mention) mention =self.get('model.curruser');
-
-                                                            return Ember.String.htmlSafe(
-                                                                '<a class="" data-bs-toggle="collapse" ' +
-                                                                'href="#i' + msg.mess_id + '" role="button" aria-expanded="false" ' +
-                                                                'aria-controls="collapseExample"> ' +
-                                                                `@${mention.name}` +
-                                                                '</a>' +
-
-                                                                `<div class="collapse" id="i${msg.mess_id}">` +
-                                                                '<div class="card card-body">' +
-                                                                'name :' +`${mention.name}` + '<br>'+
-                                                                'mobile Number :' + `${mention.mobile_number}` + '<br>'+
-                                                                '</div>' +
-                                                                '</div>'
-                                                            );
-
+                                                    let reconstructedMessage = message.replace(/@@(.*?)@@/g, (match, memberId) => {
+                                                        let mention = users.findBy('user_id', memberId);
+                                                        if (memberId === self.get('model.curruser.user_id')) {
+                                                            mention = self.get('model.curruser');
                                                         }
 
-                                                    }
-                                                    return match;
-                                                });
-                                                messages=reconstructedMessage
-                                                console.log(reconstructedMessage);
-                                                console.log("goo");
-                                            }
-                                            msg_pack ={
-                                                mess_id :msg.mess_id,
-                                                sender_id: msg.sender_id,
-                                                message :messages,
-                                                enc_message : msg.message,
-                                                iv : msg.iv,
-                                                isforward : msg.isforward,
-                                                receiver_id : msg.grp_id,
-                                                enc_aes_key : msg.enc_aes_key,
-                                                sender_name : msg.sender_name,
-                                                timestamp :msg.timestamp,
-                                                dataFormat : "Text",
-                                            };
-                                            resolve(msg_pack);
-                                        }).catch(function (error) {
-                                            console.log("Error in decryption:", error);
-                                            reject(error);
-                                        });
+                                                        if (mention !== undefined) {
+                                                            return Ember.String.htmlSafe(
+                                                                `<a class="" data-bs-toggle="collapse" href="#i${msg.mess_id}" role="button" 
+                                                                aria-expanded="false" aria-controls="collapseExample"> @${mention.name} </a>
+                                                                <div class="collapse" id="i${msg.mess_id}">
+                                                                    <div class="card card-body">
+                                                                        Name: ${mention.name} <br>
+                                                                        Mobile Number: ${mention.mobile_number} <br>
+                                                                    </div>
+                                                                </div>`
+                                                            );
+                                                        } else {
+                                                            let rolePromise = new Ember.RSVP.Promise(function (resolve, reject) {
+                                                                Ember.$.ajax({
+                                                                    url: ENV.apiHost + '/GetRoleDesc',
+                                                                    type: 'POST',
+                                                                    contentType: 'application/json',
+                                                                    dataType: 'json',
+                                                                    xhrFields: { withCredentials: true },
+                                                                    data: JSON.stringify({ role_id: memberId }),
+                                                                    success: function (response) {
+                                                                        resolve({
+                                                                            original: match,
+                                                                            replacement: Ember.String.htmlSafe(
+                                                                                `<a class="" data-bs-toggle="collapse" href="#i${msg.mess_id}" 
+                                                                                role="button" aria-expanded="false" aria-controls="collapseExample"> @${response.role_name} </a>
+                                                                                <div class="collapse" id="i${msg.mess_id}">
+                                                                                    <div class="card card-body">
+                                                                                        ${response.role_desc} <br>
+                                                                                    </div>
+                                                                                </div>`
+                                                                            ),
+                                                                        });
+                                                                    },
+                                                                    error: function (error) {
+                                                                        console.log("Error fetching role description:", error);
+                                                                        reject(error);
+                                                                    },
+                                                                });
+                                                            });
+
+                                                            promises.push(rolePromise);
+                                                            return match;
+                                                        }
+                                                    });
+
+                                                    Ember.RSVP.all(promises)
+                                                        .then(function (results) {
+                                                            results.forEach(function (result) {
+                                                                reconstructedMessage = reconstructedMessage.replace(result.original, result.replacement);
+                                                            });
+
+                                                            let msg_pack = {
+                                                                mess_id: msg.mess_id,
+                                                                sender_id: msg.sender_id,
+                                                                message: reconstructedMessage,
+                                                                enc_message: msg.message,
+                                                                iv: msg.iv,
+                                                                isforward: msg.isforward,
+                                                                receiver_id: msg.grp_id,
+                                                                enc_aes_key: msg.enc_aes_key,
+                                                                sender_name: msg.sender_name,
+                                                                timestamp: msg.timestamp,
+                                                                dataFormat: "Text",
+                                                            };
+
+                                                            resolve(msg_pack);
+                                                        })
+                                                        .catch(function (error) {
+                                                            console.error("Error in processing mentions:", error);
+                                                            reject(error);
+                                                        });
+
+                                            })
+                                            .catch(function (error) {
+                                                console.log("Error in decryption:", error);
+                                                reject(error);
+                                            });
                                     });
+
                                     promises.push(promise);
                                 }
                                 else{
@@ -1658,17 +1700,10 @@ export default Ember.Controller.extend({
             });
 
 
-
         }
 
 
-
-
-
-
     }
-
-
 
 
 });
