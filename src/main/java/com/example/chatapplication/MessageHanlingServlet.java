@@ -7,15 +7,12 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import java.io.InputStreamReader;
 import java.sql.*;
 import java.util.*;
-
 import org.json.JSONObject;
 
 @WebServlet("/MessageHandle")

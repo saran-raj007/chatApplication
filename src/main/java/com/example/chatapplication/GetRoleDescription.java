@@ -3,21 +3,11 @@ package com.example.chatapplication;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import jakarta.servlet.*;
-import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-
-import java.io.File;
 import java.io.IOException;
-
 import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.sql.*;
-import java.util.*;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 @WebServlet("/GetRoleDesc")

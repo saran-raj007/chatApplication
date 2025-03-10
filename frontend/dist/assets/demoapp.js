@@ -83,7 +83,6 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
             this._super.apply(this, arguments);
 
             var self = this;
-
             _ember["default"].run.scheduleOnce('afterRender', this, function () {
                 var _this = this;
 
@@ -122,10 +121,14 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                             if (receivedMessage.isforward) {
                                 key = receivedMessage.old_senderid === self.get('sender_id') ? receivedMessage.aes_key_sender : receivedMessage.aes_key_receiver;
                             } else {
-                                if (receivedMessage.sender_id === self.get('sender_id')) {
-                                    key = receivedMessage.aes_key_sender;
+                                if (!self.get('isGroup')) {
+                                    if (receivedMessage.sender_id === self.get('sender_id')) {
+                                        key = receivedMessage.aes_key_sender;
+                                    } else {
+                                        key = receivedMessage.aes_key_receiver;
+                                    }
                                 } else {
-                                    key = receivedMessage.aes_key_receiver;
+                                    key = receivedMessage.aes_key;
                                 }
                             }
 
@@ -178,18 +181,29 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
 
                                     messages = reconstructedMessage;
                                     msg_pack = {
+                                        mess_id: receivedMessage.mess_id,
                                         sender_id: receivedMessage.sender_id,
                                         message: messages,
                                         sender_name: receivedMessage.sender_name,
                                         dataFormat: 'Text',
                                         isforward: receivedMessage.isforward
                                     };
-                                    if (self.get('isGroup') && self.get('receiver_id') === receivedMessage.grp_id) {
+                                    var isGroup = self.get('isGroup');
+                                    if (!isGroup && (receivedMessage.sender_id === self.get('receiver_id') || receivedMessage.sender_id === self.get('sender_id'))) {
+                                        self.get('AllMessage').pushObject(msg_pack);
+                                    } else if (isGroup && receivedMessage.grp_id === self.get('receiver_id')) {
                                         self.get('AllMessage').pushObject(msg_pack);
                                     }
-                                    if (!self.get('isGroup') && self.get('sender_id') === receivedMessage.sender_id) {
-                                        self.get('AllMessage').pushObject(msg_pack);
-                                    }
+                                    // self.get('AllMessage').pushObject(msg_pack);
+
+                                    // if(self.get('isGroup') && self.get('receiver_id')===receivedMessage.grp_id){
+                                    //  self.get('AllMessage').pushObject(msg_pack);
+
+                                    // }
+                                    //// if(!self.get('isGroup') && self.get('sender_id')===receivedMessage.sender_id){
+                                    //self.get('AllMessage').pushObject(msg_pack);
+
+                                    //}
                                     console.log(reconstructedMessage);
                                     console.log("goo");
                                 })["catch"](function (error) {
@@ -331,26 +345,81 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
 
                                                 var promise = new _ember["default"].RSVP.Promise(function (resolve, reject) {
                                                     _demoappUtilsCrypto["default"].decryptMessage(msg.message, key, privateKey, msg.iv).then(function (message) {
-                                                        var msg_pack = {
-                                                            sender_id: msg.sender_id,
-                                                            receiver_id: msg.receiver_id,
-                                                            aes_key_sender: msg.aes_key_sender,
-                                                            aes_key_receiver: msg.aes_key_receiver,
-                                                            enc_message: msg.message,
-                                                            iv: msg.iv,
-                                                            sender_name: msg.sender_name,
-                                                            isforward: msg.isforward,
-                                                            mess_id: msg.mess_id,
-                                                            message: message,
-                                                            dataFormat: "Text",
-                                                            timestamp: msg.timestamp
-                                                        };
-                                                        resolve(msg_pack);
+                                                        var messages = message;
+                                                        var users = self.get('model.users');
+                                                        var promises = [];
+
+                                                        var reconstructedMessage = message.replace(/@@(.*?)@@/g, function (match, memberId) {
+                                                            var mention = users.findBy('user_id', memberId);
+                                                            if (memberId === self.get('model.curruser.user_id')) {
+                                                                mention = self.get('model.curruser');
+                                                            }
+
+                                                            if (mention !== undefined) {
+                                                                return _ember["default"].String.htmlSafe("<a class=\"\" data-bs-toggle=\"collapse\" href=\"#i" + msg.mess_id + "\" role=\"button\" \n                                                                aria-expanded=\"false\" aria-controls=\"collapseExample\"> @" + mention.name + " </a>\n                                                                <div class=\"collapse\" id=\"i" + msg.mess_id + "\">\n                                                                    <div class=\"card card-body\">\n                                                                        Name: " + mention.name + " <br>\n                                                                        Mobile Number: " + mention.mobile_number + " <br>\n                                                                    </div>\n                                                                </div>");
+                                                            } else {
+                                                                var rolePromise = new _ember["default"].RSVP.Promise(function (resolve, reject) {
+                                                                    _ember["default"].$.ajax({
+                                                                        url: _demoappConfigEnvironment["default"].apiHost + '/GetRoleDesc',
+                                                                        type: 'POST',
+                                                                        contentType: 'application/json',
+                                                                        dataType: 'json',
+                                                                        xhrFields: { withCredentials: true },
+                                                                        data: JSON.stringify({ role_id: memberId }),
+                                                                        success: function success(response) {
+                                                                            resolve({
+                                                                                original: match,
+                                                                                replacement: _ember["default"].String.htmlSafe("<a class=\"\" data-bs-toggle=\"collapse\" href=\"#i" + msg.mess_id + "\" \n                                                                                role=\"button\" aria-expanded=\"false\" aria-controls=\"collapseExample\"> @" + response.role_name + " </a>\n                                                                                <div class=\"collapse\" id=\"i" + msg.mess_id + "\">\n                                                                                    <div class=\"card card-body\">\n                                                                                        " + response.role_desc + " <br>\n                                                                                    </div>\n                                                                                </div>")
+                                                                            });
+                                                                        },
+                                                                        error: function error(_error3) {
+                                                                            console.log("Error fetching role description:", _error3);
+                                                                            reject(_error3);
+                                                                        }
+                                                                    });
+                                                                });
+
+                                                                promises.push(rolePromise);
+                                                                return match;
+                                                            }
+                                                        });
+
+                                                        _ember["default"].RSVP.all(promises).then(function (results) {
+                                                            results.forEach(function (result) {
+                                                                reconstructedMessage = reconstructedMessage.replace(result.original, result.replacement);
+                                                            });
+
+                                                            var msg_pack = {
+                                                                sender_id: msg.sender_id,
+                                                                receiver_id: msg.receiver_id,
+                                                                aes_key_sender: msg.aes_key_sender,
+                                                                aes_key_receiver: msg.aes_key_receiver,
+                                                                enc_message: msg.message,
+                                                                iv: msg.iv,
+                                                                sender_name: msg.sender_name,
+                                                                isforward: msg.isforward,
+                                                                mess_id: msg.mess_id,
+                                                                message: reconstructedMessage,
+                                                                dataFormat: "Text",
+                                                                timestamp: msg.timestamp
+                                                            };
+
+                                                            resolve(msg_pack);
+                                                        })["catch"](function (error) {
+                                                            console.error("Error in processing mentions:", error);
+                                                            reject(error);
+                                                        });
                                                     })["catch"](function (error) {
                                                         console.log("Error in decryption:", error);
                                                         reject(error);
                                                     });
+
+                                                    //resolve(msg_pack);
+                                                })["catch"](function (error) {
+                                                    console.log("Error in decryption:", error);
+                                                    reject(error);
                                                 });
+
                                                 promises.push(promise);
                                             })();
                                         } else {
@@ -480,9 +549,9 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                                                                             replacement: _ember["default"].String.htmlSafe("<a class=\"\" data-bs-toggle=\"collapse\" href=\"#i" + msg.mess_id + "\" \n                                                                                role=\"button\" aria-expanded=\"false\" aria-controls=\"collapseExample\"> @" + response.role_name + " </a>\n                                                                                <div class=\"collapse\" id=\"i" + msg.mess_id + "\">\n                                                                                    <div class=\"card card-body\">\n                                                                                        " + response.role_desc + " <br>\n                                                                                    </div>\n                                                                                </div>")
                                                                         });
                                                                     },
-                                                                    error: function error(_error3) {
-                                                                        console.log("Error fetching role description:", _error3);
-                                                                        reject(_error3);
+                                                                    error: function error(_error4) {
+                                                                        console.log("Error fetching role description:", _error4);
+                                                                        reject(_error4);
                                                                     }
                                                                 });
                                                             });
@@ -632,8 +701,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                             success: function success(response) {
                                 console.log(response);
                             },
-                            error: function error(_error4) {
-                                console.log(_error4);
+                            error: function error(_error5) {
+                                console.log(_error5);
                             }
 
                         });
@@ -674,8 +743,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success() {
                         self.transitionToRoute('login');
                     },
-                    error: function error(xhr, status, _error5) {
-                        console.error("Logout failed:", _error5);
+                    error: function error(xhr, status, _error6) {
+                        console.error("Logout failed:", _error6);
                     }
                 });
             },
@@ -718,8 +787,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         window.location.href = "chat";
                     },
-                    error: function error(_error6) {
-                        alert("erro on group creation", _error6);
+                    error: function error(_error7) {
+                        alert("erro on group creation", _error7);
                     }
 
                 });
@@ -812,8 +881,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                                     console.log(response);
                                     self.get('mentions').clear();
                                 },
-                                error: function error(_error7) {
-                                    console.log(_error7);
+                                error: function error(_error8) {
+                                    console.log(_error8);
                                 }
                             });
                         })["catch"](function (error) {
@@ -842,8 +911,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         window.location.href = "chat";
                     },
-                    error: function error(_error8) {
-                        console.log(_error8);
+                    error: function error(_error9) {
+                        console.log(_error9);
                     }
 
                 });
@@ -888,8 +957,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                             }
                         }
                     },
-                    error: function error(_error9) {
-                        console.error(_error9);
+                    error: function error(_error10) {
+                        console.error(_error10);
                     }
 
                 });
@@ -913,8 +982,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         _ember["default"].$('#viewmodal').modal('hide');
                     },
-                    error: function error(_error10) {
-                        console.error(_error10);
+                    error: function error(_error11) {
+                        console.error(_error11);
                     }
                 });
             },
@@ -954,8 +1023,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                             }
                         }
                     },
-                    error: function error(_error11) {
-                        console.error(_error11);
+                    error: function error(_error12) {
+                        console.error(_error12);
                     }
 
                 });
@@ -975,8 +1044,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         _ember["default"].$('#addmember').modal('hide');
                     },
-                    error: function error(_error12) {
-                        alert("error on Adding new members ", _error12);
+                    error: function error(_error13) {
+                        alert("error on Adding new members ", _error13);
                     }
 
                 });
@@ -1018,8 +1087,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         console.log(response);
                     },
-                    error: function error(_error13) {
-                        console.log(_error13);
+                    error: function error(_error14) {
+                        console.log(_error14);
                     }
 
                 });
@@ -1071,8 +1140,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                             }
                         }
                     },
-                    error: function error(_error14) {
-                        console.log(_error14);
+                    error: function error(_error15) {
+                        console.log(_error15);
                     }
 
                 });
@@ -1330,7 +1399,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                         }));
                         console.log("Message Deleted");
                     },
-                    error: function error(_error15) {
+                    error: function error(_error16) {
                         console.error("Error on Deleting Message");
                     }
 
@@ -1438,9 +1507,9 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                                                             reject(new Error("No members found in group"));
                                                         }
                                                     },
-                                                    error: function error(_error16) {
-                                                        console.error("Error fetching group members:", _error16);
-                                                        reject(_error16);
+                                                    error: function error(_error17) {
+                                                        console.error("Error fetching group members:", _error17);
+                                                        reject(_error17);
                                                     }
                                                 });
                                             });
@@ -1502,8 +1571,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                                 console.log("Messages forwarded successfully:", response);
                                 _ember["default"].$("#exampleModal").modal("hide");
                             },
-                            error: function error(_error17) {
-                                console.error("Error forwarding messages:", _error17);
+                            error: function error(_error18) {
+                                console.error("Error forwarding messages:", _error18);
                             }
                         });
                     })["catch"](function (error) {
@@ -1555,7 +1624,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
 
                         _ember["default"].$("#createrole").modal("show");
                     },
-                    error: function error(_error18) {}
+                    error: function error(_error19) {}
 
                 });
             },
@@ -1603,8 +1672,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         _ember["default"].$("#createrole").modal("hide");
                     },
-                    error: function error(_error19) {
-                        console.error(_error19);
+                    error: function error(_error20) {
+                        console.error(_error20);
                     }
 
                 });
@@ -1648,8 +1717,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
 
                         _ember["default"].$("#rolemodel").modal('show');
                     },
-                    error: function error(_error20) {
-                        console.error(_error20);
+                    error: function error(_error21) {
+                        console.error(_error21);
                     }
                 });
             },
@@ -1694,8 +1763,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                             }
                         }
                     },
-                    error: function error(_error21) {
-                        console.error(_error21);
+                    error: function error(_error22) {
+                        console.error(_error22);
                     }
 
                 });
@@ -1723,7 +1792,7 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         _ember["default"].$("#addMemberToRole").modal('hide');
                     },
-                    error: function error(_error22) {}
+                    error: function error(_error23) {}
 
                 });
             },
@@ -1744,8 +1813,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         _ember["default"].$("#rolemodel").modal('hide');
                     },
-                    error: function error(_error23) {
-                        console.error(_error23);
+                    error: function error(_error24) {
+                        console.error(_error24);
                     }
 
                 });
@@ -1766,8 +1835,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         _ember["default"].$("#rolemodel").modal('hide');
                     },
-                    error: function error(_error24) {
-                        console.error(_error24);
+                    error: function error(_error25) {
+                        console.error(_error25);
                     }
 
                 });
@@ -1824,8 +1893,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                             }
                         }
                     },
-                    error: function error(_error25) {
-                        console.log(_error25);
+                    error: function error(_error26) {
+                        console.log(_error26);
                     }
 
                 });
@@ -1848,8 +1917,8 @@ define("demoapp/controllers/chat", ["exports", "ember", "demoapp/utils/crypto", 
                     success: function success(response) {
                         console.log(response);
                     },
-                    error: function error(_error26) {
-                        console.error(_error26);
+                    error: function error(_error27) {
+                        console.error(_error27);
                     }
 
                 });
@@ -2586,7 +2655,7 @@ catch(err) {
 });
 
 if (!runningTests) {
-  require("demoapp/app")["default"].create({"name":"demoapp","version":"0.0.0+a7120515"});
+  require("demoapp/app")["default"].create({"name":"demoapp","version":"0.0.0+80fae2e0"});
 }
 
 /* jshint ignore:end */

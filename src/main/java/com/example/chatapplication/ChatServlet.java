@@ -2,16 +2,10 @@ package com.example.chatapplication;
 
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import java.io.BufferedReader;
 import java.io.IOException;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import java.nio.ByteBuffer;
 import java.sql.*;
 import java.util.*;
 import org.json.JSONArray;
@@ -81,7 +75,6 @@ public class ChatServlet extends HttpServlet {
                      jsonResponse.put("groups", new JSONArray(groupList));
                      jsonResponse.put("curruser", curruser);
                      response.getWriter().write(jsonResponse.toString());
-                        System.out.println(jsonResponse.toString());
 
                  }catch (SQLException e){
                      e.printStackTrace();

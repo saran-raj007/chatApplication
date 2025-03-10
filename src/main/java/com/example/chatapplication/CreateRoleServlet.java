@@ -4,23 +4,14 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import java.io.BufferedReader;
 import java.io.IOException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
 import java.sql.*;
-import java.util.*;
-
-import jakarta.websocket.Session;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 @WebServlet("/CreateRole")
@@ -34,6 +25,11 @@ public class CreateRoleServlet extends HttpServlet {
             String role_name = role.get("role_name").getAsString();
             String role_description = role.get("role_des").getAsString();
             String grp_id = role.get("grp_id").getAsString();
+            if(!AdminVerification.adminVerfiy(sender_id,grp_id)){
+                jsonResponse.put("message","unauthorized access");
+                response.getWriter().write(jsonResponse.toString());
+                return;
+            }
             JsonArray permissions = role.getAsJsonArray("permissions");
             JsonArray memebers = role.getAsJsonArray("members");
             Connection con =DBconnection.getConnection();

@@ -5,21 +5,15 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import java.io.BufferedReader;
 import java.io.IOException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
 import java.sql.*;
 import java.util.*;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 @WebServlet("/ForwardMessage")
@@ -43,11 +37,11 @@ public class ForwardMessage extends HttpServlet {
                 if(dataFormat.equals("Text")){
                     String message = messageObject.get("message").getAsString();
                     String iv = messageObject.get("iv").getAsString();
-                    System.out.println("Message ID: " + oldMsgId);
-                    System.out.println("Sender ID: " + oldSenderId);
-                    System.out.println("Message: " + message);
-                    System.out.println("IV: " + iv);
-                    System.out.println("Data Format: " + dataFormat);
+//                    System.out.println("Message ID: " + oldMsgId);
+//                    System.out.println("Sender ID: " + oldSenderId);
+//                    System.out.println("Message: " + message);
+//                    System.out.println("IV: " + iv);
+//                    System.out.println("Data Format: " + dataFormat);
 
                     JsonArray forwardToArray = messageObject.getAsJsonArray("forwardto");
                     for (JsonElement recipientElement : forwardToArray) {

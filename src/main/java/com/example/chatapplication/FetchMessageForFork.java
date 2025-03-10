@@ -2,24 +2,18 @@ package com.example.chatapplication;
 
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import java.io.BufferedReader;
 import java.io.IOException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
 import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Date;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -58,7 +52,7 @@ public class FetchMessageForFork extends HttpServlet {
 
 
                 if(!isGroup){
-                    System.out.println(senderID+" "+receiver_id+" "+timestamp);
+                  //  System.out.println(senderID+" "+receiver_id+" "+timestamp);
                     try{
                         ps=con.prepareStatement(queryPvtmsg);
                         ps.setString(1, sender_id);
@@ -100,7 +94,7 @@ public class FetchMessageForFork extends HttpServlet {
 
                 }
                 jsonResponse.put("messages", new JSONArray(msgList));
-                System.out.println(jsonResponse.toString());
+              //  System.out.println(jsonResponse.toString());
                 response.getWriter().write(jsonResponse.toString());
 
 

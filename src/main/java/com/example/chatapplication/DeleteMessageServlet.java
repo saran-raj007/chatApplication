@@ -1,24 +1,15 @@
 package com.example.chatapplication;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import jakarta.servlet.*;
+
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import java.io.BufferedReader;
 import java.io.IOException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
 import java.sql.*;
-import java.util.*;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 @WebServlet("/DeleteMessage")
@@ -41,7 +32,7 @@ public class DeleteMessageServlet extends HttpServlet {
             PreparedStatement ps;
             if(con != null){
                 if(isGroup){
-                    String qry = "";
+                    String qry="";
                     if(dataFormat.equals("Text")){
                         if(option.equals("DFM") ){
                             qry ="delete from aes_keys where grpmssg_id=?and receiver_id=?";
@@ -55,6 +46,11 @@ public class DeleteMessageServlet extends HttpServlet {
                             }
                         }
                         else if(option.equals("DFE")){
+                            if(!AdminVerification.OperationVerify(usr_id,receiver_id,"Delete Message")){
+                                jsonResponse.put("message","unauthorized access");
+                                response.getWriter().write(jsonResponse.toString());
+                                return;
+                            }
                             qry ="delete from group_messages where grpmssg_id=?";
                             try {
                                 ps= con.prepareStatement(qry);
@@ -81,16 +77,16 @@ public class DeleteMessageServlet extends HttpServlet {
                     if(dataFormat.equals("Text")){
                         if(option.equals("DFM") && isequal){
                             qry ="update messages set aes_key_sender=NULL where mess_id=?";
-                            System.out.println("inga iruhtu");
+
                         }
                         else if(option.equals("DFM")){
                             qry ="update messages set aes_key_receiver=NULL where mess_id=?";
 
                         }
                         else if(option.equals("DFE")){
+
                             qry ="delete from messages where mess_id=?";
                             WebSocketServer.deleteMessage(msg_id,isGroup,request_id,receiver_id);
-
                         }
                         try{
                             ps = con.prepareStatement(qry);

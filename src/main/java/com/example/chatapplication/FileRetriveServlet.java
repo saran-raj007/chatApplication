@@ -1,9 +1,7 @@
 package com.example.chatapplication;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+
 import jakarta.servlet.*;
-import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.*;
@@ -20,7 +18,7 @@ public class FileRetriveServlet extends HttpServlet {
         if(sender_id != null){
             String file_name = request.getParameter("file_name");
             file_name = URLDecoder.decode(file_name, "UTF-8");
-            System.out.println(file_name);
+            //System.out.println(file_name);
             File imageFile = new File(getServletContext().getRealPath("") + "/uploads/" + file_name);
 
             if (!imageFile.exists()) {

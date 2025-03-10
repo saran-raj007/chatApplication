@@ -3,21 +3,13 @@ package com.example.chatapplication;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import jakarta.servlet.annotation.MultipartConfig;
-import jakarta.servlet.http.Part;
 import jakarta.websocket.*;
 import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerEndpoint;
 import java.io.IOException;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-import java.io.StringReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.sql.*;
@@ -208,17 +200,18 @@ public class WebSocketServer  {
 
     public static void  sendMessageToGroup(String grp_id,String msg_id,String message,String msg_iv,Map<String,String> memberaesKeyMap, String sender_id,String sender_name,String old_senderid,String old_msgid,boolean isforward,JsonArray mentions) throws IOException {
 
-        System.out.println(memberaesKeyMap.size());
+       // System.out.println(memberaesKeyMap.size());
         ArrayList<JSONObject> mentionsList;
         mentionsList=getMentionDetails(mentions,grp_id);
         boolean unseen=(!mentionsList.isEmpty());
 
-        System.out.println(unseen);
+       // System.out.println(unseen);
         for (Map.Entry<String, String> entry : memberaesKeyMap.entrySet()) {
             String member_id = entry.getKey();
             String key = entry.getValue();
             Session receiverSession = userSessions.get(member_id);
-            if(receiverSession != null && receiverSession.isOpen() && !member_id.equals(sender_id)) {
+            if(receiverSession != null && receiverSession.isOpen()) {
+               // System.out.println(member_id+" "+"okie");
                 JSONObject jsonResponse = new JSONObject();
                 jsonResponse.put("dataFormat", "Text");
                 jsonResponse.put("grp_id", grp_id);
@@ -227,7 +220,7 @@ public class WebSocketServer  {
                 jsonResponse.put("sender_id",sender_id);
                 jsonResponse.put("message",message);
                 jsonResponse.put("iv",msg_iv);
-                jsonResponse.put("aes_key_receiver",key);
+                jsonResponse.put("aes_key",key);
                 jsonResponse.put("sender_name",sender_name);
                 jsonResponse.put("old_senderid",old_senderid);
                 jsonResponse.put("old_msgid",old_msgid);

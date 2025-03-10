@@ -4,18 +4,16 @@ import jakarta.servlet.*;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-
 import java.io.File;
 import java.io.IOException;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.sql.*;
 import java.util.*;
-import org.json.JSONArray;
 import org.json.JSONObject;
+
 @MultipartConfig
 @WebServlet("/FilesHandling")
 public class FilesHandlingServlet extends HttpServlet {
@@ -28,10 +26,10 @@ public class FilesHandlingServlet extends HttpServlet {
             String receiver_id = request.getParameter("receiver_id");
             boolean isGroup = request.getParameter("isGroup").equals("true");
             String sender_name = request.getParameter("sender_name");
-            System.out.println(isGroup+ " "+receiver_id);
+          //  System.out.println(isGroup+ " "+receiver_id);
             String uniqueFileName = UUID.randomUUID().toString() + ".png";
             String uploadPath = getServletContext().getRealPath("") + File.separator + "uploads";
-            System.out.println(uploadPath);
+            //System.out.println(uploadPath);
             Path filePath = Paths.get(uploadPath, uniqueFileName);
             Files.copy(filePart.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
             String msg_id=storeFiles(uniqueFileName,sender_id,receiver_id,isGroup,null,null,false);
