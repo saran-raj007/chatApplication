@@ -41,7 +41,6 @@ public class CreateForkMessageServlet extends HttpServlet {
             } catch (ParseException e) {
                 throw new RuntimeException(e);
             }
-//System.out.println(parsedDate+" "+"&&&");
             JsonArray jsonArray = jsonObject.getAsJsonArray("messages");
             ResultSet rs = getFiles(isGroup,sender_id,receiver_id_file,parsedDate);
             try{
@@ -50,7 +49,6 @@ public class CreateForkMessageServlet extends HttpServlet {
                     boolean fileData =rs.next();
                     Iterator<JsonElement> iterator = jsonArray.iterator();
                     boolean msg_data = iterator.hasNext();
-                    //System.out.println(fileData+" "+msg_data);
                     JsonElement jsonElement = null;
                     while (msg_data && fileData) {
                         if(jsonElement == null) {
@@ -67,18 +65,15 @@ public class CreateForkMessageServlet extends HttpServlet {
                         }
                         Timestamp timestamp = rs.getTimestamp("created_at");
                         if(parsedDate_msg.compareTo(timestamp)<0){
-                           // System.out.println(parsedDate_msg+" & "+ timestamp);
                             perpareDataForText(jsonObjectt,forkId,incrementSeconds,isGroup);
                             jsonElement =null;
                             msg_data=iterator.hasNext();
-
                         }
                         else{
                             prepareDataForFile(rs,forkId,incrementSeconds);
                             fileData=rs.next();
                         }
                         incrementSeconds++;
-
 
                     }
                     while(msg_data){

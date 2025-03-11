@@ -32,7 +32,6 @@ public class LoginServlet extends HttpServlet {
         response.setContentType("application/json");
         JSONObject respo = new JSONObject();
         if(con!=null) {
-
             String qry ="SELECT * FROM users WHERE mobile_number = ?";
             try{
                 ps = con.prepareStatement(qry);

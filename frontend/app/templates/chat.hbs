@@ -65,7 +65,7 @@
     <section class="Chat">
         <div class="ChatHead">
             <li class="d-flex justify-content-around align-items-center gap-3 p-2">
-                <img src="assets/profile.png" style="height: 20%; width: 20%; border-radius: 50%" alt="">
+                <img src="assets/profile.png" style="height: 15%; width: 15%; border-radius: 50%" alt="">
                 <p class="">{{selectedUsername}}</p>
                 <span>{{currentStatus}}</span>
             </li>
@@ -146,6 +146,8 @@
                                         <li><a class="dropdown-item" {{action "DeleteMessage" message "DFM" on="click"}}>Delete for me message</a></li>
                                         <li><a class="dropdown-item" {{action "DeleteMessage" message "DFE" on="click"}}>Delete for everyone message</a></li>
                                         <li><a class="dropdown-item" {{action "ForwardMessage" true   on="click"}}>Forward message</a></li>
+                                        <li><a class="dropdown-item" {{action "EditMessage" true   on="click"}}>Edit message</a></li>
+
 
                                     </ul>
                                 </div>
@@ -186,7 +188,7 @@
                                             <li><a class="dropdown-item" {{action "DeleteMessage" message "DFE" on="click"}}>Delete for everyone message</a></li>
                                         {{/if}}
 
-                                <li><a class="dropdown-item" {{action "ForwardMessage" true   on="click"}}>Forward message</a></li>
+                                       <li><a class="dropdown-item" {{action "ForwardMessage" true   on="click"}}>Forward message</a></li>
 
 
 
@@ -292,66 +294,9 @@
 
 
 
-    <section class="addMembers">
-        <form {{action "addNewMember"  on="submit" }}>
-            <div class="d-flex justify-content-between">
-                <h1>Add New Members</h1><br>
-                <button type="button" class="btn-close" {{action "closeViewMember" on="click"}} aria-label="Close"></button>
-            </div><br>
-            <div class="d-flex- flex-column">
-                {{#each ViewGrpMembers as |member|}}
-                    <div class="card d-flex justify-content-around align-items-center flex-row p-3" >
-                        <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
-                        <p class="">{{member.name}}</p>
-                        <span class="">{{member.mobile_number}}</span>
-                        <input type="checkbox"    {{action "addUsertoGroup" member.user_id on="change"}}  >
 
-                    </div>
-                    <hr>
-                {{/each}}
-            </div>
-            <div class="button-container">
-                <button type="submit" class="submit-button">Add Members</button>
-            </div>
-        </form>
-    </section>
 
-    <section class="forkmsg">
-        <div class="d-flex justify-content-between">
-            <h1><strong>Add users to forked chat</strong></h1><br>
-            <button type="button" class="btn-close" {{action "closeFork" on="click"}} aria-label="Close"></button>
-        </div>
 
-        <form {{action "CreatForkMessage"  on="submit" }}>
-            <div class="start-fork">
-                <strong id="fork-sender">sender</strong>
-                <span id="fork-msg">Message</span>
-                <span id="fork-time">Time</span>
-            </div>
-            <div class="grp-field">
-                <h3>Add Users</h3>
-                {{#each newMembersForFork as |message|}}
-                    <div class="fork-user" >
-                        <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
-                        <p class="GroupName">{{message.name}}</p>
-                        <span class="GroupDescrp">{{message.mobile_number}}</span>
-                        <input type="checkbox"   class="GroupDescrp" {{action "addUserToFork" message.user_id on="change"}}  >
-
-                    </div>
-                {{/each}}
-            </div>
-            <div class="data-field">
-            <div class="chat-title">
-                <label for="chat-title">Chat Title: </label><input type="text" name="chat-title" id="chat-title" required>
-            </div>
-            <label><input type="checkbox" id="all" name="all"> Include all participants of this conversation</label>
-            </div>
-            <div class="button-container">
-                <button type="submit" class="submit-button">Create Chat</button>
-            </div>
-        </form>
-    </section>
-    <!-- Button trigger modal -->
 
 
     <!-- Modal -->
@@ -716,6 +661,60 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <button type ="button" class="btn btn-secondary" {{action "addMemberToRole" on="click"}}>Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--Fork option model-->
+<div class="modal fade" id="forkmessage" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog   modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5">Fork Messages</h1>
+                <input type="hidden" id="roleID" name="roleID">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex flex-column">
+                    <div class="d-flex align-items-center">
+                        <div class="card start-fork">
+                            <strong id="fork-sender">sender</strong>
+                            <span id="fork-msg">Message</span>
+                            <span id="fork-time">Time</span>
+                        </div>
+                    </div>
+
+                    <div class="grp-field">
+                        <div class="ml-2" style="margin-left: 20px;">
+                            <h3>Add Users</h3>
+                        </div>
+                        <div class="d-flex flex-column gap-2 ">
+                            {{#each newMembersForFork as |message|}}
+                                <div class="card d-flex flex-row p-3 align-items-center justify-content-between w-65" >
+                                    <div class="avatargrp"><img src="assets/profile.png" alt=""></div>
+                                    <sapn>{{message.name}}</sapn>
+                                    <span >{{message.mobile_number}}</span>
+                                    <input type="checkbox"    {{action "addUserToFork" message.user_id on="change"}}  >
+
+                                </div>
+                            {{/each}}
+                        </div>
+
+                    </div>
+                    <div class="data-field">
+                        <div class="chat-title">
+                            <label for="chat-title">Chat Title: </label><input type="text" class="p-3" name="chat-title" id="chat-title" required>
+                        </div>
+                        <label><input type="checkbox" id="all" name="all"> Include all participants of this conversation</label>
+                    </div>
+                </div>
+
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="submit-button" {{action "CreatForkMessage"  on="click" }}>Create Chat</button>
             </div>
         </div>
     </div>

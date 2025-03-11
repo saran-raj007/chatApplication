@@ -183,6 +183,7 @@ export default Ember.Controller.extend({
                                             message: messages,
                                             sender_name: receivedMessage.sender_name,
                                             dataFormat : 'Text',
+                                            timestamp: receivedMessage.timestamp,
                                             isforward : receivedMessage.isforward,
                                         };
                                         let isGroup =self.get('isGroup');
@@ -272,7 +273,7 @@ export default Ember.Controller.extend({
                 xhrFields: { withCredentials: true },
                 data : JSON.stringify(details),
                 success : function (response){
-                   console.log(response)
+                   console.log(response);
                 },
                 error : function(error){
                    console.log(error);
@@ -873,8 +874,6 @@ export default Ember.Controller.extend({
                                 dataFormat : "Text",
                                 mentions : mentions,
 
-
-
                             };
                             console.log(msg_pack);
                             Ember.$.ajax({
@@ -902,8 +901,6 @@ export default Ember.Controller.extend({
                 console.error("Error fetching group keys:", error);
             });
            // self.get('AllMessage').pushObject({ sender_id: sender_id, message: message,dataFormat : "Text",timestamp: time});
-
-
         },
 
         ExitGroup : function (member_id){
@@ -1099,6 +1096,9 @@ export default Ember.Controller.extend({
             let datas ={
                 grp_id :self.get('receiver_id'),
             }
+            document.getElementById("fork-sender").textContent = message.sender_name;
+            document.getElementById("fork-msg").textContent = message.message;
+            document.getElementById("fork-time").textContent = message.timestamp;
             Ember.$.ajax({
                 url :url,
                 type :'POST',
@@ -1116,14 +1116,8 @@ export default Ember.Controller.extend({
 
             });
 
-            Ember.$(".createGroup").css("display", "none");
-            Ember.$(".ViewGrpMember").css("display", "none");
-            Ember.$(".addMembers").css("display", "none");
-            Ember.$(".Chat").css("display", "none");
-            Ember.$(".forkmsg").css("display", "block");
-            document.getElementById("fork-sender").textContent = message.sender_name;
-            document.getElementById("fork-msg").textContent = message.message;
-            document.getElementById("fork-time").textContent = message.timestamp;
+            Ember.$('#forkmessage').modal('show');
+
             self.set('forkedmsg', message);
         },
         CreatForkMessage: function () {

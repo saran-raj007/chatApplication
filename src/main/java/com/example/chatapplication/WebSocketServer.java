@@ -26,86 +26,84 @@ public class WebSocketServer  {
         updateStatus(sender_id,"Online");
     }
 
+//    @OnMessage
+//    public void onMessage(String message, @PathParam("sender_id") String sender_id, Session session) throws IOException {
+//        //   System.out.println(Arrays.toString(message));
+//
+//        JSONObject msg = new JSONObject(message);
+//        String msgType = msg.getString("type");
+//        String dataFormat = msg.getString("dataFormat");
+//
+//        if (msgType.equals("Private")) {
+//            JSONObject jsonResponse = new JSONObject();
+//            String receiver_id = msg.getString("receiver_id");
+//
+//            if (dataFormat.equals("Text")) {
+//                String message_text = msg.getString("ciphertext");
+//                String iv = msg.getString("iv");
+//                String aeskey_receiver = msg.getString("aeskeyReceiver");
+//                String aeskey_sender = msg.getString("aeskeySender");
+//                jsonResponse.put("dataFormat", "Text");
+//                jsonResponse.put("sender_id", sender_id);
+//                jsonResponse.put("message", message_text);
+//                jsonResponse.put("iv", iv);
+//                jsonResponse.put("aes_key_receiver", aeskey_receiver);
+//                jsonResponse.put("aes_key_sender", aeskey_sender);
+//            }
+//            else {
+//                String file_name = msg.getString("file_name");
+//                String sender_name = msg.getString("sender_name");
+//                jsonResponse.put("dataFormat", "Sticker");
+//                jsonResponse.put("sender_id", sender_id);
+//                jsonResponse.put("file_name", file_name);
+//                jsonResponse.put("sender_name", sender_name);
+//            }
+//            Session receiverSession = userSessions.get(receiver_id);
+//            if (receiverSession != null && receiverSession.isOpen()) {
+//
+//                receiverSession.getBasicRemote().sendText(jsonResponse.toString());
+//            }
+//
+//        }
+//        else {
+//            String grp_id = msg.getString("grp_id");
+//            String sender_name = msg.getString("sender_name");
+//
+//            if (dataFormat.equals("Text")) {
+//                JSONArray members_aesKey = msg.getJSONArray("members_aesKey");
+//                String message_text = msg.getString("ciphertext");
+//                String msg_iv = msg.getString("iv");
+//                Map<String, String> memberaesKeyMap = new HashMap<>();
+//                for (int i = 0; i < members_aesKey.length(); i++) {
+//                    JSONObject obj = members_aesKey.getJSONObject(i);
+//                    String userId = obj.getString("user_id");
+//                    String key = obj.getString("encryptedAESKey");
+//                    memberaesKeyMap.put(userId, key);
+//                }
+//               // sendMessageToGroup(grp_id, message_text, msg_iv, memberaesKeyMap, sender_id, sender_name);
+//            }
+//            else {
+//                String file_name = msg.getString("file_name");
+//                JSONObject jsonResponse = new JSONObject();
+//                jsonResponse.put("dataFormat", "Sticker");
+//                jsonResponse.put("sender_id", sender_id);
+//                jsonResponse.put("file_name", file_name);
+//                jsonResponse.put("sender_name", sender_name);
+//
+//
+//
+//
+//            }
+//
+//        }
+//
+//
+//
+//
+//
+//
+//    }
 
-    @OnMessage
-    public void onMessage(String message, @PathParam("sender_id") String sender_id, Session session) throws IOException {
-        //   System.out.println(Arrays.toString(message));
-
-        JSONObject msg = new JSONObject(message);
-        String msgType = msg.getString("type");
-        String dataFormat = msg.getString("dataFormat");
-
-        if (msgType.equals("Private")) {
-            JSONObject jsonResponse = new JSONObject();
-            String receiver_id = msg.getString("receiver_id");
-            ;
-            if (dataFormat.equals("Text")) {
-                String message_text = msg.getString("ciphertext");
-                String iv = msg.getString("iv");
-                String aeskey_receiver = msg.getString("aeskeyReceiver");
-                String aeskey_sender = msg.getString("aeskeySender");
-                jsonResponse.put("dataFormat", "Text");
-                jsonResponse.put("sender_id", sender_id);
-                jsonResponse.put("message", message_text);
-                jsonResponse.put("iv", iv);
-                jsonResponse.put("aes_key_receiver", aeskey_receiver);
-                jsonResponse.put("aes_key_sender", aeskey_sender);
-
-            }
-            else {
-
-                String file_name = msg.getString("file_name");
-                String sender_name = msg.getString("sender_name");
-                jsonResponse.put("dataFormat", "Sticker");
-                jsonResponse.put("sender_id", sender_id);
-                jsonResponse.put("file_name", file_name);
-                jsonResponse.put("sender_name", sender_name);
-            }
-            Session receiverSession = userSessions.get(receiver_id);
-            if (receiverSession != null && receiverSession.isOpen()) {
-
-                receiverSession.getBasicRemote().sendText(jsonResponse.toString());
-            }
-
-        }
-        else {
-            String grp_id = msg.getString("grp_id");
-            String sender_name = msg.getString("sender_name");
-
-            if (dataFormat.equals("Text")) {
-                JSONArray members_aesKey = msg.getJSONArray("members_aesKey");
-                String message_text = msg.getString("ciphertext");
-                String msg_iv = msg.getString("iv");
-                Map<String, String> memberaesKeyMap = new HashMap<>();
-                for (int i = 0; i < members_aesKey.length(); i++) {
-                    JSONObject obj = members_aesKey.getJSONObject(i);
-                    String userId = obj.getString("user_id");
-                    String key = obj.getString("encryptedAESKey");
-                    memberaesKeyMap.put(userId, key);
-                }
-               // sendMessageToGroup(grp_id, message_text, msg_iv, memberaesKeyMap, sender_id, sender_name);
-            }
-            else {
-                String file_name = msg.getString("file_name");
-                JSONObject jsonResponse = new JSONObject();
-                jsonResponse.put("dataFormat", "Sticker");
-                jsonResponse.put("sender_id", sender_id);
-                jsonResponse.put("file_name", file_name);
-                jsonResponse.put("sender_name", sender_name);
-
-
-
-
-            }
-
-        }
-
-
-
-
-
-
-    }
     public static ResultSet fetchGrpMembers(String grp_id) throws SQLException {
         Connection con =DBconnection.getConnection();
         PreparedStatement ps;
@@ -203,15 +201,28 @@ public class WebSocketServer  {
        // System.out.println(memberaesKeyMap.size());
         ArrayList<JSONObject> mentionsList;
         mentionsList=getMentionDetails(mentions,grp_id);
-        boolean unseen=(!mentionsList.isEmpty());
+        Timestamp timestamp=new Timestamp(System.currentTimeMillis());
 
+        System.out.println(timestamp);
        // System.out.println(unseen);
         for (Map.Entry<String, String> entry : memberaesKeyMap.entrySet()) {
             String member_id = entry.getKey();
             String key = entry.getValue();
             Session receiverSession = userSessions.get(member_id);
             if(receiverSession != null && receiverSession.isOpen()) {
-               // System.out.println(member_id+" "+"okie");
+                boolean unseen=false;
+                for (int i = 0; i < mentions.size(); i++) {
+                    JsonElement obj = mentions.get(i);
+                    if (obj.isJsonObject()){
+                        JsonObject jsonObject = obj.getAsJsonObject();
+                        if (jsonObject.get("member_id").getAsString().equals(member_id)) {
+                            unseen=true;
+                            break;
+
+                        }
+                    }
+                }
+
                 JSONObject jsonResponse = new JSONObject();
                 jsonResponse.put("dataFormat", "Text");
                 jsonResponse.put("grp_id", grp_id);
@@ -227,6 +238,7 @@ public class WebSocketServer  {
                 jsonResponse.put("isforward",isforward);
                 jsonResponse.put("unseen",unseen);
                 jsonResponse.put("mentions",mentionsList);
+                jsonResponse.put("timestamp", timestamp);
 
                 receiverSession.getBasicRemote().sendText(jsonResponse.toString());
 

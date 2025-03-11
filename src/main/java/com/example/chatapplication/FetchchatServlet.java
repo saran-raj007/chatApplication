@@ -183,7 +183,7 @@ public class FetchchatServlet extends HttpServlet {
             msg.put("old_msgid", rs.getString("old_msgid"));
             msg.put("old_senderid", rs.getString("old_senderid"));
             msg.put("timestamp", rs.getString("created_at"));
-            msg.put("mentions",retriveMentions(rs.getString("grpmssg_id")));
+           // msg.put("mentions",retriveMentions(rs.getString("grpmssg_id")));
             msgList.add(msg);
             textMsg=rs.next();
 

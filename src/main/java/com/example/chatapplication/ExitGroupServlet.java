@@ -28,7 +28,7 @@ public class ExitGroupServlet extends HttpServlet {
             PreparedStatement ps =null;
             if(con != null){
                 String  qry ="delete from group_members where grp_id =? and user_id =?";
-                String qryfordelRole ="delete from member_roles where member_id =?";
+                String qryfordelRole ="delete from member_roles where member_id =? and group_id=?";
 
                 try{
                     ps = con.prepareStatement(qry);
@@ -37,6 +37,7 @@ public class ExitGroupServlet extends HttpServlet {
                     int rowUpdate =ps.executeUpdate();
                     ps=con.prepareStatement(qryfordelRole);
                     ps.setString(1,member_id);
+                    ps.setString(2,grp_id);
                     ps.executeUpdate();
                     if(rowUpdate == 1){
                        // System.out.println("Member Successfully Exited form the group");
